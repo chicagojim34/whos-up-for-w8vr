@@ -187,7 +187,7 @@ export default function CircleDetail() {
           <Users size={19} className="text-primary" aria-hidden="true" /> Members
         </h2>
 
-        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 list-none">
+        <ul className="grid grid-cols-1 @xl:grid-cols-2 gap-2 list-none">
           {circle.memberList.map(member => (
             <li
               key={member.id}

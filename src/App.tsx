@@ -167,10 +167,12 @@ const DeviceSwitcher = ({
 
 const Header = ({
   mode,
+  viewportMode,
   isOverridden,
   setMode,
 }: {
   mode: DeviceMode;
+  viewportMode: DeviceMode;
   isOverridden: boolean;
   setMode: (m: DeviceMode | null) => void;
 }) => {
@@ -191,7 +193,7 @@ const Header = ({
       </button>
 
       <div className="flex items-center gap-3">
-        {mode !== 'mobile' && (
+        {viewportMode !== 'mobile' && (
           <DeviceSwitcher mode={mode} isOverridden={isOverridden} setMode={setMode} />
         )}
         {isPost ? (
@@ -213,7 +215,7 @@ const Header = ({
 
 function AppContent() {
   const location = useLocation();
-  const { mode, isOverridden, setMode } = useDeviceMode();
+  const { mode, viewportMode, isOverridden, setMode } = useDeviceMode();
   const isPost = location.pathname === '/post';
   const isEventDetail = location.pathname.startsWith('/event/');
 
@@ -235,8 +237,18 @@ function AppContent() {
 
       {!isPost && <Navigation isDesktop={mode === 'desktop'} />}
 
-      <div className={cx('content-area', { 'full-width': isPost })}>
-        {!isEventDetail && <Header mode={mode} isOverridden={isOverridden} setMode={setMode} />}
+      {/* `@container` makes page layouts respond to this column's width rather
+          than the window's, so the device-preview modes show the layout a
+          phone or tablet would really get. */}
+      <div className={cx('content-area @container', { 'full-width': isPost })}>
+        {!isEventDetail && (
+          <Header
+            mode={mode}
+            viewportMode={viewportMode}
+            isOverridden={isOverridden}
+            setMode={setMode}
+          />
+        )}
 
         <main id="main" className="animate-fade-in flex flex-col flex-1">
           <Routes>

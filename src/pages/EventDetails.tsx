@@ -28,6 +28,7 @@ import { StatusRing } from '../components/StatusRing';
 import { GlassModal } from '../components/GlassModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ShareSheet } from '../components/ShareSheet';
+import { FloatingBar } from '../components/FloatingBar';
 import { Avatar } from '../components/Avatar';
 import NotFound from './NotFound';
 import { ME, type BroadcastTarget, type RsvpStatus } from '../types';
@@ -299,10 +300,10 @@ export default function EventDetails() {
         </section>
 
         {/* Capacity & response dashboard */}
-        <section className="grid grid-cols-1 md:grid-cols-12 gap-4">
+        <section className="grid grid-cols-1 @2xl:grid-cols-12 gap-4">
           <h2 className="sr-only-text">Responses</h2>
 
-          <div className="md:col-span-5 bg-surface-lowest p-6 rounded-2xl shadow-sm flex flex-col items-center justify-center text-center">
+          <div className="@2xl:col-span-5 bg-surface-lowest p-6 rounded-2xl shadow-sm flex flex-col items-center justify-center text-center">
             <StatusRing
               capacity={capacity}
               size={120}
@@ -324,7 +325,7 @@ export default function EventDetails() {
             )}
           </div>
 
-          <div className="md:col-span-7 grid grid-cols-2 gap-3">
+          <div className="@2xl:col-span-7 grid grid-cols-2 gap-3">
             {ROSTER_TABS.map(tab => (
               <button
                 key={tab.key}
@@ -523,8 +524,7 @@ export default function EventDetails() {
       </div>
 
       {/* Sticky RSVP bar */}
-      <div className="floating-bar above-nav">
-        <div className="floating-bar-inner flex flex-col gap-3">
+      <FloatingBar aboveNav>
           <div className="rsvp-bar" role="group" aria-label="Your RSVP">
             <button
               onClick={() => handleRsvp('going')}
@@ -587,8 +587,7 @@ export default function EventDetails() {
             )}
             {mine === 'declined' && <span className="text-text-light">Muted for you</span>}
           </p>
-        </div>
-      </div>
+      </FloatingBar>
 
       {/* Guest list */}
       <GlassModal
