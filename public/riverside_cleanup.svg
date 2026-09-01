@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600" role="img" aria-label="Stylised riverbank at sunrise">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd8a8"/><stop offset="0.45" stop-color="#f7a072"/><stop offset="1" stop-color="#c3ecd7"/>
+    </linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4f9d8c"/><stop offset="1" stop-color="#1f5f52"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#sky)"/>
+  <circle cx="600" cy="176" r="72" fill="#fff3d6" fill-opacity="0.9"/>
+  <path d="M0 330 C 140 300 240 356 380 340 C 520 324 640 286 800 318 L800 600 L0 600Z" fill="url(#water)"/>
+  <g fill="#ffffff" fill-opacity="0.3">
+    <rect x="90" y="392" width="150" height="6" rx="3"/>
+    <rect x="330" y="430" width="200" height="6" rx="3"/>
+    <rect x="180" y="482" width="260" height="6" rx="3"/>
+    <rect x="520" y="392" width="120" height="6" rx="3"/>
+  </g>
+  <g fill="#2c4a3c">
+    <path d="M0 352 C 90 336 150 372 210 350 L210 600 L0 600Z" fill-opacity="0.55"/>
+    <path d="M620 322 C 690 306 740 340 800 324 L800 600 L620 600Z" fill-opacity="0.45"/>
+  </g>
+  <g transform="translate(300 300)">
+    <path d="M0 84 L0 30 A26 26 0 0 1 52 30 L52 84 Z" fill="#416656"/>
+    <rect x="-8" y="76" width="68" height="16" rx="6" fill="#2c4a3c"/>
+    <path d="M18 30 L18 6 M34 30 L34 6" stroke="#c3ecd7" stroke-width="6" stroke-linecap="round"/>
+  </g>
+</svg>

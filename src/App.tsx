@@ -1,151 +1,201 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  Bell, 
-  Compass, 
-  PlusCircle, 
-  Users, 
-  LayoutDashboard, 
-  Calendar, 
-  RotateCcw
+import {
+  Bell,
+  Compass,
+  PlusCircle,
+  Users,
+  LayoutDashboard,
+  Calendar,
+  RotateCcw,
 } from 'lucide-react';
 import cx from 'classnames';
 
-import { AppProvider, useApp } from './context/AppContext';
+import { AppProvider } from './context/AppContext';
+import { useApp } from './hooks/useApp';
+import { useDeviceMode, type DeviceMode } from './hooks/useDeviceMode';
+import { Avatar } from './components/Avatar';
+import { ConfirmDialog } from './components/ConfirmDialog';
+import { useConfirm } from './hooks/useConfirm';
 import Feed from './pages/Feed';
 import PostEvent from './pages/PostEvent';
 import Circles from './pages/Circles';
+import CircleDetail from './pages/CircleDetail';
 import EventDetails from './pages/EventDetails';
 import Discovery from './pages/Discovery';
 import Alerts from './pages/Alerts';
 import Schedule from './pages/Schedule';
+import Settings from './pages/Settings';
+import NotFound from './pages/NotFound';
 
-interface NavigationProps {
-  isDesktop: boolean;
-}
+const NAV_ITEMS = [
+  { path: '/', label: 'FEED', icon: LayoutDashboard },
+  { path: '/discovery', label: 'DISCOVERY', icon: Compass },
+  { path: '/post', label: 'POST', icon: PlusCircle },
+  { path: '/circles', label: 'CIRCLES', icon: Users },
+  { path: '/schedule', label: 'SCHEDULE', icon: Calendar },
+  { path: '/alerts', label: 'ALERTS', icon: Bell },
+];
 
-const Navigation = ({ isDesktop }: NavigationProps) => {
+const Navigation = ({ isDesktop }: { isDesktop: boolean }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { alerts, resetToDefaults } = useApp();
+  const { alerts, user, resetToDefaults } = useApp();
+  const confirm = useConfirm();
 
   const unreadAlertsCount = alerts.filter(a => a.unread).length;
 
-  const navItems = [
-    { path: '/', label: 'FEED', icon: LayoutDashboard },
-    { path: '/discovery', label: 'DISCOVERY', icon: Compass },
-    { path: '/post', label: 'POST', icon: PlusCircle },
-    { path: '/circles', label: 'CIRCLES', icon: Users },
-    { path: '/schedule', label: 'SCHEDULE', icon: Calendar },
-    { path: '/alerts', label: 'ALERTS', icon: Bell, badge: unreadAlertsCount },
-  ];
+  const handleReset = async () => {
+    const ok = await confirm.ask({
+      title: 'Reset demo data?',
+      body: 'Every event, circle, RSVP and alert returns to its starting state. This cannot be undone.',
+      confirmLabel: 'Reset everything',
+      tone: 'danger',
+    });
+    if (ok) resetToDefaults();
+  };
 
   return (
-    <nav className="bottom-nav">
-      {/* Desktop-only Branding in Sidebar */}
+    <nav className="bottom-nav" aria-label="Primary">
       {isDesktop && (
         <div className="flex flex-col gap-1 w-full px-2 mb-6">
-          <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => navigate('/')}>
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-primary to-primary-container flex items-center justify-center text-white font-headline font-black text-sm shadow-md">
+          <button
+            className="flex items-center gap-2.5 text-left"
+            onClick={() => navigate('/')}
+            aria-label="W8VR home"
+          >
+            <span className="w-9 h-9 rounded-2xl primary-gradient flex items-center justify-center text-white font-headline font-black text-sm shadow-md">
               W
-            </div>
+            </span>
             <span className="font-headline font-black text-2xl text-primary tracking-tight">
               W8VR
             </span>
-          </div>
+          </button>
           <span className="text-[10px] font-bold text-text-light uppercase tracking-widest pl-1 mt-0.5">
             Fluid Social Curator
           </span>
         </div>
       )}
 
-      {/* Nav Links Container */}
       <div className={cx('flex w-full', isDesktop ? 'flex-col gap-2' : 'justify-around items-center')}>
-        {navItems.map(item => {
+        {NAV_ITEMS.map(item => {
           const Icon = item.icon;
-          const isActive =
-            location.pathname === item.path ||
-            (item.path === '/' && location.pathname === '/feed');
+          const isActive = location.pathname === item.path;
+          const badge = item.path === '/alerts' ? unreadAlertsCount : 0;
           return (
             <button
               key={item.label}
               className={cx('nav-item', { active: isActive })}
               onClick={() => navigate(item.path)}
+              aria-current={isActive ? 'page' : undefined}
             >
-              <div className="relative flex items-center justify-center">
-                <Icon size={isDesktop ? 20 : 20} strokeWidth={isActive ? 2.5 : 2} />
-                {item.badge && item.badge > 0 ? (
-                  <span className="absolute -top-1 -right-2.5 w-4 h-4 bg-red-600 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-sm">
-                    {item.badge}
+              <span className="relative flex items-center justify-center">
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} aria-hidden="true" />
+                {badge > 0 && (
+                  <span
+                    className="absolute -top-1.5 -right-2.5 min-w-4 h-4 px-1 bg-error text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-sm"
+                    aria-hidden="true"
+                  >
+                    {badge}
                   </span>
-                ) : null}
-              </div>
+                )}
+              </span>
               <span className="nav-label">{item.label}</span>
+              {badge > 0 && <span className="sr-only-text">{badge} unread</span>}
             </button>
           );
         })}
       </div>
 
-      {/* Desktop-only User Profile Card & Reset Demo at Bottom of Sidebar */}
       {isDesktop && (
-        <div className="flex flex-col gap-3 w-full mt-auto pt-4 border-t border-gray-100">
-          <div className="flex items-center justify-between p-2.5 rounded-2xl bg-surface-low">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-full overflow-hidden bg-slate-800 border-2 border-white shadow-sm shrink-0">
-                <img
-                  src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
-                  alt="Felix"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-headline font-bold text-xs text-text-dark">Felix Vance</span>
-                <span className="text-[10px] font-bold text-primary">HOST • AUSTIN, TX</span>
-              </div>
-            </div>
-          </div>
+        <div className="flex flex-col gap-3 w-full mt-auto pt-4">
+          <button
+            onClick={() => navigate('/settings')}
+            className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-surface-low hover:bg-surface-high transition-colors text-left w-full"
+          >
+            <Avatar name={user.name} size={36} />
+            <span className="flex flex-col">
+              <span className="font-headline font-bold text-xs text-text-dark">{user.name}</span>
+              <span className="text-[10px] font-bold text-primary">{user.tagline}</span>
+            </span>
+          </button>
 
           <button
-            onClick={() => {
-              if (confirm('Reset demo state to original defaults?')) {
-                resetToDefaults();
-              }
-            }}
-            className="text-[10px] font-bold text-text-light hover:text-primary flex items-center justify-center gap-1.5 py-1.5 transition-colors cursor-pointer"
-            title="Reset local mock database to defaults"
+            onClick={handleReset}
+            className="text-[10px] font-bold text-text-light hover:text-primary flex items-center justify-center gap-1.5 py-1.5 transition-colors"
           >
-            <RotateCcw size={12} /> Reset Demo Data
+            <RotateCcw size={12} aria-hidden="true" /> Reset Demo Data
           </button>
         </div>
       )}
+
+      <ConfirmDialog {...confirm.dialogProps} />
     </nav>
   );
 };
 
-const Header = () => {
+const DeviceSwitcher = ({
+  mode,
+  isOverridden,
+  setMode,
+}: {
+  mode: DeviceMode;
+  isOverridden: boolean;
+  setMode: (m: DeviceMode | null) => void;
+}) => (
+  <div className="device-switcher" role="group" aria-label="Preview layout at a different width">
+    <button
+      className={cx('switcher-btn', { active: !isOverridden })}
+      onClick={() => setMode(null)}
+      title="Follow this window's width"
+      aria-pressed={!isOverridden}
+    >
+      Auto
+    </button>
+    {(['mobile', 'tablet', 'desktop'] as const).map(m => (
+      <button
+        key={m}
+        className={cx('switcher-btn', { active: isOverridden && mode === m })}
+        onClick={() => setMode(m)}
+        aria-pressed={isOverridden && mode === m}
+      >
+        {m[0].toUpperCase() + m.slice(1)}
+      </button>
+    ))}
+  </div>
+);
+
+const Header = ({
+  mode,
+  isOverridden,
+  setMode,
+}: {
+  mode: DeviceMode;
+  isOverridden: boolean;
+  setMode: (m: DeviceMode | null) => void;
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useApp();
   const isPost = location.pathname === '/post';
 
   return (
     <header className="app-header">
-      <div
-        className="flex items-center gap-2.5 cursor-pointer"
+      <button
+        className="flex items-center gap-2.5"
         onClick={() => navigate('/')}
+        aria-label="W8VR home"
       >
-        <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-800 border-2 border-white shadow-sm">
-          <img
-            src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
-            alt="Felix"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="logo">W8VR</div>
-      </div>
+        <Avatar name={user.name} size={32} />
+        <span className="logo">W8VR</span>
+      </button>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
+        {mode !== 'mobile' && (
+          <DeviceSwitcher mode={mode} isOverridden={isOverridden} setMode={setMode} />
+        )}
         {isPost ? (
-          <span className="badge bg-primary-fixed text-primary text-[10px] font-bold">
+          <span className="badge bg-primary-fixed text-primary-container text-[10px] font-bold">
             CREATOR MODE
           </span>
         ) : (
@@ -153,7 +203,7 @@ const Header = () => {
             onClick={() => navigate('/post')}
             className="btn btn-primary text-xs py-1.5 px-3 flex items-center gap-1 shadow-sm"
           >
-            <PlusCircle size={13} /> Post
+            <PlusCircle size={13} aria-hidden="true" /> Post
           </button>
         )}
       </div>
@@ -161,64 +211,45 @@ const Header = () => {
   );
 };
 
-const DeviceSwitcher = ({ mode, setMode }: { mode: string; setMode: (m: string) => void }) => {
-  return (
-    <div className="device-switcher-container" title="Toggle responsive preview width">
-      <div className="device-switcher">
-        <button
-          className={cx('switcher-btn', { active: mode === 'mobile' })}
-          onClick={() => setMode('mobile')}
-        >
-          Mobile
-        </button>
-        <button
-          className={cx('switcher-btn', { active: mode === 'tablet' })}
-          onClick={() => setMode('tablet')}
-        >
-          Tablet
-        </button>
-        <button
-          className={cx('switcher-btn', { active: mode === 'desktop' })}
-          onClick={() => setMode('desktop')}
-        >
-          Desktop
-        </button>
-      </div>
-    </div>
-  );
-};
-
 function AppContent() {
   const location = useLocation();
-  const [mode, setMode] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
+  const { mode, isOverridden, setMode } = useDeviceMode();
   const isPost = location.pathname === '/post';
   const isEventDetail = location.pathname.startsWith('/event/');
 
   useEffect(() => {
-    const root = document.getElementById('root');
-    if (root) {
-      root.className = `mode-${mode}`;
-    }
+    document.documentElement.className = `mode-${mode}`;
   }, [mode]);
 
+  // Route changes should start the reader at the top, not wherever the
+  // previous page happened to be scrolled to.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   return (
-    <div className={cx('app-container', { [`mode-${mode}`]: true })}>
-      <DeviceSwitcher mode={mode} setMode={m => setMode(m as 'mobile' | 'tablet' | 'desktop')} />
+    <div className={cx('app-container', `mode-${mode}`)}>
+      <a href="#main" className="sr-only-text">
+        Skip to main content
+      </a>
 
       {!isPost && <Navigation isDesktop={mode === 'desktop'} />}
 
       <div className={cx('content-area', { 'full-width': isPost })}>
-        {!isEventDetail && <Header />}
+        {!isEventDetail && <Header mode={mode} isOverridden={isOverridden} setMode={setMode} />}
 
-        <main className="animate-fade-in flex-col flex-1">
+        <main id="main" className="animate-fade-in flex flex-col flex-1">
           <Routes>
             <Route path="/" element={<Feed />} />
             <Route path="/discovery" element={<Discovery />} />
             <Route path="/post" element={<PostEvent />} />
             <Route path="/circles" element={<Circles />} />
+            <Route path="/circle/:id" element={<CircleDetail />} />
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/alerts" element={<Alerts />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/event/:id" element={<EventDetails />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
       </div>

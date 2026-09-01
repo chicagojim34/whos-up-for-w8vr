@@ -1,0 +1,431 @@
+import { dayAt } from './datetime';
+import {
+  ME,
+  type AlertItem,
+  type Attendee,
+  type CircleItem,
+  type ContactItem,
+  type EventItem,
+  type RsvpStatus,
+  type UserProfile,
+} from '../types';
+
+const NAME_POOL = [
+  'Aneka Rao', 'Jocelyn Park', 'Marcus Bell', 'Elena Rostova', 'Miles Okafor',
+  'Nina Castellanos', 'Julian Vance', 'Leo Marchetti', 'Maya Lin', 'David Park',
+  'Sarah Miller', 'Chen Wu', 'Priya Nair', 'Tomas Ferreira', 'Ada Nwosu',
+  'Ruth Bergman', 'Kofi Mensah', 'Ines Duarte', 'Oscar Lindqvist', 'Hana Sato',
+  'Gabriel Silva', 'Noor Haddad', 'Bea Whitfield', 'Ivan Petrov', 'Yuki Tanaka',
+  'Rosa Delgado', 'Simon Achebe', 'Talia Mizrahi', 'Owen Gallagher', 'Lucia Moretti',
+  'Femi Adeyemi', 'Clara Bouchard', 'Dmitri Volkov', 'Sana Iqbal', 'Theo Lambert',
+  'Amara Diallo', 'Jonah Keller', 'Mei Zhang', 'Rafael Ortiz', 'Freya Nilsen',
+  'Kwame Boateng', 'Isla MacLeod', 'Andre Dubois', 'Lena Hoffmann', 'Vikram Shah',
+  'Zoe Antonopoulos', 'Caleb Osei', 'Marta Kowalska', 'Hugo Beaumont', 'Nadia Rahimi',
+  'Silas Byrne', 'Anouk Visser', 'Kenji Mori', 'Delphine Roy', 'Emeka Obi',
+  'Sofia Ricci', 'Arjun Menon', 'Greta Lindholm', 'Mateo Herrera', 'Wren Halloran',
+];
+
+/**
+ * Builds a real attendee list. The response dashboard reads this directly, so
+ * the counts on the event page are the length of a list someone can open —
+ * not a number typed into the seed.
+ */
+function roster(
+  spec: { going?: number; maybe?: number; waitlist?: number; declined?: number },
+  offset: number,
+  baseTime: number
+): Attendee[] {
+  const out: Attendee[] = [];
+  let cursor = offset;
+  const push = (count: number, status: RsvpStatus) => {
+    for (let i = 0; i < count; i++) {
+      const name = NAME_POOL[cursor % NAME_POOL.length];
+      out.push({
+        id: `u${cursor}`,
+        name,
+        status,
+        joinedAt: baseTime + cursor * 60_000,
+      });
+      cursor++;
+    }
+  };
+  push(spec.going ?? 0, 'going');
+  push(spec.maybe ?? 0, 'maybe');
+  push(spec.waitlist ?? 0, 'waitlist');
+  push(spec.declined ?? 0, 'declined');
+  return out;
+}
+
+const T0 = Date.now() - 7 * 86_400_000;
+const HOUR = 3_600_000;
+
+export const INITIAL_USER: UserProfile = {
+  id: ME,
+  name: 'Felix Vance',
+  tagline: 'HOST • AUSTIN, TX',
+  homeCity: 'Austin, TX',
+  notifications: {
+    logistics: true,
+    closeFriends: true,
+    circleActivity: true,
+    publicNearby: false,
+  },
+  blockedIds: [],
+  closeFriendIds: ['u0', 'u1', 'u2'],
+};
+
+export const INITIAL_EVENTS: EventItem[] = [
+  {
+    id: 'e1',
+    title: 'Vanguard Social Dinner',
+    description: 'Exclusive evening of curated networking at The Glass House Rooftop.',
+    category: 'Dining',
+    image: '/vanguard_social_1774367422848.png',
+    startsAt: dayAt(0, 19, 30),
+    distanceMi: 0.8,
+    location: 'The Glass House Rooftop, Austin',
+    exactAddress: '1401 Rainey St, Rooftop Level, Austin TX 78701',
+    maxSpots: 50,
+    autoWaitlist: true,
+    attendees: [
+      { id: ME, name: 'Felix Vance', status: 'going', joinedAt: T0 },
+      ...roster({ going: 47, maybe: 15, waitlist: 3 }, 0, T0),
+    ],
+    interested: 102,
+    vibe:
+      'Exclusive evening of curated networking at The Glass House Rooftop. Join us for a night of meaningful connections and high-end dining. Reflective tones and elevated cyberpunk style encouraged.',
+    hostId: 'u0',
+    hostName: 'Aneka Rao',
+    privacy: 'circle',
+    circleId: 'c1',
+    coords: { x: 28, y: 35 },
+    comments: [
+      {
+        id: 'm1',
+        authorId: 'u10',
+        author: 'Sarah Miller',
+        text: 'Is there a specific dress code for tonight?',
+        createdAt: Date.now() - 2 * HOUR,
+      },
+      {
+        id: 'm2',
+        authorId: 'u0',
+        author: 'Aneka Rao',
+        text: 'Check the invite link for the styling guide — reflective tones and dark textures encouraged.',
+        createdAt: Date.now() - 1 * HOUR,
+        isHost: true,
+      },
+    ],
+  },
+  {
+    id: 'e2',
+    title: 'Morning Ridge Trail',
+    description: 'Medium-intensity 5k hike followed by breakfast at the trailhead cafe.',
+    category: 'Active',
+    image: '/morning_ridge_1774367438744.png',
+    startsAt: dayAt(3, 9, 0),
+    distanceMi: 4.2,
+    location: 'Morning Ridge Trailhead, West Hills',
+    exactAddress: 'Morning Ridge Trailhead, 8200 City Park Rd, Austin TX 78730',
+    maxSpots: 20,
+    autoWaitlist: true,
+    attendees: [
+      { id: ME, name: 'Felix Vance', status: 'going', joinedAt: T0 },
+      ...roster({ going: 7, maybe: 4 }, 2, T0),
+    ],
+    interested: 45,
+    vibe:
+      "Start your weekend with crisp air, panoramic views, and great company. We'll hit the ridge trail loop, then regroup at the base cafe for coffee and pastries.",
+    hostId: ME,
+    hostName: 'Felix Vance',
+    privacy: 'public',
+    coords: { x: 68, y: 22 },
+    comments: [
+      {
+        id: 'm3',
+        authorId: 'u2',
+        author: 'Marcus Bell',
+        text: 'Are dogs allowed on this specific trail?',
+        createdAt: Date.now() - 3 * HOUR,
+      },
+      {
+        id: 'm4',
+        authorId: ME,
+        author: 'Felix Vance',
+        text: 'Yes! Leashed dogs are very welcome.',
+        createdAt: Date.now() - 2 * HOUR,
+        isHost: true,
+      },
+    ],
+  },
+  {
+    id: 'e3',
+    title: 'Underground Vinyl Set',
+    description: 'A curated selection of rare soul and jazz imports in a cozy basement setting.',
+    category: 'Entertainment',
+    image: '/vinyl_set_1774367456136.png',
+    startsAt: dayAt(1, 21, 0),
+    distanceMi: 1.5,
+    location: 'The Basement Studio, East Side',
+    exactAddress: '2115 E 6th St, Basement Entrance, Austin TX 78702',
+    maxSpots: 40,
+    autoWaitlist: true,
+    attendees: roster({ going: 38, maybe: 12, waitlist: 2 }, 4, T0),
+    interested: 88,
+    vibe:
+      'Strictly vinyl. Strictly soul. Join us for an intimate listening session featuring rare Japanese jazz imports and guest selectors.',
+    hostId: 'u4',
+    hostName: 'Miles Okafor',
+    privacy: 'circle',
+    circleId: 'c1',
+    coords: { x: 45, y: 62 },
+    comments: [
+      {
+        id: 'm5',
+        authorId: 'u5',
+        author: 'Nina Castellanos',
+        text: 'Will there be refreshments or BYOB?',
+        createdAt: Date.now() - 4 * HOUR,
+      },
+    ],
+  },
+  {
+    id: 'e4',
+    title: 'Rooftop Board Game & BBQ',
+    description: 'Casual Catan, Codenames, and smoked brisket with craft sodas.',
+    category: 'Home/Social',
+    image: '/neon_midnight_1774367472687.png',
+    startsAt: dayAt(4, 16, 0),
+    distanceMi: 2.1,
+    location: "Leo's Terrace, Downtown",
+    exactAddress: '910 W 5th St, Apt 12C, Austin TX 78703',
+    maxSpots: 15,
+    autoWaitlist: true,
+    attendees: roster({ going: 9, maybe: 3 }, 7, T0),
+    interested: 28,
+    vibe:
+      'Low stakes, high fun. Bring your favourite board game or just come for the BBQ. Vegan options available.',
+    hostId: 'u7',
+    hostName: 'Leo Marchetti',
+    privacy: 'circle',
+    circleId: 'c2',
+    coords: { x: 55, y: 48 },
+    comments: [],
+  },
+  {
+    id: 'e5',
+    title: 'Generative AI & Design Jam',
+    description: 'Hands-on prototyping session exploring tactile interfaces and autonomous agents.',
+    category: 'Professional',
+    image: '/curator_lab.svg',
+    startsAt: dayAt(6, 18, 30),
+    distanceMi: 3.0,
+    location: 'Curator Lab, Suite 400',
+    exactAddress: '600 Congress Ave, Suite 400, Austin TX 78701',
+    maxSpots: 30,
+    autoWaitlist: true,
+    attendees: roster({ going: 26, maybe: 8 }, 11, T0),
+    interested: 74,
+    vibe:
+      'Bring your laptop and ideas. We will build, critique, and ship interface experiments with live feedback.',
+    hostId: 'u11',
+    hostName: 'Priya Nair',
+    privacy: 'public',
+    coords: { x: 75, y: 78 },
+    comments: [],
+  },
+  {
+    id: 'e6',
+    title: 'Riverside Cleanup Crew',
+    description: 'Two hours on the trail with gloves, bags and very good company.',
+    category: 'Community',
+    image: '/riverside_cleanup.svg',
+    startsAt: dayAt(2, 10, 0),
+    distanceMi: 1.2,
+    location: 'Lady Bird Lake, Boardwalk Entrance',
+    maxSpots: 60,
+    autoWaitlist: false,
+    attendees: roster({ going: 22, maybe: 9 }, 17, T0),
+    interested: 61,
+    vibe:
+      'Gloves, bags and grabbers provided. We finish with tacos at the trailhead — first round is on the organisers.',
+    hostId: 'u17',
+    hostName: 'Delphine Roy',
+    privacy: 'public',
+    coords: { x: 38, y: 72 },
+    comments: [],
+  },
+  {
+    id: 'e7',
+    title: 'Risograph Print Lab',
+    description: 'Two-colour riso printing for absolute beginners. All materials included.',
+    category: 'Creative',
+    image: '/print_lab.svg',
+    startsAt: dayAt(5, 14, 0),
+    distanceMi: 2.7,
+    location: 'Ink & Iron Studio, South Congress',
+    exactAddress: '1608 S Congress Ave, Rear Studio, Austin TX 78704',
+    maxSpots: 12,
+    autoWaitlist: true,
+    attendees: roster({ going: 11, maybe: 2, waitlist: 4 }, 23, T0),
+    interested: 39,
+    vibe:
+      'Pull two colours, misregister them on purpose, take home a stack. No experience needed — just wear something you do not mind inking.',
+    hostId: 'u23',
+    hostName: 'Wren Halloran',
+    privacy: 'hidden',
+    coords: { x: 60, y: 30 },
+    comments: [],
+  },
+];
+
+export const INITIAL_CIRCLES: CircleItem[] = [
+  {
+    id: 'c1',
+    name: 'College Friends',
+    description: 'Planning: Weekend Tahoe Trip',
+    extraMembers: 10,
+    color: '#4343D5',
+    isJoined: true,
+    isPrivate: true,
+    categoryTag: 'FRIENDS',
+    memberList: [
+      { id: ME, name: 'Felix Vance', role: 'Creator' },
+      { id: 'u0', name: 'Aneka Rao', role: 'Host' },
+      { id: 'u1', name: 'Jocelyn Park', role: 'Member' },
+      { id: 'u10', name: 'Sarah Miller', role: 'Member' },
+      { id: 'u7', name: 'Leo Marchetti', role: 'Member' },
+    ],
+  },
+  {
+    id: 'c2',
+    name: 'The Family',
+    description: 'Weekly dinners and birthdays',
+    extraMembers: 1,
+    color: '#5D5FEF',
+    isJoined: true,
+    isPrivate: true,
+    categoryTag: 'FAMILY',
+    memberList: [
+      { id: ME, name: 'Felix Vance', role: 'Member' },
+      { id: 'u30', name: 'Ruth Vance', role: 'Admin' },
+      { id: 'u31', name: 'Peter Vance', role: 'Member' },
+      { id: 'u32', name: 'Chloe Vance', role: 'Member' },
+    ],
+  },
+  {
+    id: 'c3',
+    name: 'Gym Squad',
+    description: 'Morning HIIT & weekend runs',
+    extraMembers: 4,
+    color: '#416656',
+    isJoined: true,
+    isPrivate: true,
+    categoryTag: 'FITNESS',
+    memberList: [
+      { id: ME, name: 'Felix Vance', role: 'Member' },
+      { id: 'u2', name: 'Marcus Bell', role: 'Captain' },
+      { id: 'u9', name: 'David Park', role: 'Member' },
+      { id: 'u3', name: 'Elena Rostova', role: 'Member' },
+    ],
+  },
+  {
+    id: 'c4',
+    name: 'SF Design Collective',
+    description: 'Bi-weekly meetups for local creators and engineers',
+    extraMembers: 1236,
+    color: '#6366F1',
+    isJoined: false,
+    isPrivate: false,
+    categoryTag: 'CAMPUS',
+    memberList: [
+      { id: 'u11', name: 'Priya Nair', role: 'Admin' },
+      { id: 'u12', name: 'Tomas Ferreira', role: 'Member' },
+      { id: 'u13', name: 'Ada Nwosu', role: 'Member' },
+      { id: 'u14', name: 'Ruth Bergman', role: 'Member' },
+    ],
+  },
+  {
+    id: 'c5',
+    name: 'Bay Area Trekkers',
+    description: 'Exploring the best hidden trails together',
+    extraMembers: 447,
+    color: '#10B981',
+    isJoined: false,
+    isPrivate: false,
+    categoryTag: 'NATURE',
+    memberList: [
+      { id: 'u15', name: 'Kofi Mensah', role: 'Admin' },
+      { id: 'u16', name: 'Ines Duarte', role: 'Member' },
+      { id: 'u17', name: 'Delphine Roy', role: 'Member' },
+    ],
+  },
+  {
+    id: 'c6',
+    name: 'Modern Lit Society',
+    description: 'Monthly wine and discussion nights',
+    extraMembers: 887,
+    color: '#EC4899',
+    isJoined: false,
+    isPrivate: false,
+    categoryTag: 'CULTURE',
+    memberList: [
+      { id: 'u18', name: 'Oscar Lindqvist', role: 'Admin' },
+      { id: 'u19', name: 'Hana Sato', role: 'Member' },
+      { id: 'u20', name: 'Gabriel Silva', role: 'Member' },
+    ],
+  },
+];
+
+export const INITIAL_ALERTS: AlertItem[] = [
+  {
+    id: 'a1',
+    type: 'invite',
+    tier: 'closeFriends',
+    title: 'Aneka invited you',
+    desc: 'Join the "SF Design Collective" circle for bi-weekly meetups.',
+    createdAt: Date.now() - 2 * 60_000,
+    unread: true,
+    circleId: 'c4',
+    actionLabel: 'Accept Invite',
+  },
+  {
+    id: 'a2',
+    type: 'confirm',
+    tier: 'logistics',
+    title: 'RSVP Confirmed',
+    desc: 'You are going to Vanguard Social Dinner tonight at 7:30 PM.',
+    createdAt: Date.now() - HOUR,
+    unread: false,
+    eventId: 'e1',
+  },
+  {
+    id: 'a3',
+    type: 'broadcast',
+    tier: 'logistics',
+    title: 'Host Update • Morning Ridge Trail',
+    desc: 'Weather looks fantastic. Meeting right at the trailhead cafe sign.',
+    createdAt: Date.now() - 3 * HOUR,
+    unread: true,
+    eventId: 'e2',
+  },
+  {
+    id: 'a4',
+    type: 'circle',
+    tier: 'circleActivity',
+    title: 'Gym Squad has a new event',
+    desc: 'Marcus posted a sunrise run for Saturday morning.',
+    createdAt: Date.now() - 5 * HOUR,
+    unread: false,
+    circleId: 'c3',
+  },
+];
+
+export const INITIAL_CONTACTS: ContactItem[] = [
+  { id: 'u8', name: 'Maya Lin', phone: '+1 (415) 890-1234', isOnW8VR: true, isInvited: false },
+  { id: 'u6', name: 'Julian Vance', phone: '+1 (415) 345-6789', isOnW8VR: true, isInvited: false },
+  { id: 'u10', name: 'Sarah Miller', phone: '+1 (510) 678-9012', isOnW8VR: true, isInvited: true },
+  { id: 'u9', name: 'David Park', phone: '+1 (415) 234-5678', isOnW8VR: false, isInvited: false },
+  { id: 'u3', name: 'Elena Rostova', phone: '+1 (650) 901-2345', isOnW8VR: false, isInvited: false },
+  { id: 'u25', name: 'Sofia Ricci', phone: '+1 (512) 445-7781', isOnW8VR: true, isInvited: false },
+];

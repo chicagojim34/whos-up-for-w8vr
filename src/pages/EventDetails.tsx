@@ -1,44 +1,136 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  Calendar, 
-  MapPin, 
-  CheckCircle2, 
-  Send, 
-  Lock, 
-  Globe, 
-  ChevronLeft, 
-  MessageSquare, 
-  Radio, 
-  Flag, 
-  Users, 
+import { useMemo, useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import {
+  Calendar,
+  MapPin,
+  CheckCircle2,
+  Send,
+  Lock,
+  Globe,
+  EyeOff,
+  ChevronLeft,
+  MessageSquare,
+  Radio,
+  Flag,
+  Users,
   Sparkles,
   Share2,
-  ExternalLink
+  ExternalLink,
+  ShieldOff,
+  Video,
+  Clock,
 } from 'lucide-react';
 import cx from 'classnames';
-import { useApp } from '../context/AppContext';
+import { useApp } from '../hooks/useApp';
+import { useToast } from '../hooks/useToast';
+import { useConfirm } from '../hooks/useConfirm';
 import { StatusRing } from '../components/StatusRing';
 import { GlassModal } from '../components/GlassModal';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import { ShareSheet } from '../components/ShareSheet';
+import { Avatar } from '../components/Avatar';
+import NotFound from './NotFound';
+import { ME, type BroadcastTarget, type RsvpStatus } from '../types';
+import {
+  attendeesWith,
+  canSeeExactAddress,
+  capacityPct,
+  confirmedCount,
+  displayAddress,
+  isFull,
+  isHosting,
+  maybeCount,
+  myRsvp,
+  spotsLeft,
+  waitlistCount,
+  waitlistQueue,
+} from '../lib/events';
+import { formatAgo, formatDistance, formatWhen } from '../lib/datetime';
+
+const REPORT_REASONS = [
+  { value: 'spam', label: 'Spam or commercial advertisement' },
+  { value: 'inappropriate', label: 'Inappropriate or unsafe content' },
+  { value: 'fake', label: 'Fake or misleading event' },
+  { value: 'harassment', label: 'Harassment or exclusionary behaviour' },
+];
+
+const ROSTER_TABS: { key: RsvpStatus; label: string }[] = [
+  { key: 'going', label: 'Confirmed' },
+  { key: 'maybe', label: 'Maybe' },
+  { key: 'waitlist', label: 'Waitlist' },
+];
 
 export default function EventDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { events, rsvpEvent, addComment, sendHostBroadcast } = useApp();
+  const { findEvent, rsvpEvent, addComment, sendHostBroadcast, reportEvent, blockUser } = useApp();
+  const toast = useToast();
+  const confirm = useConfirm();
 
-  const event = events.find(e => e.id === id) || events[0];
+  const event = findEvent(id);
+
   const [commentText, setCommentText] = useState('');
-  const [isAttendeesModalOpen, setIsAttendeesModalOpen] = useState(false);
-  const [attendeeTab, setAttendeeTab] = useState<'confirmed' | 'maybe' | 'waitlist'>('confirmed');
-  const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
+  const [rosterOpen, setRosterOpen] = useState(false);
+  const [rosterTab, setRosterTab] = useState<RsvpStatus>('going');
+  const [broadcastOpen, setBroadcastOpen] = useState(false);
   const [broadcastMessage, setBroadcastMessage] = useState('');
-  const [broadcastTarget, setBroadcastTarget] = useState<'all' | 'yes' | 'waitlist'>('all');
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [broadcastTarget, setBroadcastTarget] = useState<BroadcastTarget>('all');
+  const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [reportNote, setReportNote] = useState('');
+  const [shareOpen, setShareOpen] = useState(false);
 
-  const spotsLeft = Math.max(0, event.maxSpots - event.confirmed);
-  const isFull = spotsLeft === 0;
+  const roster = useMemo(() => {
+    if (!event) return [];
+    const list = rosterTab === 'waitlist' ? waitlistQueue(event) : attendeesWith(event, rosterTab);
+    return [...list].sort((a, b) =>
+      a.id === ME ? -1 : b.id === ME ? 1 : a.name.localeCompare(b.name)
+    );
+  }, [event, rosterTab]);
+
+  // A stale deep link should say so, not silently show a different event.
+  if (!event) {
+    return (
+      <NotFound
+        title="That event is not here"
+        body="The link may have expired, the host may have removed it, or it belongs to a circle you are not in."
+      />
+    );
+  }
+
+  const mine = myRsvp(event);
+  const host = isHosting(event);
+  const capacity = capacityPct(event);
+  const left = spotsLeft(event);
+  const full = isFull(event);
+  const going = confirmedCount(event);
+  const eventUrl = `${window.location.origin}/event/${event.id}`;
+  const addressVisible = canSeeExactAddress(event);
+
+  const counts: Record<RsvpStatus, number> = {
+    going,
+    maybe: maybeCount(event),
+    waitlist: waitlistCount(event),
+    declined: 0,
+  };
+
+  const handleRsvp = (intent: 'going' | 'maybe' | 'no') => {
+    const outcome = rsvpEvent(event.id, intent);
+    if (outcome.blocked) {
+      toast.show('This event is full and the host closed the waitlist', 'warning');
+    } else if (outcome.waitlisted) {
+      toast.show(`You are #${counts.waitlist + 1} on the waitlist`, 'info');
+    } else if (outcome.status === 'going') {
+      toast.show('You are going — the address is now unlocked');
+    } else if (outcome.status === 'declined') {
+      toast.show('Muted. No more updates for this one.', 'info');
+    } else if (outcome.status === 'maybe') {
+      toast.show('Marked as maybe');
+    }
+    if (outcome.promoted) {
+      toast.show(`${outcome.promoted} moved off the waitlist into your spot`, 'info');
+    }
+  };
 
   const handleSendComment = () => {
     if (!commentText.trim()) return;
@@ -48,544 +140,652 @@ export default function EventDetails() {
 
   const handleSendBroadcast = () => {
     if (!broadcastMessage.trim()) return;
-    sendHostBroadcast(event.id, broadcastMessage, broadcastTarget);
+    const reached = sendHostBroadcast(event.id, broadcastMessage, broadcastTarget);
     setBroadcastMessage('');
-    setIsBroadcastModalOpen(false);
+    setBroadcastOpen(false);
+    toast.show(`Update sent to ${reached} ${reached === 1 ? 'person' : 'people'}`);
   };
 
-  const handleReportEvent = () => {
-    alert('Thank you for your report. Our safety team has been notified.');
-    setIsReportModalOpen(false);
+  const handleReport = () => {
+    if (!reportReason) return;
+    reportEvent(event.id, reportReason, reportNote);
+    setReportOpen(false);
     setReportReason('');
+    setReportNote('');
+    toast.show('Report sent to the safety team');
   };
+
+  const handleBlockHost = async () => {
+    const ok = await confirm.ask({
+      title: `Block ${event.hostName}?`,
+      body: 'You will stop seeing their events and messages everywhere in W8VR. You can undo this in Settings.',
+      confirmLabel: 'Block',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    blockUser(event.hostId, event.hostName);
+    toast.show(`${event.hostName} blocked`, 'info');
+    navigate('/');
+  };
+
+  const broadcastReach =
+    broadcastTarget === 'going'
+      ? counts.going
+      : broadcastTarget === 'waitlist'
+        ? counts.waitlist
+        : event.attendees.filter(a => a.status !== 'declined').length;
+
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    displayAddress(event)
+  )}`;
 
   return (
-    <div className="flex-col pb-[190px] min-h-screen bg-surface animate-fade-in">
-      {/* Hero Header with Image */}
-      <div className="hero-header">
-        <img src={event.image} className="img-full" alt={event.title} />
+    <div className="flex flex-col pb-[210px] min-h-screen bg-surface animate-fade-in">
+      {/* Hero */}
+      <header className="hero-header">
+        <img src={event.image} className="img-full" alt="" />
 
         <div className="hero-overlay">
-          {/* Top Row: Back Button & Actions */}
           <div className="flex justify-between items-center w-full">
-            <button onClick={() => navigate('/')} className="back-btn-float" title="Go back">
-              <ChevronLeft size={24} strokeWidth={2.5} />
+            <button onClick={() => navigate(-1)} className="back-btn-float" aria-label="Go back">
+              <ChevronLeft size={24} strokeWidth={2.5} aria-hidden="true" />
             </button>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setIsShareModalOpen(true)}
+                onClick={() => setShareOpen(true)}
                 className="back-btn-float"
-                title="Share event"
+                aria-label="Share this event"
               >
-                <Share2 size={20} />
+                <Share2 size={20} aria-hidden="true" />
               </button>
-              <button
-                onClick={() => setIsReportModalOpen(true)}
-                className="back-btn-float"
-                title="Report event"
-              >
-                <Flag size={18} />
-              </button>
+              {!host && (
+                <>
+                  <button
+                    onClick={() => setReportOpen(true)}
+                    className="back-btn-float"
+                    aria-label="Report this event"
+                  >
+                    <Flag size={18} aria-hidden="true" />
+                  </button>
+                  <button
+                    onClick={handleBlockHost}
+                    className="back-btn-float"
+                    aria-label={`Block ${event.hostName}`}
+                  >
+                    <ShieldOff size={18} aria-hidden="true" />
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
-          {/* Bottom Content: Title & Badges */}
           <div className="text-white">
-            <div className="flex gap-2 mb-3">
-              <span className="badge bg-white/20 backdrop-blur-md text-[10px] uppercase font-bold text-white tracking-widest px-3 border border-white/15">
+            <div className="flex flex-wrap gap-2 mb-3">
+              <span className="badge bg-white/20 backdrop-blur-md text-[10px] uppercase font-bold text-white tracking-widest px-3">
                 {event.category}
               </span>
-              <span className="badge bg-green-100/95 text-[10px] uppercase font-bold text-green-900 tracking-widest px-3 flex items-center gap-1.5 border border-green-200/50">
-                {event.privacy === 'public' ? (
+              <span className="badge bg-surface-lowest/95 text-[10px] uppercase font-bold text-text-dark tracking-widest px-3 flex items-center gap-1.5">
+                {event.privacy === 'public' && (
                   <>
-                    <Globe size={11} /> Public Event
+                    <Globe size={11} aria-hidden="true" /> Public event
                   </>
-                ) : (
+                )}
+                {event.privacy === 'circle' && (
                   <>
-                    <Lock size={11} /> {event.type.includes('CIRCLE') ? 'Circle Only' : 'Hidden Link'}
+                    <Lock size={11} aria-hidden="true" /> Circle only
+                  </>
+                )}
+                {event.privacy === 'hidden' && (
+                  <>
+                    <EyeOff size={11} aria-hidden="true" /> Invite link only
                   </>
                 )}
               </span>
             </div>
 
-            <h1 className="text-3xl md:text-4xl font-headline font-black leading-tight drop-shadow-md tracking-tight text-white">
+            {/* DESIGN.md reserves the display scale for event titles. */}
+            <h1 className="text-display-sm font-headline font-black text-white drop-shadow-md text-balance">
               {event.title}
             </h1>
 
-            <div className="flex flex-wrap gap-4 mt-4 text-xs opacity-95 font-semibold text-white">
-              <div className="flex items-center gap-1.5">
-                <Calendar size={15} className="text-primary-fixed" /> {event.timeLabel}
-              </div>
-              <div className="flex items-center gap-1.5">
-                <MapPin size={15} className="text-primary-fixed" /> {event.location}
-              </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-4 text-xs opacity-95 font-semibold text-white">
+              <span className="flex items-center gap-1.5">
+                <Calendar size={15} className="text-primary-fixed" aria-hidden="true" />
+                <time dateTime={event.startsAt}>{formatWhen(event.startsAt)}</time>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <MapPin size={15} className="text-primary-fixed" aria-hidden="true" />
+                {event.location}
+              </span>
+              <span>Hosted by {host ? 'you' : event.hostName}</span>
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Content wrapper */}
-      <div className="px-6 mt-6 relative z-30 flex-col gap-8 max-w-4xl mx-auto w-full">
-        {/* Host Broadcast Banner (if user is host) */}
-        {event.isHost && (
-          <div className="bg-primary-fixed/40 border border-primary/20 rounded-2xl p-4 flex justify-between items-center shadow-sm">
+      <div className="px-6 mt-6 relative z-30 flex flex-col gap-8 max-w-4xl mx-auto w-full">
+        {/* Host controls */}
+        {host && (
+          <section className="bg-primary-fixed rounded-2xl p-4 flex flex-wrap justify-between items-center gap-3 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center">
-                <Radio size={20} />
-              </div>
+              <span className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shrink-0">
+                <Radio size={20} aria-hidden="true" />
+              </span>
               <div>
-                <h4 className="font-headline font-bold text-sm text-text-dark">Host Controls Active</h4>
-                <p className="text-xs text-text-medium">Send segmented broadcast updates to attendees</p>
+                <h2 className="font-headline font-bold text-sm text-text-dark">
+                  You are hosting this
+                </h2>
+                <p className="text-xs text-text-medium">
+                  Send an update to a specific group of guests
+                </p>
               </div>
             </div>
             <button
-              onClick={() => setIsBroadcastModalOpen(true)}
+              onClick={() => setBroadcastOpen(true)}
               className="btn btn-primary text-xs py-2 px-4"
             >
-              📢 Broadcast
+              Send update
             </button>
-          </div>
+          </section>
         )}
 
-        {/* The Vibe Description */}
-        <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm">
+        {/* The vibe */}
+        <section className="bg-surface-lowest rounded-2xl p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-1.5 h-6 bg-primary rounded-full"></div>
-            <h2 className="text-xl font-headline font-bold text-text-dark">The Vibe</h2>
+            <span className="w-1.5 h-6 bg-primary rounded-full" aria-hidden="true" />
+            <h2 className="text-xl font-headline font-bold text-text-dark">The vibe</h2>
           </div>
           <p className="text-text-medium leading-relaxed text-sm">{event.vibe}</p>
-        </div>
+        </section>
 
-        {/* Capacity & Stats Bento */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-          {/* Capacity Ring Card */}
-          <div className="md:col-span-5 bg-surface-container-lowest p-6 rounded-2xl shadow-sm flex flex-col items-center justify-center text-center">
-            <StatusRing capacity={event.capacity} size={110} strokeWidth={8} label={`${spotsLeft}`} />
-            <div className="text-[11px] font-headline font-bold text-text-light tracking-widest uppercase mt-3">
-              {isFull ? 'EVENT IS FULL' : 'SPOTS LEFT'}
-            </div>
-            <p className="text-xs font-semibold text-text-medium mt-1">
-              {event.capacity}% Capacity Reached ({event.confirmed}/{event.maxSpots})
+        {/* Capacity & response dashboard */}
+        <section className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <h2 className="sr-only-text">Responses</h2>
+
+          <div className="md:col-span-5 bg-surface-lowest p-6 rounded-2xl shadow-sm flex flex-col items-center justify-center text-center">
+            <StatusRing
+              capacity={capacity}
+              size={120}
+              strokeWidth={9}
+              label={full ? 'FULL' : String(left)}
+              srLabel={`${going} of ${event.maxSpots} spots taken`}
+              variant="bare"
+            />
+            <p className="text-[11px] font-headline font-bold text-text-light tracking-widest uppercase mt-3">
+              {full ? 'No spots left' : left === 1 ? 'Spot left' : 'Spots left'}
             </p>
+            <p className="text-xs font-semibold text-text-medium mt-1">
+              {capacity}% full ({going}/{event.maxSpots})
+            </p>
+            {event.autoWaitlist && full && (
+              <p className="text-[11px] text-text-light mt-2">
+                Waitlist is open — freed spots are filled automatically
+              </p>
+            )}
           </div>
 
-          {/* Stats Grid */}
           <div className="md:col-span-7 grid grid-cols-2 gap-3">
-            <button
-              onClick={() => {
-                setAttendeeTab('confirmed');
-                setIsAttendeesModalOpen(true);
-              }}
-              className="bg-surface-container-low hover:bg-surface-container-high transition-all p-4 rounded-2xl flex flex-col justify-between text-left cursor-pointer group"
-            >
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">
-                  Confirmed
+            {ROSTER_TABS.map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => {
+                  setRosterTab(tab.key);
+                  setRosterOpen(true);
+                }}
+                className={cx(
+                  'p-4 rounded-2xl flex flex-col justify-between text-left transition-all group',
+                  tab.key === 'waitlist'
+                    ? 'bg-error-container hover:brightness-95'
+                    : 'bg-surface-low hover:bg-surface-high'
+                )}
+              >
+                <span className="flex justify-between items-center gap-2">
+                  <span
+                    className={cx(
+                      'text-[10px] font-bold uppercase tracking-wider',
+                      tab.key === 'waitlist' ? 'text-error' : 'text-text-light'
+                    )}
+                  >
+                    {tab.label}
+                  </span>
+                  <Users
+                    size={14}
+                    className={cx(
+                      'opacity-0 group-hover:opacity-100 transition-opacity',
+                      tab.key === 'waitlist' ? 'text-error' : 'text-primary'
+                    )}
+                    aria-hidden="true"
+                  />
                 </span>
-                <Users size={14} className="text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <div className="text-3xl font-headline font-black text-primary mt-2">
-                {event.confirmed}
-              </div>
-            </button>
-
-            <button
-              onClick={() => {
-                setAttendeeTab('maybe');
-                setIsAttendeesModalOpen(true);
-              }}
-              className="bg-surface-container-low hover:bg-surface-container-high transition-all p-4 rounded-2xl flex flex-col justify-between text-left cursor-pointer group"
-            >
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">
-                  Maybe
+                <span
+                  className={cx(
+                    'text-3xl font-headline font-black mt-2 tabular-nums',
+                    tab.key === 'going'
+                      ? 'text-primary'
+                      : tab.key === 'waitlist'
+                        ? 'text-error'
+                        : 'text-text-medium'
+                  )}
+                >
+                  {counts[tab.key]}
                 </span>
-                <Users size={14} className="text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <div className="text-3xl font-headline font-black text-text-medium mt-2">
-                {event.maybe}
-              </div>
-            </button>
+              </button>
+            ))}
 
-            <div className="bg-surface-container-low p-4 rounded-2xl flex flex-col justify-between">
+            <div className="bg-surface-low p-4 rounded-2xl flex flex-col justify-between">
               <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">
                 Interested
               </span>
-              <div className="text-3xl font-headline font-black text-text-dark mt-2">
+              <span className="text-3xl font-headline font-black text-text-dark mt-2 tabular-nums">
                 {event.interested}
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                setAttendeeTab('waitlist');
-                setIsAttendeesModalOpen(true);
-              }}
-              className="bg-red-50 hover:bg-red-100 transition-all p-4 rounded-2xl flex flex-col justify-between text-left cursor-pointer group"
-            >
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">
-                  Waitlist
-                </span>
-                <Users size={14} className="text-red-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <div className="text-3xl font-headline font-black text-red-600 mt-2">
-                {event.waitlist}
-              </div>
-            </button>
-          </div>
-        </div>
-
-        {/* Logistics & Location Card */}
-        <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm flex flex-col gap-4">
-          <div className="flex justify-between items-center">
-            <h3 className="font-headline font-bold text-lg text-text-dark">Location & Logistics</h3>
-            <span className="text-xs font-bold text-primary flex items-center gap-1 cursor-pointer">
-              <ExternalLink size={14} /> Open Maps
-            </span>
-          </div>
-
-          <div className="p-4 bg-surface-container-low rounded-xl flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
-              <MapPin size={20} />
-            </div>
-            <div className="flex-1">
-              <div className="font-bold text-sm text-text-dark">{event.location}</div>
-              <div className="text-xs text-text-light">{event.distance} • Address unlocked for confirmed RSVPs</div>
+              </span>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Coordination Thread (Comments) */}
-        <div className="thread-container">
-          <div className="flex items-center gap-2 mb-4">
-            <MessageSquare size={20} className="text-primary" />
-            <h3 className="font-headline font-bold text-lg text-text-dark">Coordination Thread</h3>
-            <span className="text-xs font-bold text-text-light ml-auto">
-              {event.comments.length} updates
-            </span>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            {event.comments.map(msg => (
-              <div
-                key={msg.id}
-                className={cx('flex gap-3', {
-                  'flex-row-reverse': msg.isHost || msg.user === 'You',
-                })}
+        {/* Location */}
+        <section className="bg-surface-lowest rounded-2xl p-6 shadow-sm flex flex-col gap-4">
+          <div className="flex justify-between items-center gap-3">
+            <h2 className="font-headline font-bold text-lg text-text-dark">Where</h2>
+            {addressVisible && !event.isVirtual && (
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="text-xs font-bold text-primary flex items-center gap-1 hover:underline"
               >
-                <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border-2 border-white shadow-sm bg-slate-800">
-                  <img
-                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(msg.avatar)}`}
-                    alt={msg.user}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div
-                  className={cx('flex flex-col', {
-                    'items-end': msg.isHost || msg.user === 'You',
-                  })}
-                >
-                  <div
-                    className={cx('message-bubble', {
-                      'bg-primary text-white': msg.user === 'You' && !msg.isHost,
-                      'message-bubble host': msg.isHost,
-                      'message-bubble received': msg.user !== 'You' && !msg.isHost,
-                    })}
-                  >
-                    <span
-                      className={cx('font-bold text-[10px] block mb-1 uppercase tracking-tight', {
-                        'text-primary font-black': msg.isHost,
-                        'text-white/80': msg.user === 'You' && !msg.isHost,
-                        'text-text-medium': msg.user !== 'You' && !msg.isHost,
+                <ExternalLink size={14} aria-hidden="true" /> Open in Maps
+              </a>
+            )}
+          </div>
+
+          <div className="p-4 bg-surface-low rounded-xl flex items-center gap-3">
+            <span className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary-container shrink-0">
+              {event.isVirtual ? (
+                <Video size={20} aria-hidden="true" />
+              ) : (
+                <MapPin size={20} aria-hidden="true" />
+              )}
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm text-text-dark">{displayAddress(event)}</p>
+              <p className="text-xs text-text-light">
+                {event.isVirtual
+                  ? 'Virtual — the room link appears here once you RSVP yes'
+                  : addressVisible
+                    ? formatDistance(event.distanceMi)
+                    : `${formatDistance(event.distanceMi)} • exact address unlocks when you RSVP yes`}
+              </p>
+            </div>
+            {!addressVisible && (
+              <Lock size={16} className="text-text-light shrink-0" aria-hidden="true" />
+            )}
+          </div>
+
+          {event.isVirtual && event.virtualLink && mine === 'going' && (
+            <a
+              href={event.virtualLink}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="btn btn-secondary w-full py-3"
+            >
+              Join the room
+            </a>
+          )}
+        </section>
+
+        {/* Coordination thread */}
+        <section className="thread-container">
+          <div className="flex items-center gap-2 mb-3">
+            <MessageSquare size={20} className="text-primary" aria-hidden="true" />
+            <h2 className="font-headline font-bold text-lg text-text-dark">Coordination thread</h2>
+            <span className="text-xs font-bold text-text-light ml-auto">
+              {event.comments.length} {event.comments.length === 1 ? 'update' : 'updates'}
+            </span>
+          </div>
+
+          <p className="text-xs text-text-light mb-4">
+            Logistics only — for a longer conversation,{' '}
+            <a
+              href={`sms:&body=${encodeURIComponent(`${event.title} — ${eventUrl}`)}`}
+              className="text-primary font-semibold hover:underline"
+            >
+              take it to Messages
+            </a>
+            .
+          </p>
+
+          <ol className="flex flex-col gap-4 list-none">
+            {event.comments.map(msg => {
+              const isMe = msg.authorId === ME;
+              return (
+                <li key={msg.id} className={cx('flex gap-3', { 'flex-row-reverse': isMe })}>
+                  <Avatar name={msg.author} size={32} />
+                  <div className={cx('flex flex-col min-w-0', { 'items-end': isMe })}>
+                    <div
+                      className={cx('message-bubble', {
+                        sent: isMe && !msg.isHost,
+                        host: msg.isHost,
+                        received: !isMe && !msg.isHost,
                       })}
                     >
-                      {msg.user}
+                      <span
+                        className={cx('font-bold text-[10px] block mb-1 uppercase tracking-tight', {
+                          'text-primary font-black': msg.isHost,
+                          'text-white/80': isMe && !msg.isHost,
+                          'text-text-medium': !isMe && !msg.isHost,
+                        })}
+                      >
+                        {isMe ? 'You' : msg.author}
+                        {msg.isHost && ' · Host'}
+                        {msg.broadcastTo &&
+                          ` · blast to ${msg.broadcastTo === 'all' ? 'everyone' : msg.broadcastTo}`}
+                      </span>
+                      <p className="text-sm">{msg.text}</p>
+                    </div>
+                    <span className="text-[10px] text-text-light font-medium mt-1 px-1">
+                      {formatAgo(msg.createdAt)}
                     </span>
-                    <p className="text-sm">{msg.text}</p>
                   </div>
-                  <span className="text-[10px] text-text-light font-medium mt-1 inline-block px-1">
-                    {msg.time}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+                </li>
+              );
+            })}
+          </ol>
 
-          {/* Comment Input */}
-          <div className="thread-input-wrapper">
+          <form
+            className="thread-input-wrapper"
+            onSubmit={e => {
+              e.preventDefault();
+              handleSendComment();
+            }}
+          >
+            <label htmlFor="thread-input" className="sr-only-text">
+              Ask a question about logistics
+            </label>
             <input
+              id="thread-input"
               type="text"
-              placeholder="Ask a logistics question or share update..."
+              placeholder="Ask a logistics question…"
               className="thread-input"
               value={commentText}
               onChange={e => setCommentText(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') handleSendComment();
-              }}
             />
-            <button onClick={handleSendComment} className="thread-send-btn" title="Post message">
-              <Send size={16} />
+            <button
+              type="submit"
+              className="thread-send-btn"
+              disabled={!commentText.trim()}
+              aria-label="Post message"
+            >
+              <Send size={16} aria-hidden="true" />
             </button>
-          </div>
-        </div>
+          </form>
+        </section>
       </div>
 
-      {/* Sticky RSVP Action Bar */}
-      <div className="floating-bar" style={{ bottom: '84px' }}>
-        <div className="floating-bar-inner flex-col gap-3">
-          <div className="rsvp-bar">
+      {/* Sticky RSVP bar */}
+      <div className="floating-bar above-nav">
+        <div className="floating-bar-inner flex flex-col gap-3">
+          <div className="rsvp-bar" role="group" aria-label="Your RSVP">
             <button
-              onClick={() => rsvpEvent(event.id, 'going')}
+              onClick={() => handleRsvp('going')}
               className={cx('rsvp-btn', {
-                'active-going': event.status === 'Attending' || event.status === 'Waitlisted',
+                'active-going': mine === 'going' || mine === 'waitlist',
               })}
+              aria-pressed={mine === 'going' || mine === 'waitlist'}
             >
-              {event.status === 'Attending' ? (
+              {mine === 'going' ? (
                 <>
-                  <CheckCircle2 size={16} className="inline mr-1 mb-0.5" /> Going
+                  <CheckCircle2 size={16} className="inline mr-1 mb-0.5" aria-hidden="true" /> Going
                 </>
-              ) : isFull ? (
+              ) : mine === 'waitlist' ? (
                 <>
-                  <Sparkles size={16} className="inline mr-1 mb-0.5" /> Join Waitlist
+                  <Clock size={16} className="inline mr-1 mb-0.5" aria-hidden="true" /> Waitlisted
+                </>
+              ) : full && event.autoWaitlist ? (
+                <>
+                  <Sparkles size={16} className="inline mr-1 mb-0.5" aria-hidden="true" /> Join
+                  waitlist
                 </>
               ) : (
                 'Going'
               )}
             </button>
             <button
-              onClick={() => rsvpEvent(event.id, 'maybe')}
-              className={cx('rsvp-btn', { 'active-maybe': event.status === 'Pending RSVP' })}
+              onClick={() => handleRsvp('maybe')}
+              className={cx('rsvp-btn', { 'active-maybe': mine === 'maybe' })}
+              aria-pressed={mine === 'maybe'}
             >
               Maybe
             </button>
             <button
-              onClick={() => rsvpEvent(event.id, 'no')}
-              className={cx('rsvp-btn', { 'active-no': event.status === 'Declined' })}
+              onClick={() => handleRsvp('no')}
+              className={cx('rsvp-btn', { 'active-no': mine === 'declined' })}
+              aria-pressed={mine === 'declined'}
             >
               No
             </button>
           </div>
 
-          {event.status === 'Attending' && (
-            <div className="text-center animate-fade-in">
-              <span className="text-[10px] font-black text-green-700 tracking-[0.2em] uppercase flex items-center justify-center gap-1.5">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-                CONFIRMED FOR THIS EVENT
+          <p
+            className="text-center text-[10px] font-black tracking-[0.18em] uppercase"
+            role="status"
+          >
+            {mine === 'going' && (
+              <span className="text-secondary flex items-center justify-center gap-1.5">
+                <span
+                  className="w-2 h-2 bg-secondary rounded-full animate-pulse"
+                  aria-hidden="true"
+                />
+                Confirmed — see you there
               </span>
-            </div>
-          )}
-
-          {event.status === 'Waitlisted' && (
-            <div className="text-center animate-fade-in">
-              <span className="text-[10px] font-black text-amber-700 tracking-[0.15em] uppercase flex items-center justify-center gap-1.5">
-                <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
-                ON WAITLIST • WE'LL NOTIFY YOU IF A SPOT OPENS
+            )}
+            {mine === 'waitlist' && (
+              <span className="text-primary flex items-center justify-center gap-1.5">
+                <span className="w-2 h-2 bg-primary rounded-full animate-pulse" aria-hidden="true" />
+                On the waitlist — we will tell you if a spot opens
               </span>
-            </div>
-          )}
+            )}
+            {mine === 'declined' && <span className="text-text-light">Muted for you</span>}
+          </p>
         </div>
       </div>
 
-      {/* Attendees Modal */}
+      {/* Guest list */}
       <GlassModal
-        isOpen={isAttendeesModalOpen}
-        onClose={() => setIsAttendeesModalOpen(false)}
-        title="Guest List & RSVPs"
-        subtitle={`${event.title} • ${event.confirmed} Confirmed`}
+        isOpen={rosterOpen}
+        onClose={() => setRosterOpen(false)}
+        title="Who's coming"
+        subtitle={`${event.title} • ${going} confirmed`}
+        maxWidth="lg"
       >
-        <div className="flex gap-2 border-b border-gray-100 pb-3 mb-4">
-          <button
-            onClick={() => setAttendeeTab('confirmed')}
-            className={cx('px-4 py-1.5 rounded-full text-xs font-bold transition-all', {
-              'bg-primary text-white': attendeeTab === 'confirmed',
-              'bg-surface-high text-text-medium': attendeeTab !== 'confirmed',
-            })}
-          >
-            Confirmed ({event.confirmed})
-          </button>
-          <button
-            onClick={() => setAttendeeTab('maybe')}
-            className={cx('px-4 py-1.5 rounded-full text-xs font-bold transition-all', {
-              'bg-primary text-white': attendeeTab === 'maybe',
-              'bg-surface-high text-text-medium': attendeeTab !== 'maybe',
-            })}
-          >
-            Maybe ({event.maybe})
-          </button>
-          <button
-            onClick={() => setAttendeeTab('waitlist')}
-            className={cx('px-4 py-1.5 rounded-full text-xs font-bold transition-all', {
-              'bg-primary text-white': attendeeTab === 'waitlist',
-              'bg-surface-high text-text-medium': attendeeTab !== 'waitlist',
-            })}
-          >
-            Waitlist ({event.waitlist})
-          </button>
+        <div className="flex gap-2 mb-4" role="tablist" aria-label="RSVP groups">
+          {ROSTER_TABS.map(tab => (
+            <button
+              key={tab.key}
+              role="tab"
+              aria-selected={rosterTab === tab.key}
+              onClick={() => setRosterTab(tab.key)}
+              className={cx('px-4 py-1.5 rounded-full text-xs font-bold transition-all', {
+                'bg-primary text-white': rosterTab === tab.key,
+                'bg-surface-high text-text-medium': rosterTab !== tab.key,
+              })}
+            >
+              {tab.label} ({counts[tab.key]})
+            </button>
+          ))}
         </div>
 
-        <div className="flex flex-col gap-3 max-h-60 overflow-y-auto">
-          {attendeeTab === 'confirmed' && (
-            <>
-              {event.avatars.map((name, i) => (
-                <div key={name + i} className="flex items-center gap-3 p-2 bg-surface-low rounded-xl">
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-800">
-                    <img
-                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`}
-                      alt={name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="font-bold text-sm text-text-dark">{name}</div>
-                  <span className="ml-auto text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded">
-                    GOING
-                  </span>
-                </div>
-              ))}
-            </>
+        <ol className="flex flex-col gap-2 max-h-[45vh] overflow-y-auto list-none pr-1">
+          {roster.map((person, index) => (
+            <li key={person.id} className="flex items-center gap-3 p-2 bg-surface-low rounded-xl">
+              {rosterTab === 'waitlist' && (
+                <span className="w-6 text-center text-xs font-headline font-black text-text-light tabular-nums">
+                  {index + 1}
+                </span>
+              )}
+              <Avatar name={person.name} size={32} />
+              <span className="font-bold text-sm text-text-dark truncate">
+                {person.id === ME ? 'You' : person.name}
+              </span>
+              {person.id === event.hostId && (
+                <span className="badge bg-primary-fixed text-primary-container text-[9px] py-0 px-2 ml-auto">
+                  HOST
+                </span>
+              )}
+            </li>
+          ))}
+          {roster.length === 0 && (
+            <li className="text-center py-8 text-sm text-text-light">
+              {rosterTab === 'waitlist'
+                ? 'Nobody is waiting — there is still room.'
+                : `No ${ROSTER_TABS.find(t => t.key === rosterTab)?.label.toLowerCase()} responses yet.`}
+            </li>
           )}
-
-          {attendeeTab === 'maybe' && (
-            <div className="text-center py-6 text-xs text-text-medium">
-              {event.maybe} people marked themselves as 'Maybe'
-            </div>
-          )}
-
-          {attendeeTab === 'waitlist' && (
-            <div className="text-center py-6 text-xs text-text-medium">
-              {event.waitlist > 0
-                ? `${event.waitlist} people on the automatic promotion waitlist`
-                : 'No one is currently on the waitlist'}
-            </div>
-          )}
-        </div>
+        </ol>
       </GlassModal>
 
-      {/* Host Broadcast Modal */}
+      {/* Host broadcast */}
       <GlassModal
-        isOpen={isBroadcastModalOpen}
-        onClose={() => setIsBroadcastModalOpen(false)}
-        title="Send Host Announcement 📢"
-        subtitle="Broadcast an immediate update to attendees"
+        isOpen={broadcastOpen}
+        onClose={() => setBroadcastOpen(false)}
+        title="Send an update"
+        subtitle="Reaches only the group you pick"
       >
         <div className="flex flex-col gap-4">
-          <div>
-            <label className="text-xs font-bold text-text-medium mb-1 block">Target Audience</label>
+          <fieldset className="border-0 p-0 m-0">
+            <legend className="text-xs font-bold text-text-medium mb-2">Who gets this</legend>
             <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setBroadcastTarget('all')}
-                className={cx('flex-1 py-2 rounded-xl text-xs font-bold', {
-                  'bg-primary text-white': broadcastTarget === 'all',
-                  'bg-surface-high text-text-medium': broadcastTarget !== 'all',
-                })}
-              >
-                All Invited
-              </button>
-              <button
-                type="button"
-                onClick={() => setBroadcastTarget('yes')}
-                className={cx('flex-1 py-2 rounded-xl text-xs font-bold', {
-                  'bg-primary text-white': broadcastTarget === 'yes',
-                  'bg-surface-high text-text-medium': broadcastTarget !== 'yes',
-                })}
-              >
-                Only "Yes" RSVPs
-              </button>
-              <button
-                type="button"
-                onClick={() => setBroadcastTarget('waitlist')}
-                className={cx('flex-1 py-2 rounded-xl text-xs font-bold', {
-                  'bg-primary text-white': broadcastTarget === 'waitlist',
-                  'bg-surface-high text-text-medium': broadcastTarget !== 'waitlist',
-                })}
-              >
-                Waitlist Only
-              </button>
+              {(
+                [
+                  ['all', 'Everyone invited'],
+                  ['going', 'Confirmed only'],
+                  ['waitlist', 'Waitlist only'],
+                ] as [BroadcastTarget, string][]
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setBroadcastTarget(key)}
+                  aria-pressed={broadcastTarget === key}
+                  className={cx(
+                    'flex-1 py-2.5 px-2 rounded-xl text-xs font-bold transition-colors',
+                    {
+                      'bg-primary text-white': broadcastTarget === key,
+                      'bg-surface-high text-text-medium': broadcastTarget !== key,
+                    }
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
-          </div>
+          </fieldset>
 
           <div>
-            <label className="text-xs font-bold text-text-medium mb-1 block">Message</label>
+            <label
+              htmlFor="broadcast-message"
+              className="text-xs font-bold text-text-medium mb-1 block"
+            >
+              Message
+            </label>
             <textarea
+              id="broadcast-message"
               rows={3}
-              placeholder="e.g., Moving to the second floor terrace! Grab a seat near the lounge."
+              placeholder="e.g. Moving to the second floor terrace — grab a seat near the lounge."
               value={broadcastMessage}
               onChange={e => setBroadcastMessage(e.target.value)}
               className="input-field text-sm"
             />
           </div>
 
-          <button onClick={handleSendBroadcast} className="btn btn-primary w-full py-3">
-            Send Announcement
-          </button>
-        </div>
-      </GlassModal>
-
-      {/* Share Modal */}
-      <GlassModal
-        isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
-        title="Share Event"
-        subtitle="Invite friends into this coordination thread"
-      >
-        <div className="flex flex-col gap-4 text-center">
-          <div className="w-44 h-44 mx-auto bg-surface-low rounded-2xl flex items-center justify-center p-4 border border-gray-100">
-            <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
-                window.location.href
-              )}`}
-              alt="QR Code"
-              className="w-full h-full object-contain"
-            />
-          </div>
-          <div className="p-3 bg-surface-low rounded-xl text-xs font-mono text-text-medium break-all">
-            {window.location.href}
-          </div>
           <button
-            onClick={() => {
-              navigator.clipboard?.writeText(window.location.href);
-              alert('Link copied to clipboard!');
-              setIsShareModalOpen(false);
-            }}
+            onClick={handleSendBroadcast}
+            disabled={!broadcastMessage.trim() || broadcastReach === 0}
             className="btn btn-primary w-full py-3"
           >
-            Copy Invite Link
+            {broadcastReach === 0
+              ? 'Nobody in that group yet'
+              : `Send to ${broadcastReach} ${broadcastReach === 1 ? 'person' : 'people'}`}
           </button>
         </div>
       </GlassModal>
 
-      {/* Report Modal */}
+      <ShareSheet
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        title="Share this event"
+        subtitle={
+          event.privacy === 'public'
+            ? 'Anyone with this link can RSVP'
+            : 'Only people you send this to can see it'
+        }
+        url={eventUrl}
+        shareText={`${event.title} — ${formatWhen(event.startsAt)}`}
+      />
+
+      {/* Report */}
       <GlassModal
-        isOpen={isReportModalOpen}
-        onClose={() => setIsReportModalOpen(false)}
-        title="Report Event"
-        subtitle="Help keep the W8VR community safe"
+        isOpen={reportOpen}
+        onClose={() => setReportOpen(false)}
+        title="Report this event"
+        subtitle="Reports go to the safety team"
       >
         <div className="flex flex-col gap-4">
           <div>
-            <label className="text-xs font-bold text-text-medium mb-1 block">Reason for Report</label>
+            <label
+              htmlFor="report-reason"
+              className="text-xs font-bold text-text-medium mb-1 block"
+            >
+              What is wrong with it?
+            </label>
             <select
+              id="report-reason"
               value={reportReason}
               onChange={e => setReportReason(e.target.value)}
               className="input-field text-sm"
             >
-              <option value="">Select a reason...</option>
-              <option value="spam">Spam or commercial advertisement</option>
-              <option value="inappropriate">Inappropriate or unsafe content</option>
-              <option value="fake">Fake or misleading event</option>
-              <option value="harassment">Harassment or exclusionary behavior</option>
+              <option value="">Choose a reason…</option>
+              {REPORT_REASONS.map(r => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
             </select>
           </div>
+
+          <div>
+            <label htmlFor="report-note" className="text-xs font-bold text-text-medium mb-1 block">
+              Anything else? (optional)
+            </label>
+            <textarea
+              id="report-note"
+              rows={3}
+              value={reportNote}
+              onChange={e => setReportNote(e.target.value)}
+              placeholder="Details help the review go faster."
+              className="input-field text-sm"
+            />
+          </div>
+
           <button
             disabled={!reportReason}
-            onClick={handleReportEvent}
-            className="btn btn-primary w-full py-3 disabled:opacity-50"
+            onClick={handleReport}
+            className="btn btn-primary w-full py-3"
           >
-            Submit Report
+            Send report
           </button>
+
+          <p className="text-xs text-text-light text-center">
+            You can also{' '}
+            <Link to="/settings" className="text-primary font-semibold hover:underline">
+              manage blocked people
+            </Link>{' '}
+            in Settings.
+          </p>
         </div>
       </GlassModal>
+
+      <ConfirmDialog {...confirm.dialogProps} />
     </div>
   );
 }

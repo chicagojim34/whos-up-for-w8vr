@@ -1,11 +1,15 @@
 import React from 'react';
 import cx from 'classnames';
+import { Avatar } from './Avatar';
 
 interface AvatarGroupProps {
   names: string[];
   max?: number;
   size?: number;
   className?: string;
+  ringColor?: string;
+  /** Describes the group for screen readers, e.g. "12 people going". */
+  label?: string;
 }
 
 export const AvatarGroup: React.FC<AvatarGroupProps> = ({
@@ -13,46 +17,45 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
   max = 3,
   size = 32,
   className,
+  ringColor,
+  label,
 }) => {
-  const visible = names.slice(0, max);
-  const remaining = names.length - max;
-
   if (names.length === 0) return null;
 
+  const visible = names.slice(0, max);
+  const remaining = names.length - visible.length;
+  const overlap = -Math.floor(size * 0.3);
+
   return (
-    <div className={cx('flex items-center', className)}>
+    <span
+      className={cx('inline-flex items-center', className)}
+      role="img"
+      aria-label={label ?? `${names.length} people`}
+    >
       {visible.map((name, i) => (
-        <div
+        <span
           key={name + i}
-          className="rounded-full overflow-hidden border-2 border-white bg-slate-800 shrink-0 shadow-sm"
-          style={{
-            width: size,
-            height: size,
-            marginLeft: i > 0 ? -Math.floor(size * 0.3) : 0,
-            zIndex: 10 - i,
-          }}
-          title={name}
+          className="inline-flex"
+          style={{ marginLeft: i === 0 ? 0 : overlap, zIndex: visible.length - i }}
         >
-          <img
-            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`}
-            alt={name}
-            className="w-full h-full object-cover"
-          />
-        </div>
+          <Avatar name={name} size={size} ringColor={ringColor} />
+        </span>
       ))}
       {remaining > 0 && (
-        <div
-          className="rounded-full border-2 border-white bg-primary text-white font-headline font-black text-[10px] flex items-center justify-center shrink-0 shadow-sm"
+        <span
+          className="inline-flex items-center justify-center rounded-full bg-primary text-white font-headline font-black shrink-0"
           style={{
             width: size,
             height: size,
-            marginLeft: -Math.floor(size * 0.3),
-            zIndex: 1,
+            marginLeft: overlap,
+            fontSize: Math.max(9, Math.round(size * 0.32)),
+            boxShadow: `0 0 0 2px ${ringColor ?? '#ffffff'}`,
           }}
+          aria-hidden="true"
         >
           +{remaining}
-        </div>
+        </span>
       )}
-    </div>
+    </span>
   );
 };

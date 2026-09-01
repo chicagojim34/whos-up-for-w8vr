@@ -1,37 +1,6 @@
 import React from 'react';
-import { 
-  Activity, 
-  Utensils, 
-  Music, 
-  Home, 
-  Paintbrush, 
-  Briefcase, 
-  HeartHandshake, 
-  Sparkles,
-  type LucideIcon 
-} from 'lucide-react';
 import cx from 'classnames';
-
-export type EventCategory = 
-  | 'All Events'
-  | 'Active' 
-  | 'Dining' 
-  | 'Entertainment' 
-  | 'Home/Social' 
-  | 'Creative' 
-  | 'Professional' 
-  | 'Community';
-
-export const CATEGORY_DEFINITIONS: { label: EventCategory; icon: LucideIcon; desc: string }[] = [
-  { label: 'All Events', icon: Sparkles, desc: 'All nearby happenings' },
-  { label: 'Active', icon: Activity, desc: 'Pickleball, Hiking, Gym, Team Sports' },
-  { label: 'Dining', icon: Utensils, desc: 'Brunch, Dinner, Drinks, Coffee' },
-  { label: 'Entertainment', icon: Music, desc: 'Live Shows, Vinyl Sets, Theater' },
-  { label: 'Home/Social', icon: Home, desc: 'BBQ, Game Nights, Watch Parties' },
-  { label: 'Creative', icon: Paintbrush, desc: 'Workshops, Arts & Crafts, Jams' },
-  { label: 'Professional', icon: Briefcase, desc: 'Networking, Coworking, Tech Talks' },
-  { label: 'Community', icon: HeartHandshake, desc: 'Volunteering, Local Rallies' },
-];
+import { CATEGORY_ICONS, type EventCategory } from '../lib/categories';
 
 interface CategoryChipProps {
   category: EventCategory;
@@ -50,8 +19,7 @@ export const CategoryChip: React.FC<CategoryChipProps> = ({
   size = 'md',
   className,
 }) => {
-  const def = CATEGORY_DEFINITIONS.find(c => c.label === category) || CATEGORY_DEFINITIONS[0];
-  const Icon = def.icon;
+  const Icon = CATEGORY_ICONS[category];
 
   const sizeClasses = {
     sm: 'px-3 py-1.5 text-xs gap-1.5',
@@ -63,8 +31,9 @@ export const CategoryChip: React.FC<CategoryChipProps> = ({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={cx(
-        'rounded-full flex items-center shrink-0 transition-all font-headline cursor-pointer active:scale-95 duration-150 select-none',
+        'rounded-full flex items-center shrink-0 transition-all font-headline active:scale-95 duration-150 select-none',
         sizeClasses,
         active
           ? 'bg-primary-container text-white shadow-md shadow-primary/25'
@@ -72,7 +41,13 @@ export const CategoryChip: React.FC<CategoryChipProps> = ({
         className
       )}
     >
-      {showIcon && <Icon size={size === 'sm' ? 13 : 15} className={active ? 'text-white' : 'text-primary'} />}
+      {showIcon && (
+        <Icon
+          size={size === 'sm' ? 13 : 15}
+          className={active ? 'text-white' : 'text-primary'}
+          aria-hidden="true"
+        />
+      )}
       <span>{category}</span>
     </button>
   );
