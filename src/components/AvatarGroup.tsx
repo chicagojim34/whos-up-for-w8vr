@@ -48,7 +48,9 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
             width: size,
             height: size,
             marginLeft: overlap,
-            fontSize: Math.max(9, Math.round(size * 0.32)),
+            // Smaller than the initials: "+128" has to fit the same circle.
+            fontSize: Math.max(8, Math.round(size * 0.26)),
+            letterSpacing: '-0.03em',
             boxShadow: `0 0 0 2px ${ringColor ?? '#ffffff'}`,
           }}
           aria-hidden="true"
