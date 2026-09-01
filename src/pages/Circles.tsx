@@ -75,11 +75,11 @@ export default function Circles() {
       </header>
 
       {/* Joined circles */}
-      <section className="grid grid-cols-1 md:grid-cols-12 gap-4">
+      <section className="grid grid-cols-1 @2xl:grid-cols-12 gap-4">
         <h2 className="sr-only-text">Circles you are in</h2>
 
         {featured && (
-          <article className="md:col-span-12 card p-6 relative overflow-hidden">
+          <article className="@2xl:col-span-12 card p-6 relative overflow-hidden">
             <span
               className="absolute -right-8 -top-8 w-36 h-36 rounded-full opacity-15 pointer-events-none"
               style={{
@@ -137,7 +137,7 @@ export default function Circles() {
         {joined.slice(1).map(circle => (
           <article
             key={circle.id}
-            className="md:col-span-4 card p-5 flex flex-col justify-between gap-4"
+            className="@2xl:col-span-4 card p-5 flex flex-col justify-between gap-4"
           >
             <div>
               <div className="flex justify-between items-start gap-2 mb-3">
@@ -216,7 +216,7 @@ export default function Circles() {
           </span>
         </div>
 
-        <ul className="grid grid-cols-1 md:grid-cols-3 gap-4 list-none">
+        <ul className="grid grid-cols-1 @2xl:grid-cols-3 gap-4 list-none">
           {discoverable.map(circle => (
             <li key={circle.id}>
               <article className="card p-4 flex items-center gap-4 h-full">

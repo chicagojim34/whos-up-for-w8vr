@@ -123,9 +123,9 @@ export default function Schedule() {
                 <li key={event.id}>
                   <button
                     onClick={() => navigate(`/event/${event.id}`)}
-                    className="card w-full p-5 flex flex-col md:flex-row md:items-center gap-4 text-left group"
+                    className="card w-full p-5 flex flex-col @2xl:flex-row @2xl:items-center gap-4 text-left group"
                   >
-                    <span className="flex md:flex-col items-center justify-center p-3 bg-surface-low rounded-2xl md:w-20 shrink-0 text-center gap-1 md:gap-0">
+                    <span className="flex @2xl:flex-col items-center justify-center p-3 bg-surface-low rounded-2xl @2xl:w-20 shrink-0 text-center gap-1 @2xl:gap-0">
                       <span className="font-headline font-black text-xl text-text-dark tabular-nums">
                         {formatTime(event.startsAt).replace(/\s?[AP]M/i, '')}
                       </span>
@@ -137,7 +137,7 @@ export default function Schedule() {
                     <img
                       src={event.image}
                       alt=""
-                      className="w-full md:w-28 h-32 md:h-20 rounded-xl object-cover shrink-0"
+                      className="w-full @2xl:w-28 h-32 @2xl:h-20 rounded-xl object-cover shrink-0"
                       loading="lazy"
                     />
 
@@ -175,7 +175,7 @@ export default function Schedule() {
                       </span>
                     </span>
 
-                    <span className="flex items-center justify-between md:justify-end gap-3 shrink-0">
+                    <span className="flex items-center justify-between @2xl:justify-end gap-3 shrink-0">
                       <StatusRing
                         capacity={capacityPct(event)}
                         size={42}

@@ -22,6 +22,7 @@ import { useApp } from '../hooks/useApp';
 import { useToast } from '../hooks/useToast';
 import { SELECTABLE_CATEGORIES, type EventCategory } from '../lib/categories';
 import { StatusRing } from '../components/StatusRing';
+import { FloatingBar } from '../components/FloatingBar';
 import { formatWhen } from '../lib/datetime';
 
 const COVER_OPTIONS = [
@@ -152,10 +153,10 @@ export default function PostEvent() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 @2xl:grid-cols-12 gap-8">
         {/* Form */}
         <form
-          className="md:col-span-7 flex flex-col gap-6"
+          className="@2xl:col-span-7 flex flex-col gap-6"
           onSubmit={e => {
             e.preventDefault();
             if (step < 3) goNext();
@@ -558,12 +559,12 @@ export default function PostEvent() {
         </form>
 
         {/* Live preview */}
-        <aside className="md:col-span-5 flex flex-col gap-3">
+        <aside className="@2xl:col-span-5 flex flex-col gap-3">
           <p className="text-xs font-headline font-bold text-text-light uppercase tracking-wider flex items-center gap-1.5">
             <ImageIcon size={14} className="text-primary" aria-hidden="true" /> Live preview
           </p>
 
-          <div className="card p-0 overflow-hidden md:sticky md:top-24">
+          <div className="card p-0 overflow-hidden @2xl:sticky @2xl:top-24">
             <div className="relative h-48 bg-text-dark">
               <img
                 src={coverImage}
@@ -624,8 +625,8 @@ export default function PostEvent() {
       </div>
 
       {/* Action bar */}
-      <div className="floating-bar">
-        <div className="floating-bar-inner">
+      <FloatingBar>
+        <div className="flex items-center justify-between gap-4 w-full">
           <button
             type="button"
             onClick={() => (step > 1 ? setStep(s => (s - 1) as 1 | 2 | 3) : navigate('/'))}
@@ -658,7 +659,7 @@ export default function PostEvent() {
             </button>
           )}
         </div>
-      </div>
+      </FloatingBar>
     </div>
   );
 }
