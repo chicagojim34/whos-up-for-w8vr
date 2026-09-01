@@ -1,75 +1,107 @@
 import React from 'react';
 import cx from 'classnames';
+import { ringTone } from '../lib/ring';
 
 interface StatusRingProps {
-  capacity: number; // 0 to 100
+  /** 0–100. */
+  capacity: number;
   size?: number;
   strokeWidth?: number;
+  /** Overrides the centre text (e.g. spots remaining instead of a percent). */
   label?: string;
+  /** Read aloud in place of the visual label. */
+  srLabel?: string;
   showPulse?: boolean;
   className?: string;
-  variant?: 'light' | 'dark' | 'glass';
+  variant?: 'light' | 'dark' | 'glass' | 'bare';
 }
 
+/**
+ * The signature capacity ring.
+ *
+ * Colour follows the PRD's rule — green while there is room, red once it is
+ * full — with the brand indigo marking the "filling up" middle band, and the
+ * urgency pulse DESIGN.md asks for above 90%.
+ */
 export const StatusRing: React.FC<StatusRingProps> = ({
   capacity,
   size = 48,
   strokeWidth = 4,
   label,
+  srLabel,
   showPulse = true,
   className,
   variant = 'glass',
 }) => {
-  const isUrgent = capacity >= 90;
+  const clamped = Math.max(0, Math.min(100, capacity));
+  const isUrgent = clamped >= 90;
+  const { stroke, text } = ringTone(clamped);
+
   const radius = (size - strokeWidth * 2) / 2;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (capacity / 100) * circumference;
+  const dashOffset = circumference - (clamped / 100) * circumference;
 
   const bgVariantClass = {
-    glass: 'bg-white/90 backdrop-blur-md shadow-md text-primary',
-    light: 'bg-white shadow-md text-primary',
-    dark: 'bg-black/40 backdrop-blur-md text-white border border-white/20',
+    glass: 'bg-surface-lowest/90 backdrop-blur-md shadow-md',
+    light: 'bg-surface-lowest shadow-md',
+    dark: 'bg-text-dark/50 backdrop-blur-md',
+    bare: '',
   }[variant];
 
   return (
-    <div
+    // The outer span carries only sizing and the caller's classes, so a caller
+    // positioning the ring (`absolute bottom-3 right-4`) is not fighting a
+    // `relative` baked in here — Tailwind resolves that collision by stylesheet
+    // order, not class order, and `relative` would silently win.
+    <span
       className={cx(
-        'relative rounded-full flex items-center justify-center transition-transform',
+        'inline-flex items-center justify-center rounded-full shrink-0',
         bgVariantClass,
-        { 'status-ring-pulse': isUrgent && showPulse },
+        { 'animate-status-pulse': isUrgent && showPulse },
         className
       )}
       style={{ width: size, height: size }}
+      role="img"
+      aria-label={srLabel ?? `${clamped}% full`}
     >
-      <svg className="w-full h-full transform -rotate-90" viewBox={`0 0 ${size} ${size}`}>
-        {/* Track circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="transparent"
-          stroke="rgba(65, 102, 86, 0.2)"
-          strokeWidth={strokeWidth}
-        />
-        {/* Fill circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="transparent"
-          stroke={isUrgent ? 'var(--error)' : 'var(--primary)'}
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset 0.6s cubic-bezier(0.16, 1, 0.3, 1)' }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <span className="font-headline font-bold text-[10px] leading-none" style={{ color: isUrgent ? 'var(--error)' : 'inherit' }}>
-          {label ?? `${capacity}%`}
+      <span className="relative inline-flex" style={{ width: size, height: size }}>
+        <svg
+          width={size}
+          height={size}
+          viewBox={`0 0 ${size} ${size}`}
+          className="-rotate-90"
+          aria-hidden="true"
+        >
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="transparent"
+            stroke="var(--color-secondary)"
+            strokeOpacity={0.2}
+            strokeWidth={strokeWidth}
+          />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="transparent"
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={dashOffset}
+            strokeLinecap="round"
+            style={{ transition: 'stroke-dashoffset 0.6s var(--ease-curator), stroke 0.4s' }}
+          />
+        </svg>
+        <span
+          className="absolute inset-0 flex items-center justify-center pointer-events-none font-headline font-bold leading-none"
+          style={{ color: text, fontSize: Math.max(9, Math.round(size * 0.24)) }}
+          aria-hidden="true"
+        >
+          {label ?? `${clamped}%`}
         </span>
-      </div>
-    </div>
+      </span>
+    </span>
   );
 };

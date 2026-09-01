@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600" role="img" aria-label="Overlapping risograph colour blocks">
+  <rect width="800" height="600" fill="#f6f2e9"/>
+  <g style="mix-blend-mode:multiply">
+    <circle cx="300" cy="270" r="180" fill="#ff5a5f" fill-opacity="0.82"/>
+    <circle cx="450" cy="330" r="180" fill="#3d5afe" fill-opacity="0.78"/>
+    <rect x="180" y="404" width="440" height="64" rx="10" fill="#111827" fill-opacity="0.86"/>
+  </g>
+  <g fill="none" stroke="#111827" stroke-opacity="0.22" stroke-width="2">
+    <rect x="72" y="72" width="656" height="456" rx="8"/>
+    <path d="M72 140H728M72 470H728"/>
+  </g>
+  <g fill="#f6f2e9" font-family="Helvetica, Arial, sans-serif" font-weight="700">
+    <text x="212" y="446" font-size="34" letter-spacing="10">TWO COLOUR</text>
+  </g>
+  <g fill="#111827" fill-opacity="0.5" font-family="Helvetica, Arial, sans-serif" font-size="17" letter-spacing="5">
+    <text x="90" y="118">INK &amp; IRON STUDIO</text>
+    <text x="90" y="508">RISOGRAPH · MISREGISTER ON PURPOSE</text>
+  </g>
+</svg>

@@ -1,360 +1,451 @@
 import { useState } from 'react';
-import { 
-  Plus, 
-  Share2, 
-  QrCode, 
-  Phone, 
-  Users, 
-  Check, 
-  Lock, 
-  Globe, 
-  Sparkles, 
-  UserPlus, 
-  Send 
-} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Share2, Phone, Users, Check, UserPlus, ChevronRight, Lock, Globe } from 'lucide-react';
 import cx from 'classnames';
-import { useApp, type CircleItem } from '../context/AppContext';
+import { useApp } from '../hooks/useApp';
+import { useToast } from '../hooks/useToast';
 import { GlassModal } from '../components/GlassModal';
+import { ShareSheet } from '../components/ShareSheet';
 import { AvatarGroup } from '../components/AvatarGroup';
+import { Avatar } from '../components/Avatar';
+import type { CircleItem } from '../types';
+
+const CATEGORY_TAGS = [
+  { value: 'FRIENDS', label: 'Friends & social' },
+  { value: 'FAMILY', label: 'Family' },
+  { value: 'FITNESS', label: 'Fitness & sports' },
+  { value: 'CAMPUS', label: 'Campus & college' },
+  { value: 'CULTURE', label: 'Culture & arts' },
+  { value: 'WORK', label: 'Professional & work' },
+];
 
 export default function Circles() {
+  const navigate = useNavigate();
   const { circles, contacts, joinCircle, createCircle, inviteContact } = useApp();
+  const toast = useToast();
 
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [newCircleName, setNewCircleName] = useState('');
-  const [newCircleDesc, setNewCircleDesc] = useState('');
-  const [newCircleCategory, setNewCircleCategory] = useState('FRIENDS');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [categoryTag, setCategoryTag] = useState('FRIENDS');
+  const [isPrivate, setIsPrivate] = useState(true);
+  const [inviteIds, setInviteIds] = useState<string[]>([]);
 
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [activeCircleForShare, setActiveCircleForShare] = useState<CircleItem | null>(null);
+  const [shareTarget, setShareTarget] = useState<CircleItem | null>(null);
+  const [contactsOpen, setContactsOpen] = useState(false);
 
-  const [isContactsModalOpen, setIsContactsModalOpen] = useState(false);
+  const joined = circles.filter(c => c.isJoined);
+  const discoverable = circles.filter(c => !c.isJoined);
+  const featured = joined[0];
+  const matchedContacts = contacts.filter(c => c.isOnW8VR).length;
 
-  const myJoinedCircles = circles.filter(c => c.isJoined);
-  const discoverCircles = circles.filter(c => !c.isJoined);
+  const toggleInvite = (id: string) =>
+    setInviteIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
 
-  const handleCreateCircle = () => {
-    if (!newCircleName.trim()) return;
-    createCircle(newCircleName, newCircleDesc, newCircleCategory);
-    setNewCircleName('');
-    setNewCircleDesc('');
-    setIsCreateModalOpen(false);
+  const handleCreate = () => {
+    if (!name.trim()) return;
+    const circle = createCircle({
+      name,
+      description,
+      categoryTag,
+      isPrivate,
+      inviteIds,
+    });
+    setCreateOpen(false);
+    setName('');
+    setDescription('');
+    setInviteIds([]);
+    toast.show(
+      inviteIds.length > 0
+        ? `${circle.name} created — ${inviteIds.length} invited`
+        : `${circle.name} created`
+    );
+    navigate(`/circle/${circle.id}`);
   };
 
-  const openShare = (circle: CircleItem) => {
-    setActiveCircleForShare(circle);
-    setIsShareModalOpen(true);
-  };
+  const memberCount = (c: CircleItem) => c.memberList.length + c.extraMembers;
 
   return (
-    <div className="flex-col pb-28 px-6 bg-surface animate-fade-in max-w-4xl mx-auto w-full">
-      {/* Header */}
-      <div className="mt-4 mb-6">
-        <h1 className="font-headline font-black text-3xl text-text-dark">My Circles</h1>
+    <div className="flex flex-col pb-28 px-6 bg-surface animate-fade-in max-w-4xl mx-auto w-full">
+      <header className="mt-4 mb-6">
+        <h1 className="font-headline font-black text-3xl text-text-dark">My circles</h1>
         <p className="text-text-medium text-sm mt-1">
-          Manage your private friend groups, sports rosters, and community squads.
+          Private friend groups, sports rosters and community squads.
         </p>
-      </div>
+      </header>
 
-      {/* Bento Grid: My Circles */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-        {/* Featured Circle Card */}
-        {myJoinedCircles.length > 0 && (
-          <div className="md:col-span-12 card p-6 relative overflow-hidden bg-surface-lowest shadow-md border border-white/80">
-            <div
+      {/* Joined circles */}
+      <section className="grid grid-cols-1 md:grid-cols-12 gap-4">
+        <h2 className="sr-only-text">Circles you are in</h2>
+
+        {featured && (
+          <article className="md:col-span-12 card p-6 relative overflow-hidden">
+            <span
               className="absolute -right-8 -top-8 w-36 h-36 rounded-full opacity-15 pointer-events-none"
               style={{
-                background: 'conic-gradient(from 0deg, var(--primary) 0%, var(--primary) 75%, #416656 75%, #416656 100%)',
+                background: `conic-gradient(from 0deg, ${featured.color} 0%, ${featured.color} 72%, var(--color-secondary) 72%, var(--color-secondary) 100%)`,
               }}
+              aria-hidden="true"
             />
 
-            <div className="relative z-10 flex-col gap-3">
-              <div className="flex justify-between items-center">
+            <div className="relative z-10 flex flex-col gap-3">
+              <div className="flex justify-between items-center gap-3 flex-wrap">
                 <span className="badge bg-secondary-container text-on-secondary-container text-[11px] font-bold">
-                  {myJoinedCircles[0].active ? 'Active Circle' : 'Circle'}
+                  Most active
                 </span>
-                <div className="flex items-center gap-2">
-                  <AvatarGroup names={['Felix', 'Aneka', 'Jocelyn', 'Sarah']} size={28} max={3} />
+                <span className="flex items-center gap-2">
+                  <AvatarGroup
+                    names={featured.memberList.map(m => m.name)}
+                    size={28}
+                    max={3}
+                    label={`${memberCount(featured)} members`}
+                  />
                   <span className="text-xs font-bold text-text-medium">
-                    {myJoinedCircles[0].members} members
+                    {memberCount(featured)} members
                   </span>
-                </div>
+                </span>
               </div>
 
-              <h2 className="font-headline font-black text-2xl text-text-dark mt-1">
-                {myJoinedCircles[0].name}
-              </h2>
-              <p className="text-sm text-text-medium">{myJoinedCircles[0].description}</p>
-
-              <div className="flex gap-2 mt-4 pt-2 border-t border-gray-100/80">
+              <h3 className="font-headline font-black text-2xl text-text-dark mt-1">
                 <button
-                  onClick={() => openShare(myJoinedCircles[0])}
-                  className="btn btn-secondary flex-1 py-2.5 text-xs flex items-center justify-center gap-2"
+                  onClick={() => navigate(`/circle/${featured.id}`)}
+                  className="text-left hover:text-primary transition-colors"
                 >
-                  <Share2 size={15} /> Invite Members
+                  {featured.name}
+                </button>
+              </h3>
+              <p className="text-sm text-text-medium">{featured.description}</p>
+
+              <div className="flex flex-wrap gap-2 mt-4">
+                <button
+                  onClick={() => navigate(`/circle/${featured.id}`)}
+                  className="btn btn-primary flex-1 min-w-40 py-2.5 text-xs flex items-center justify-center gap-2"
+                >
+                  Open circle <ChevronRight size={15} aria-hidden="true" />
                 </button>
                 <button
-                  onClick={() => openShare(myJoinedCircles[0])}
-                  className="btn btn-ghost bg-surface-high p-2.5 rounded-xl text-text-dark"
-                  title="Show QR Code"
+                  onClick={() => setShareTarget(featured)}
+                  className="btn btn-secondary py-2.5 px-4 text-xs flex items-center gap-2"
                 >
-                  <QrCode size={18} />
+                  <Share2 size={15} aria-hidden="true" /> Invite
                 </button>
               </div>
             </div>
-          </div>
+          </article>
         )}
 
-        {/* Other Joined Circles Mini Cards */}
-        {myJoinedCircles.slice(1).map(circle => (
-          <div
+        {joined.slice(1).map(circle => (
+          <article
             key={circle.id}
-            className="md:col-span-4 card p-5 flex flex-col justify-between bg-surface-lowest shadow-sm hover:shadow-md transition-shadow"
+            className="md:col-span-4 card p-5 flex flex-col justify-between gap-4"
           >
             <div>
-              <div className="flex justify-between items-start mb-3">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-headline font-bold text-sm shadow-sm"
-                  style={{ background: circle.color || 'var(--primary)' }}
+              <div className="flex justify-between items-start gap-2 mb-3">
+                <span
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-headline font-bold text-sm shrink-0"
+                  style={{ background: circle.color }}
+                  aria-hidden="true"
                 >
                   {circle.name[0]}
-                </div>
+                </span>
                 <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">
                   {circle.categoryTag}
                 </span>
               </div>
-              <h3 className="font-headline font-bold text-base text-text-dark">{circle.name}</h3>
-              <p className="text-xs text-text-medium mt-0.5 line-clamp-1">{circle.description}</p>
+              <h3 className="font-headline font-bold text-base text-text-dark">
+                <button
+                  onClick={() => navigate(`/circle/${circle.id}`)}
+                  className="text-left hover:text-primary transition-colors"
+                >
+                  {circle.name}
+                </button>
+              </h3>
+              <p className="text-xs text-text-medium mt-0.5 line-clamp-2">{circle.description}</p>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
-              <span className="text-xs font-semibold text-text-light">{circle.members} Members</span>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-text-light">
+                {memberCount(circle)} members
+              </span>
               <button
-                onClick={() => openShare(circle)}
-                className="text-xs font-bold text-primary flex items-center gap-1 hover:underline cursor-pointer"
+                onClick={() => setShareTarget(circle)}
+                className="text-xs font-bold text-primary flex items-center gap-1 hover:underline"
               >
-                <Share2 size={12} /> Invite
+                <Share2 size={12} aria-hidden="true" /> Invite
               </button>
             </div>
-          </div>
+          </article>
         ))}
-      </div>
+      </section>
 
-      {/* Create New Circle Button */}
       <button
-        onClick={() => setIsCreateModalOpen(true)}
-        className="btn btn-primary w-full mt-6 py-4 flex items-center justify-center gap-2 text-base shadow-lg shadow-primary/25 rounded-2xl"
+        onClick={() => setCreateOpen(true)}
+        className="btn btn-primary w-full mt-6 py-4 flex items-center justify-center gap-2 text-base rounded-2xl"
       >
-        <Plus size={20} /> Create New Circle
+        <Plus size={20} aria-hidden="true" /> Create a new circle
       </button>
 
-      {/* Contact Sync / Find Friends Banner */}
-      <div className="mt-10 rounded-3xl primary-gradient text-white p-8 relative overflow-hidden shadow-xl shadow-primary/20">
-        <div className="absolute -right-6 -bottom-6 opacity-10 pointer-events-none">
+      {/* Contact sync */}
+      <section className="mt-10 rounded-3xl primary-gradient text-white p-8 relative overflow-hidden shadow-xl">
+        <span className="absolute -right-6 -bottom-6 opacity-10 pointer-events-none" aria-hidden="true">
           <Phone size={180} />
-        </div>
+        </span>
         <div className="relative z-10 max-w-[85%]">
           <span className="badge bg-white/20 text-white text-[10px] uppercase font-bold tracking-widest mb-3">
-            Contact Sync
+            Contact sync
           </span>
           <h2 className="font-headline font-extrabold text-2xl text-white">Find your people</h2>
           <p className="text-sm mt-2 text-white/90 leading-relaxed mb-6">
-            Sync your mobile address book to instantly match with friends already using W8VR or invite them to circles.
+            Match your address book against W8VR. We compare hashes, never upload your contacts.
           </p>
           <button
-            onClick={() => setIsContactsModalOpen(true)}
-            className="bg-white text-primary font-headline font-bold px-8 py-3 rounded-full text-sm hover:scale-105 active:scale-95 transition-all shadow-md cursor-pointer border-none"
+            onClick={() => setContactsOpen(true)}
+            className="btn bg-surface-lowest text-primary-container px-8 py-3 rounded-full text-sm"
           >
-            Find Friends
+            Find friends
           </button>
         </div>
-      </div>
+      </section>
 
-      {/* Discover Public Circles */}
-      <div className="mt-12">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="font-headline font-bold text-2xl text-text-dark">Discover Communities</h2>
+      {/* Discover */}
+      <section className="mt-12">
+        <div className="flex justify-between items-center gap-3 mb-4">
+          <h2 className="font-headline font-bold text-2xl text-text-dark">Discover communities</h2>
           <span className="text-xs font-bold text-text-light uppercase tracking-wider">
-            {discoverCircles.length} SUGGESTIONS
+            {discoverable.length} suggestions
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {discoverCircles.map(group => (
-            <div
-              key={group.id}
-              className="card p-4 flex items-center gap-4 bg-surface-lowest shadow-sm hover:bg-surface-low transition-colors"
-            >
-              <img
-                src={group.img || 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=200&h=200'}
-                alt={group.name}
-                className="w-16 h-16 rounded-2xl object-cover shrink-0"
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 text-[10px] font-bold text-text-medium mb-0.5">
-                  <span className="bg-surface-high px-1.5 py-0.5 rounded uppercase">{group.categoryTag}</span>
-                  <span className="flex items-center gap-1 text-secondary font-bold">
-                    <Users size={11} /> {group.members}
+        <ul className="grid grid-cols-1 md:grid-cols-3 gap-4 list-none">
+          {discoverable.map(circle => (
+            <li key={circle.id}>
+              <article className="card p-4 flex items-center gap-4 h-full">
+                <span
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-headline font-black text-lg shrink-0"
+                  style={{ background: circle.color }}
+                  aria-hidden="true"
+                >
+                  {circle.name[0]}
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="flex items-center gap-2 text-[10px] font-bold text-text-medium mb-0.5">
+                    <span className="bg-surface-high px-1.5 py-0.5 rounded uppercase">
+                      {circle.categoryTag}
+                    </span>
+                    <span className="flex items-center gap-1 text-secondary">
+                      <Users size={11} aria-hidden="true" /> {memberCount(circle)}
+                    </span>
                   </span>
-                </div>
-                <h3 className="font-bold text-sm text-text-dark leading-tight truncate">{group.name}</h3>
-                <p className="text-xs text-text-light truncate mt-0.5">{group.description}</p>
-              </div>
-              <button
-                onClick={() => joinCircle(group.id)}
-                className="w-9 h-9 rounded-full bg-primary-fixed text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-all shrink-0 cursor-pointer shadow-sm"
-                title="Join Circle"
-              >
-                <Plus size={18} />
-              </button>
-            </div>
+                  <span className="block font-bold text-sm text-text-dark leading-tight truncate">
+                    <button
+                      onClick={() => navigate(`/circle/${circle.id}`)}
+                      className="hover:text-primary transition-colors text-left"
+                    >
+                      {circle.name}
+                    </button>
+                  </span>
+                  <span className="block text-xs text-text-light truncate mt-0.5">
+                    {circle.description}
+                  </span>
+                </span>
+                <button
+                  onClick={() => {
+                    joinCircle(circle.id);
+                    toast.show(`You joined ${circle.name}`);
+                  }}
+                  className="w-9 h-9 rounded-full bg-primary-fixed text-primary-container flex items-center justify-center hover:bg-primary hover:text-white transition-all shrink-0 shadow-sm"
+                  aria-label={`Join ${circle.name}`}
+                >
+                  <Plus size={18} aria-hidden="true" />
+                </button>
+              </article>
+            </li>
           ))}
-        </div>
-      </div>
+        </ul>
+      </section>
 
-      {/* Create Circle Modal */}
+      {/* Create circle */}
       <GlassModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        title="Create a New Circle"
-        subtitle="Group your friends or colleagues for effortless event coordination"
+        isOpen={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title="Create a circle"
+        subtitle="Group people once, then invite the whole circle in a tap"
+        maxWidth="lg"
       >
-        <div className="flex flex-col gap-4">
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={e => {
+            e.preventDefault();
+            handleCreate();
+          }}
+        >
           <div>
-            <label className="text-xs font-bold text-text-medium mb-1.5 block">CIRCLE NAME *</label>
+            <label htmlFor="circle-name" className="text-xs font-bold text-text-medium mb-1.5 block">
+              Circle name
+            </label>
             <input
+              id="circle-name"
               type="text"
-              placeholder="e.g., Weekend Runners, Co-workers, Book Club"
-              value={newCircleName}
-              onChange={e => setNewCircleName(e.target.value)}
+              required
+              placeholder="e.g. Weekend Runners, Book Club"
+              value={name}
+              onChange={e => setName(e.target.value)}
               className="input-field font-bold text-base"
-              autoFocus
             />
           </div>
 
           <div>
-            <label className="text-xs font-bold text-text-medium mb-1.5 block">DESCRIPTION</label>
+            <label htmlFor="circle-desc" className="text-xs font-bold text-text-medium mb-1.5 block">
+              What is it for?
+            </label>
             <textarea
+              id="circle-desc"
               rows={2}
-              placeholder="What is this circle all about?"
-              value={newCircleDesc}
-              onChange={e => setNewCircleDesc(e.target.value)}
+              placeholder="Sunday long runs and a coffee after."
+              value={description}
+              onChange={e => setDescription(e.target.value)}
               className="input-field text-sm"
             />
           </div>
 
           <div>
-            <label className="text-xs font-bold text-text-medium mb-1.5 block">CATEGORY TAG</label>
+            <label htmlFor="circle-tag" className="text-xs font-bold text-text-medium mb-1.5 block">
+              Category
+            </label>
             <select
-              value={newCircleCategory}
-              onChange={e => setNewCircleCategory(e.target.value)}
+              id="circle-tag"
+              value={categoryTag}
+              onChange={e => setCategoryTag(e.target.value)}
               className="input-field text-sm"
             >
-              <option value="FRIENDS">Friends & Social</option>
-              <option value="FAMILY">Family</option>
-              <option value="FITNESS">Fitness & Sports</option>
-              <option value="CAMPUS">Campus & College</option>
-              <option value="CULTURE">Culture & Arts</option>
-              <option value="WORK">Professional & Work</option>
+              {CATEGORY_TAGS.map(t => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
             </select>
           </div>
 
-          <button
-            onClick={handleCreateCircle}
-            disabled={!newCircleName.trim()}
-            className="btn btn-primary w-full py-3.5 mt-2 disabled:opacity-50"
-          >
-            Create Circle
+          <fieldset className="border-0 p-0 m-0">
+            <legend className="text-xs font-bold text-text-medium mb-1.5">Who can join</legend>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setIsPrivate(true)}
+                aria-pressed={isPrivate}
+                className={cx('flex-1 p-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors', {
+                  'bg-primary text-white': isPrivate,
+                  'bg-surface-low text-text-medium hover:bg-surface-high': !isPrivate,
+                })}
+              >
+                <Lock size={14} aria-hidden="true" /> Invite only
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPrivate(false)}
+                aria-pressed={!isPrivate}
+                className={cx('flex-1 p-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors', {
+                  'bg-primary text-white': !isPrivate,
+                  'bg-surface-low text-text-medium hover:bg-surface-high': isPrivate,
+                })}
+              >
+                <Globe size={14} aria-hidden="true" /> Anyone can join
+              </button>
+            </div>
+          </fieldset>
+
+          <fieldset className="border-0 p-0 m-0">
+            <legend className="text-xs font-bold text-text-medium mb-1.5">
+              Invite people {inviteIds.length > 0 && `(${inviteIds.length} selected)`}
+            </legend>
+            <ul className="flex flex-wrap gap-2 list-none">
+              {contacts.map(contact => {
+                const selected = inviteIds.includes(contact.id);
+                return (
+                  <li key={contact.id}>
+                    <button
+                      type="button"
+                      onClick={() => toggleInvite(contact.id)}
+                      aria-pressed={selected}
+                      className={cx(
+                        'flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full text-xs font-bold transition-colors',
+                        selected
+                          ? 'bg-primary-fixed text-primary-container'
+                          : 'bg-surface-low text-text-medium hover:bg-surface-high'
+                      )}
+                    >
+                      <Avatar name={contact.name} size={24} ringColor="transparent" />
+                      {contact.name}
+                      {selected && <Check size={13} aria-hidden="true" />}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </fieldset>
+
+          <button type="submit" disabled={!name.trim()} className="btn btn-primary w-full py-3.5 mt-2">
+            Create circle
           </button>
-        </div>
+        </form>
       </GlassModal>
 
-      {/* Share / QR Modal */}
+      <ShareSheet
+        isOpen={shareTarget !== null}
+        onClose={() => setShareTarget(null)}
+        title={`Invite to ${shareTarget?.name ?? 'circle'}`}
+        subtitle="Scan the code or send the link"
+        url={`${window.location.origin}/circle/${shareTarget?.id ?? ''}`}
+        shareText={`Join ${shareTarget?.name ?? 'my circle'} on W8VR`}
+      />
+
+      {/* Contact sync */}
       <GlassModal
-        isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
-        title={`Invite to ${activeCircleForShare?.name || 'Circle'}`}
-        subtitle="Scan QR or copy private invitation link"
+        isOpen={contactsOpen}
+        onClose={() => setContactsOpen(false)}
+        title="Matched contacts"
+        subtitle={`${matchedContacts} of your ${contacts.length} contacts are already on W8VR`}
       >
-        <div className="flex flex-col gap-4 text-center items-center">
-          <div className="w-48 h-48 bg-surface-low rounded-2xl flex items-center justify-center p-4 border border-gray-100 shadow-sm">
-            <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                window.location.origin + '/circles?join=' + (activeCircleForShare?.id || 'c1')
-              )}`}
-              alt="Circle QR Code"
-              className="w-full h-full object-contain"
-            />
-          </div>
-
-          <div className="p-3 bg-surface-low rounded-xl text-xs font-mono text-text-medium break-all w-full">
-            {window.location.origin}/join/{activeCircleForShare?.id || 'c1'}
-          </div>
-
-          <button
-            onClick={() => {
-              navigator.clipboard?.writeText(`${window.location.origin}/join/${activeCircleForShare?.id || 'c1'}`);
-              alert('Invite link copied!');
-              setIsShareModalOpen(false);
-            }}
-            className="btn btn-primary w-full py-3"
-          >
-            Copy Invite URL
-          </button>
-        </div>
-      </GlassModal>
-
-      {/* Contact Sync Modal */}
-      <GlassModal
-        isOpen={isContactsModalOpen}
-        onClose={() => setIsContactsModalOpen(false)}
-        title="Matched Contacts on W8VR"
-        subtitle="5 friends found in your address book"
-      >
-        <div className="flex flex-col gap-3 max-h-72 overflow-y-auto">
+        <ul className="flex flex-col gap-2 max-h-[55vh] overflow-y-auto list-none pr-1">
           {contacts.map(contact => (
-            <div
+            <li
               key={contact.id}
-              className="flex items-center justify-between p-3 bg-surface-low rounded-2xl"
+              className="flex items-center justify-between gap-3 p-3 bg-surface-low rounded-2xl"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-800 shrink-0">
-                  <img
-                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(contact.avatar)}`}
-                    alt={contact.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div>
-                  <div className="font-bold text-sm text-text-dark flex items-center gap-1.5">
+              <span className="flex items-center gap-3 min-w-0">
+                <Avatar name={contact.name} size={40} />
+                <span className="min-w-0">
+                  <span className="font-bold text-sm text-text-dark flex items-center gap-1.5 flex-wrap">
                     {contact.name}
                     {contact.isOnW8VR && (
-                      <span className="badge bg-primary-fixed text-primary text-[9px] py-0 px-1.5 font-bold">
+                      <span className="badge bg-primary-fixed text-primary-container text-[9px] py-0 px-1.5 font-bold">
                         ON W8VR
                       </span>
                     )}
-                  </div>
-                  <div className="text-xs text-text-light">{contact.phone}</div>
-                </div>
-              </div>
-
-              <div>
-                {contact.isInvited ? (
-                  <span className="text-xs font-bold text-green-700 flex items-center gap-1">
-                    <Check size={14} /> Invited
                   </span>
-                ) : (
-                  <button
-                    onClick={() => inviteContact(contact.id)}
-                    className="btn btn-outline text-xs py-1.5 px-3 rounded-full"
-                  >
-                    <UserPlus size={13} className="mr-1 inline" /> Invite
-                  </button>
-                )}
-              </div>
-            </div>
+                  <span className="block text-xs text-text-light">{contact.phone}</span>
+                </span>
+              </span>
+
+              {contact.isInvited ? (
+                <span className="text-xs font-bold text-secondary flex items-center gap-1 shrink-0">
+                  <Check size={14} aria-hidden="true" /> Invited
+                </span>
+              ) : (
+                <button
+                  onClick={() => {
+                    inviteContact(contact.id);
+                    toast.show(`Invite sent to ${contact.name}`);
+                  }}
+                  className="btn btn-outline text-xs py-1.5 px-3 rounded-full shrink-0 flex items-center gap-1"
+                >
+                  <UserPlus size={13} aria-hidden="true" />
+                  {contact.isOnW8VR ? 'Add' : 'Invite'}
+                </button>
+              )}
+            </li>
           ))}
-        </div>
+        </ul>
       </GlassModal>
     </div>
   );
