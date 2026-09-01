@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>W8VR - Create Event</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-tertiary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#294e3f",
+                        "background": "#f8f9fa",
+                        "surface-tint": "#4849da",
+                        "surface-variant": "#e1e3e4",
+                        "primary-container": "#5d5fef",
+                        "outline": "#767586",
+                        "surface-dim": "#d9dadb",
+                        "on-secondary-fixed": "#002115",
+                        "on-background": "#191c1d",
+                        "inverse-on-surface": "#f0f1f2",
+                        "inverse-surface": "#2e3132",
+                        "surface-container-low": "#f3f4f5",
+                        "surface-container-highest": "#e1e3e4",
+                        "on-tertiary-fixed-variant": "#404752",
+                        "error-container": "#ffdad6",
+                        "on-surface": "#191c1d",
+                        "surface-container": "#edeeef",
+                        "on-tertiary-fixed": "#151c25",
+                        "on-tertiary-container": "#f5f7ff",
+                        "tertiary-fixed": "#dce3f0",
+                        "primary": "#4343d5",
+                        "on-secondary-container": "#476c5b",
+                        "secondary-container": "#c3ecd7",
+                        "secondary-fixed": "#c3ecd7",
+                        "tertiary": "#535a64",
+                        "on-surface-variant": "#464555",
+                        "secondary": "#416656",
+                        "surface": "#f8f9fa",
+                        "tertiary-container": "#6b727d",
+                        "outline-variant": "#c7c4d7",
+                        "surface-bright": "#f8f9fa",
+                        "on-error": "#ffffff",
+                        "surface-container-high": "#e7e8e9",
+                        "on-primary-fixed": "#07006c",
+                        "inverse-primary": "#c1c1ff",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed-variant": "#2e2bc2",
+                        "on-secondary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed-dim": "#c0c7d3",
+                        "secondary-fixed-dim": "#a8cfbc",
+                        "primary-fixed-dim": "#c1c1ff",
+                        "primary-fixed": "#e1e0ff",
+                        "on-primary-container": "#faf7ff"
+                    },
+                    fontFamily: {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .status-ring-pulse {
+            box-shadow: 0 0 0 0 rgba(93, 95, 239, 0.4);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(93, 95, 239, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(93, 95, 239, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(93, 95, 239, 0); }
+        }
+        .glass-header {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .custom-gradient-btn {
+            background: linear-gradient(135deg, #4343d5 0%, #5d5fef 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface min-h-screen pb-32">
+<!-- Top Navigation Anchor -->
+<header class="fixed top-0 w-full z-50 glass-header shadow-sm shadow-[#4343d508]">
+<div class="flex justify-between items-center px-6 py-4 w-full max-w-2xl mx-auto">
+<div class="flex items-center gap-3">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors active:scale-95">
+<span class="material-symbols-outlined text-on-surface">close</span>
+</button>
+<h1 class="font-headline font-black tracking-tight text-2xl text-primary">W8VR</h1>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-on-surface-variant font-label text-xs font-bold uppercase tracking-widest">Draft Saved</span>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="minimalist cartoon avatar of a young person with short hair and glasses on a soft purple background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvzq75jq_fCZtSi_NGO1sn3CRvumRfeByXVG95iAUl_8_ORyX-J07QALLxceqYTawbRXM8afC4xNoV55QrDhyKLIImmaYfQJLNr0ShJKS4mba3TJQrwPvHSt1DEtVUvD-bRzpBsEJf3qefBFi16YM_Zp1yEItvbdvMT0UKiYLk-kzdjOb5ALXIVTBDYHXFhu24ROmg1mBnMweHcxjWSmZFF54WjTUsfUMkv-9BVD6xFGlXfIJFe7NIwQZhBPodwyLm1zG3V5OD5wc"/>
+</div>
+</div>
+</div>
+<!-- Progress Bar -->
+<div class="w-full bg-surface-container-low h-1.5">
+<div class="bg-primary h-full w-2/3 transition-all duration-500 rounded-r-full shadow-[0_0_8px_rgba(67,67,213,0.4)]"></div>
+</div>
+</header>
+<main class="pt-28 px-6 max-w-2xl mx-auto space-y-10">
+<!-- Section: The Essentials -->
+<section class="space-y-6">
+<header class="space-y-1">
+<span class="text-primary font-label text-xs font-bold uppercase tracking-wider">Step 2 of 3</span>
+<h2 class="font-headline text-3xl font-bold text-on-surface leading-tight">What's the vibe?</h2>
+<p class="text-on-surface-variant text-body-md">Give your event a name and a place to happen.</p>
+</header>
+<div class="space-y-8">
+<!-- Title Input -->
+<div class="space-y-2">
+<label class="font-headline text-sm font-semibold text-on-surface-variant ml-1">Event Title</label>
+<input class="w-full bg-surface-container-low border-none rounded-xl px-5 py-4 text-headline-sm focus:ring-2 focus:ring-primary/20 bg-surface-container-lowest transition-all placeholder:text-surface-dim font-headline font-bold text-xl" placeholder="e.g., Midnight Padel Tournament" type="text"/>
+</div>
+<!-- Bento Grid Essentials -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Date Picker -->
+<div class="bg-surface-container-low p-5 rounded-xl space-y-3 hover:bg-surface-container-lowest transition-all group">
+<div class="flex items-center justify-between">
+<span class="material-symbols-outlined text-primary">calendar_today</span>
+<span class="text-xs font-bold uppercase text-on-surface-variant tracking-tighter">Required</span>
+</div>
+<div class="space-y-0.5">
+<p class="text-on-surface-variant text-xs font-semibold">Date</p>
+<p class="font-headline font-bold text-lg">Sat, Oct 24</p>
+</div>
+</div>
+<!-- Time Picker -->
+<div class="bg-surface-container-low p-5 rounded-xl space-y-3 hover:bg-surface-container-lowest transition-all group">
+<div class="flex items-center justify-between">
+<span class="material-symbols-outlined text-primary">schedule</span>
+<span class="text-xs font-bold uppercase text-on-surface-variant tracking-tighter">Required</span>
+</div>
+<div class="space-y-0.5">
+<p class="text-on-surface-variant text-xs font-semibold">Start Time</p>
+<p class="font-headline font-bold text-lg">08:00 PM</p>
+</div>
+</div>
+</div>
+<!-- Location / Link -->
+<div class="bg-surface-container-low p-1 rounded-xl flex items-center gap-1">
+<button class="flex-1 py-3 px-4 rounded-lg bg-surface-container-lowest shadow-sm text-primary font-bold text-sm flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">location_on</span> Physical
+                    </button>
+<button class="flex-1 py-3 px-4 rounded-lg text-on-surface-variant font-semibold text-sm flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">link</span> Virtual/Link
+                    </button>
+</div>
+<div class="relative group">
+<input class="w-full bg-surface-container-low border-none rounded-xl pl-12 pr-5 py-4 focus:ring-2 focus:ring-primary/20 bg-surface-container-lowest transition-all placeholder:text-outline/50" placeholder="Search for a venue or address..." type="text"/>
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+</div>
+</div>
+</section>
+<!-- Section: Logistics -->
+<section class="space-y-6 pt-4">
+<h3 class="font-headline text-xl font-bold text-on-surface">Logistics &amp; Privacy</h3>
+<!-- Category Chips -->
+<div class="space-y-3">
+<p class="text-on-surface-variant text-xs font-bold uppercase tracking-widest">Select Category</p>
+<div class="flex flex-wrap gap-2">
+<button class="px-4 py-2 rounded-full bg-secondary-container text-on-secondary-container font-bold text-xs flex items-center gap-2 border-2 border-transparent">
+<span class="material-symbols-outlined text-[16px]">sports_tennis</span> Sports
+                    </button>
+<button class="px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant font-bold text-xs flex items-center gap-2 hover:bg-surface-container-highest transition-all">
+<span class="material-symbols-outlined text-[16px]">restaurant</span> Dining
+                    </button>
+<button class="px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant font-bold text-xs flex items-center gap-2 hover:bg-surface-container-highest transition-all">
+<span class="material-symbols-outlined text-[16px]">nightlife</span> Party
+                    </button>
+<button class="px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant font-bold text-xs flex items-center gap-2 hover:bg-surface-container-highest transition-all">
+<span class="material-symbols-outlined text-[16px]">brush</span> Creative
+                    </button>
+<button class="px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant font-bold text-xs flex items-center gap-2 hover:bg-surface-container-highest transition-all">
+<span class="material-symbols-outlined text-[16px]">more_horiz</span> Other
+                    </button>
+</div>
+</div>
+<!-- Capacity Control -->
+<div class="bg-surface-container-low p-6 rounded-2xl flex items-center justify-between gap-6">
+<div class="space-y-1">
+<h4 class="font-headline font-bold text-on-surface">Maximum Capacity</h4>
+<p class="text-on-surface-variant text-xs">Limit how many people can join.</p>
+</div>
+<div class="flex items-center gap-4 bg-surface-container-lowest rounded-xl p-1 shadow-sm">
+<button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-surface-container-high text-primary">
+<span class="material-symbols-outlined">remove</span>
+</button>
+<span class="font-headline font-extrabold text-xl min-w-[2rem] text-center">12</span>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-surface-container-high text-primary">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+<!-- Toggles List -->
+<div class="space-y-4">
+<div class="flex items-center justify-between p-2">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-tertiary-fixed rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined text-on-tertiary-fixed-variant">hourglass_empty</span>
+</div>
+<div>
+<p class="font-headline font-bold text-sm">Auto-Waitlist</p>
+<p class="text-on-surface-variant text-xs">Open spots for others as people drop out.</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-center justify-between p-2">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-primary-fixed rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">visibility_off</span>
+</div>
+<div>
+<p class="font-headline font-bold text-sm">Hidden Event</p>
+<p class="text-on-surface-variant text-xs">Only people with the link can find this.</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</section>
+<!-- Dynamic Preview Card -->
+<section class="pt-4">
+<div class="relative rounded-3xl overflow-hidden aspect-[4/3] shadow-xl group">
+<img alt="Event Cover" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="dramatic wide angle shot of a vibrant indoor padel court at night with bright stadium lights and athletes in motion" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0V9sprsdsa0mAILJrKDhZmvVHLk6UIcqwpD3YWc7751Yw3hFdthkns7gUyL76r0p-60E-AeJuid_viXJLEj8VKhF9_i7b0TyRGhBIjCah4Yronj9C4nWL4CGNZa5y_bscEqH6pW46J1fBZCv8puGIrrOESoq1C6ZwP4ngXEZ5rr-glWsEwbPThqvjgCess4s6J0a4LGVO9OXUbCFftEcV4NrcV8jB5HC_FFYhWk-eEqZA5QEpgpTX935myfAId-5SmlDXqN6VE8U"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-8 w-full space-y-3">
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-bold text-white uppercase tracking-widest">Preview Mode</span>
+</div>
+<h4 class="font-headline text-white text-3xl font-black leading-tight tracking-tight">Midnight Padel Tournament</h4>
+<div class="flex items-center gap-4 text-white/80 text-sm font-medium">
+<span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[18px]">calendar_today</span> Oct 24</span>
+<span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[18px]">location_on</span> Padel Arena Hub</span>
+</div>
+</div>
+<!-- Signature Status Ring -->
+<div class="absolute top-6 right-6 w-16 h-16 bg-white/10 backdrop-blur-xl rounded-full p-1 border border-white/20">
+<svg class="w-full h-full" viewbox="0 0 36 36">
+<circle class="stroke-white/20" cx="18" cy="18" fill="none" r="16" stroke-width="3"></circle>
+<circle class="stroke-primary-container" cx="18" cy="18" fill="none" r="16" stroke-dasharray="75, 100" stroke-linecap="round" stroke-width="3"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center text-white font-headline font-bold text-[10px]">
+                        0/12
+                    </div>
+</div>
+</div>
+</section>
+</main>
+<!-- Fixed Bottom Actions -->
+<div class="fixed bottom-0 w-full glass-header z-50">
+<div class="max-w-2xl mx-auto px-6 py-6 flex items-center justify-between gap-4">
+<button class="flex-1 py-4 font-headline font-bold text-on-surface-variant hover:bg-surface-container-high rounded-2xl transition-all active:scale-95">
+                Back
+            </button>
+<button class="flex-[2] py-4 px-8 rounded-2xl custom-gradient-btn text-white font-headline font-extrabold text-lg shadow-lg shadow-primary/30 flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
+                Create Event <span class="material-symbols-outlined">rocket_launch</span>
+</button>
+</div>
+</div>
+</body></html>

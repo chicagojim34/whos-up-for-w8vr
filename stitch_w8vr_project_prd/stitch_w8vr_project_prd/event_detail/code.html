@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-tertiary": "#ffffff",
+              "on-primary": "#ffffff",
+              "on-error-container": "#93000a",
+              "on-secondary-fixed-variant": "#294e3f",
+              "background": "#f8f9fa",
+              "surface-tint": "#4849da",
+              "surface-variant": "#e1e3e4",
+              "primary-container": "#5d5fef",
+              "outline": "#767586",
+              "surface-dim": "#d9dadb",
+              "on-secondary-fixed": "#002115",
+              "on-background": "#191c1d",
+              "inverse-on-surface": "#f0f1f2",
+              "inverse-surface": "#2e3132",
+              "surface-container-low": "#f3f4f5",
+              "surface-container-highest": "#e1e3e4",
+              "on-tertiary-fixed-variant": "#404752",
+              "error-container": "#ffdad6",
+              "on-surface": "#191c1d",
+              "surface-container": "#edeeef",
+              "on-tertiary-fixed": "#151c25",
+              "on-tertiary-container": "#f5f7ff",
+              "tertiary-fixed": "#dce3f0",
+              "primary": "#4343d5",
+              "on-secondary-container": "#476c5b",
+              "secondary-container": "#c3ecd7",
+              "secondary-fixed": "#c3ecd7",
+              "tertiary": "#535a64",
+              "on-surface-variant": "#464555",
+              "secondary": "#416656",
+              "surface": "#f8f9fa",
+              "tertiary-container": "#6b727d",
+              "outline-variant": "#c7c4d7",
+              "surface-bright": "#f8f9fa",
+              "on-error": "#ffffff",
+              "surface-container-high": "#e7e8e9",
+              "on-primary-fixed": "#07006c",
+              "inverse-primary": "#c1c1ff",
+              "error": "#ba1a1a",
+              "on-primary-fixed-variant": "#2e2bc2",
+              "on-secondary": "#ffffff",
+              "surface-container-lowest": "#ffffff",
+              "tertiary-fixed-dim": "#c0c7d3",
+              "secondary-fixed-dim": "#a8cfbc",
+              "primary-fixed-dim": "#c1c1ff",
+              "primary-fixed": "#e1e0ff",
+              "on-primary-container": "#faf7ff"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .status-ring-pulse {
+            animation: pulse 2s infinite ease-in-out;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .glass-header {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface">
+<!-- Top Navigation (Contextually Suppressed labels per JSON requirement, keeping branding) -->
+<header class="fixed top-0 w-full z-50 glass-header shadow-sm shadow-[#4343d508]">
+<div class="flex justify-between items-center px-6 py-3 w-full max-w-2xl mx-auto">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container-high">
+<img alt="User Profile" data-alt="close-up portrait of a friendly man with short dark hair and a warm smile, soft natural studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpWpvBOERAk1JoHlMw6IAHbiiAAREpreh-ZxVoBlw3SN8gqlYd_9x8C4tdVSYqvVPNPmHuf-umC9FMzBDDWjDt4G2JAN-uOM380_Ywa7JySd_enCGI3jfjbJRpvUjWcfYt8DQ2Zhbwa0J95zDmsi7IoQnwCRH9bmpSGQEWVjap6J_8GPgmlkeyhAWOxR3_nDYKFrNyEBS62f6p25NRA9ZiZAgvhE760QgrdHqpbQS1yAqe5iY_jtbTXPFVjmiuBQ_hQKK1YWWS27g"/>
+</div>
+<span class="text-[#5D5FEF] font-black tracking-tight text-2xl font-headline">W8VR</span>
+</div>
+<button class="p-2 rounded-full hover:bg-slate-100 transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-slate-500">search</span>
+</button>
+</div>
+</header>
+<main class="pt-16 pb-32 max-w-2xl mx-auto">
+<!-- Hero Section -->
+<section class="relative w-full h-[397px] overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="vibrant nightlife scene with blurred purple and blue stage lights at a modern electronic music venue" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrLwUFRah2IU0XcqTgRcaVawQeSjQHZWq9lR4blNZaI5su1kDVTYD4EF1CQMNWAZcKuTpAHXjf_fLp-l-0x6LEHgp8iKJX9WO4wxz3iiPfjSNmXfZ_Mq5IWCDEW4zTxgsOSi7fVTy2Dl9hlsXze2UDD86elHqr2DSKhG7QiBWRHeOqa9bbckVAU0pnBhozs88OKoup-e33L7j5LzpvibcpSiAC31vAEVkCmQMF2XXZqncvDEiIhMlYmtZkuN_WHpXl6rnJDt60wys"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8">
+<div class="flex items-center gap-2 mb-3">
+<span class="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white">Social Gathering</span>
+<span class="bg-[#D1FAE5] text-secondary px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">lock</span>
+                        Private
+                    </span>
+</div>
+<h1 class="text-white font-headline font-extrabold text-4xl md:text-5xl leading-tight mb-2">Neon Midnight Social</h1>
+<div class="flex flex-wrap items-center gap-4 text-white/90 font-medium">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-lg">calendar_today</span>
+<span>Friday, Oct 24</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-lg">location_on</span>
+<span>The Glass House, Austin</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Capacity & Stats Bento -->
+<section class="px-6 -mt-8 relative z-10 grid grid-cols-12 gap-4">
+<!-- Capacity Ring Card -->
+<div class="col-span-12 md:col-span-5 bg-surface-container-lowest p-6 rounded-xl shadow-sm flex flex-col items-center justify-center">
+<div class="relative w-32 h-32 mb-4">
+<!-- Background Circle -->
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-secondary-container" cx="64" cy="64" fill="transparent" r="56" stroke="currentColor" stroke-width="8"></circle>
+<!-- Progress Circle -->
+<circle class="text-primary-container" cx="64" cy="64" fill="transparent" r="56" stroke="currentColor" stroke-dasharray="351.8" stroke-dashoffset="100" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-2xl font-headline font-bold text-on-surface">12</span>
+<span class="text-[10px] font-bold uppercase text-on-surface-variant tracking-tighter">Spots Left</span>
+</div>
+</div>
+<p class="text-body-md text-on-surface-variant text-center font-medium">80% Capacity Reached</p>
+</div>
+<!-- RSVP Counts Grid -->
+<div class="col-span-12 md:col-span-7 grid grid-cols-2 gap-3">
+<div class="bg-surface-container-low p-4 rounded-xl flex flex-col justify-between">
+<span class="text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Confirmed</span>
+<span class="text-display-lg text-primary leading-none mt-2">48</span>
+</div>
+<div class="bg-surface-container-low p-4 rounded-xl flex flex-col justify-between">
+<span class="text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Maybe</span>
+<span class="text-display-lg text-tertiary leading-none mt-2">15</span>
+</div>
+<div class="bg-surface-container-low p-4 rounded-xl flex flex-col justify-between">
+<span class="text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Interested</span>
+<span class="text-display-lg text-on-surface-variant leading-none mt-2">102</span>
+</div>
+<div class="bg-error-container p-4 rounded-xl flex flex-col justify-between">
+<span class="text-label-md font-bold text-on-error-container uppercase tracking-wider">Waitlist</span>
+<span class="text-display-lg text-on-error-container leading-none mt-2">3</span>
+</div>
+</div>
+</section>
+<!-- Description & Logistics -->
+<section class="px-6 mt-10">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-1.5 h-8 bg-surface-tint rounded-full"></div>
+<h2 class="text-headline-sm font-headline font-bold">The Vibe</h2>
+</div>
+<p class="text-body-md text-on-surface-variant leading-relaxed mb-8">
+                Join us for an evening of atmospheric beats and high-fidelity social curation. We're taking over The Glass House to celebrate the launch of W8VR's new creator tools. Expect curated cocktails, late-night snacks, and a signature visual set.
+            </p>
+<!-- Logistic Threads (Comments) -->
+<div class="bg-surface-container-low rounded-xl p-6">
+<h3 class="font-headline font-bold text-lg mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">forum</span>
+                    Logistics Coordination
+                </h3>
+<div class="space-y-6">
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+<img alt="User" data-alt="portrait of a woman with curly brown hair wearing a simple white shirt, bright outdoor natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD62NcuFcI8n5YsuK_-G8l7zbbKMlPfsY3UvuR6aAzNBm5Pg-_QlY72scakJpni4D5uZLvMGiWOvucabHsS-1mthq9kNX_inSz_4wtQelydEb-5jGOoMIWMRwkssncrI5pFC1dC_E6oGUpRYH849SUk1YfDKMNHYnpL6D__CPgtDdDZBAqaB90P8QwMRt_JVpz7T65ipm8f-SBRe5q0qWTY3JAn5j-ReGr7v_2vGK99ysxx03plcKLJ5nk-U_ZmKzic4aimwMHeMzE"/>
+</div>
+<div>
+<div class="bg-surface-container-lowest p-3 rounded-xl rounded-tl-none shadow-sm">
+<p class="text-sm font-medium text-on-surface-variant">Is there a specific dress code for the neon theme?</p>
+</div>
+<span class="text-[10px] text-slate-400 mt-1 ml-1">Sarah M. • 2h ago</span>
+</div>
+</div>
+<div class="flex gap-3 flex-row-reverse">
+<div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+<img alt="User" data-alt="headshot of a man with glasses and a beard in a professional navy blazer, soft office lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTvnjsTZEUrTHsJD9-5G4XsW9e4baVOcOxge0RG3sQsiFcosrPIrlvSEkOfQLuJlhNe1VzsMcVpAzDONP9Qnv0TXRUyT8BmhDnfyY6ioS-93VaItbQXuqxR02fA7Sxm4NP01EvnwmfkV0KinCPfSPRegIIOFs1_oH4sKSxkruVCtqfxF1Ifj8UpzmXjKqZkmzf1eVIwmtf-HjV2Ny2sEOFvf5Ct511-bd5Tf6vTY0PxDl3nLg4BNiBFpJs4v7dFF05tB6dGaQOEec"/>
+</div>
+<div class="flex flex-col items-end">
+<div class="bg-primary/10 p-3 rounded-xl rounded-tr-none border-l-2 border-primary">
+<p class="text-sm font-medium text-primary">Think 'Elevated Cyberpunk' – reflective textures and dark tones encouraged!</p>
+</div>
+<span class="text-[10px] text-primary/60 mt-1 mr-1">Host • 1h ago</span>
+</div>
+</div>
+</div>
+<div class="mt-6 relative">
+<input class="w-full bg-surface-container-lowest border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 placeholder:text-slate-400" placeholder="Add to the thread..." type="text"/>
+<button class="absolute right-2 top-1.5 p-1.5 text-primary hover:bg-primary/5 rounded-lg transition-colors">
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Contextual RSVP Sticky Action Bar (Status Aware) -->
+<!-- Applying Soft Mint background (secondary-container) if user was 'Attending' -->
+<div class="fixed bottom-0 left-0 right-0 z-50 p-6 bg-white/80 backdrop-blur-xl shadow-[0_-8px_24px_rgba(67,67,213,0.06)] rounded-t-[2.5rem]">
+<div class="max-w-md mx-auto flex flex-col gap-4">
+<!-- Active State Logic: RSVP Selection -->
+<div class="flex gap-2">
+<button class="flex-1 py-4 bg-gradient-to-br from-primary to-primary-container text-white rounded-xl font-headline font-bold text-sm shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-95 duration-150">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                    Going
+                </button>
+<button class="flex-1 py-4 bg-surface-container-high text-on-surface-variant rounded-xl font-headline font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-200 transition-colors">
+                    Maybe
+                </button>
+<button class="px-6 py-4 bg-surface-container-high text-on-surface-variant rounded-xl font-headline font-bold text-sm hover:bg-error-container hover:text-error transition-colors">
+                    No
+                </button>
+</div>
+<!-- Dynamic Status Confirmation (Appears if user clicked 'Going') -->
+<div class="flex items-center justify-center gap-2 text-secondary font-bold text-xs uppercase tracking-widest">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+                You are confirmed for this event
+            </div>
+</div>
+</div>
+<!-- Hidden Map Overlay Mockup (Editorial Detail) -->
+<div class="fixed right-6 top-24 z-20 md:block hidden">
+<div class="w-48 h-48 rounded-2xl overflow-hidden border-4 border-white shadow-xl rotate-3 hover:rotate-0 transition-transform duration-500 cursor-pointer">
+<img class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" data-alt="minimalist street map of downtown Austin Texas with clean lines and soft grey aesthetic" data-location="Austin, TX" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJrlGQDsQGIeK1gByhHReQzUD_1GrNKrqEDYfUSXlFGKL9dCh5Kt5cN4_AzRBf1Hv_2eQwOdziOhymriZF_7EdCfU80KXehk5ozR6toYcvlFTS8jrCj7XpgRktY_7dFPUQr1mPyCf7gVBR_MgWgl7Hnu45oB2ssO0Oemr8okhDdGi7ZiG8-AT5ngVnfDxlTfxvKGsFvpSEFkKkQAVUw6VOJ-JPNbZ-K1mf-0akRwXeVAA5G9QOIayMjWaJ8wNdQN6r8Y_4wrBKSH4"/>
+<div class="absolute bottom-3 left-3 bg-white/90 backdrop-blur px-2 py-1 rounded-lg">
+<span class="text-[10px] font-black uppercase text-on-surface">View Map</span>
+</div>
+</div>
+</div>
+</body></html>

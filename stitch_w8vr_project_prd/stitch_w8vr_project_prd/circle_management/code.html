@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>W8VR | Circles</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-tertiary": "#ffffff",
+              "on-primary": "#ffffff",
+              "on-error-container": "#93000a",
+              "on-secondary-fixed-variant": "#294e3f",
+              "background": "#f8f9fa",
+              "surface-tint": "#4849da",
+              "surface-variant": "#e1e3e4",
+              "primary-container": "#5d5fef",
+              "outline": "#767586",
+              "surface-dim": "#d9dadb",
+              "on-secondary-fixed": "#002115",
+              "on-background": "#191c1d",
+              "inverse-on-surface": "#f0f1f2",
+              "inverse-surface": "#2e3132",
+              "surface-container-low": "#f3f4f5",
+              "surface-container-highest": "#e1e3e4",
+              "on-tertiary-fixed-variant": "#404752",
+              "error-container": "#ffdad6",
+              "on-surface": "#191c1d",
+              "surface-container": "#edeeef",
+              "on-tertiary-fixed": "#151c25",
+              "on-tertiary-container": "#f5f7ff",
+              "tertiary-fixed": "#dce3f0",
+              "primary": "#4343d5",
+              "on-secondary-container": "#476c5b",
+              "secondary-container": "#c3ecd7",
+              "secondary-fixed": "#c3ecd7",
+              "tertiary": "#535a64",
+              "on-surface-variant": "#464555",
+              "secondary": "#416656",
+              "surface": "#f8f9fa",
+              "tertiary-container": "#6b727d",
+              "outline-variant": "#c7c4d7",
+              "surface-bright": "#f8f9fa",
+              "on-error": "#ffffff",
+              "surface-container-high": "#e7e8e9",
+              "on-primary-fixed": "#07006c",
+              "inverse-primary": "#c1c1ff",
+              "error": "#ba1a1a",
+              "on-primary-fixed-variant": "#2e2bc2",
+              "on-secondary": "#ffffff",
+              "surface-container-lowest": "#ffffff",
+              "tertiary-fixed-dim": "#c0c7d3",
+              "secondary-fixed-dim": "#a8cfbc",
+              "primary-fixed-dim": "#c1c1ff",
+              "primary-fixed": "#e1e0ff",
+              "on-primary-container": "#faf7ff"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .status-ring {
+            background: conic-gradient(from 0deg, #5d5fef 0%, #5d5fef 75%, #416656 75%, #416656 100%);
+        }
+        .glass-header {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+        }
+        .primary-gradient {
+            background: linear-gradient(135deg, #4343d5 0%, #5d5fef 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 glass-header shadow-sm shadow-[#4343d508]">
+<div class="flex justify-between items-center px-6 py-3 w-full max-w-md mx-auto">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-container/20">
+<img alt="Profile" data-alt="professional headshot of a smiling young woman with warm natural lighting and soft focus office background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBedXeAn8i1RBoJRk50ZHjqcJIGySn8MdDhKcK7jYSCOFzCAVKuWNIUTibPh-8v5-QuXFm0VtukxjPK0f5uU6-BeJDEkcC3n42Bnen10Xj1iMFa7S-MHxOMEOAg8qOXUzZJTzpL3Za1mSqCFNrWw6sahVpNofosnLDD6adam5Z8U3qcbdJRuCpy0Gui8NU74PdWyNpFlEvYjSVY6aD64rilava9RcvGC4TSE9-AoHLdCNvXRKC80RbgBaWJ4wxfg3JInTMY3LiwuQI"/>
+</div>
+<h1 class="font-headline font-black tracking-tight text-2xl text-primary">W8VR</h1>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-on-surface-variant">search</span>
+</button>
+</div>
+</header>
+<main class="pt-20 pb-32 max-w-md mx-auto px-6">
+<!-- Header Section -->
+<section class="mb-10">
+<h2 class="font-headline font-bold text-3xl tracking-tight text-on-surface mb-2">My Circles</h2>
+<p class="text-on-surface-variant body-md leading-relaxed">Manage your private friend groups and active community connections.</p>
+</section>
+<!-- Bento Grid: My Circles -->
+<section class="grid grid-cols-2 gap-4 mb-12">
+<!-- Featured Circle Card (Asymmetric) -->
+<div class="col-span-2 bg-surface-container-lowest rounded-xl p-6 shadow-sm shadow-primary/5 relative overflow-hidden group">
+<div class="absolute -right-4 -top-4 w-24 h-24 rounded-full status-ring opacity-20 group-hover:scale-110 transition-transform duration-500"></div>
+<div class="relative z-10">
+<div class="flex items-center justify-between mb-4">
+<span class="label-md px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-container">Active</span>
+<div class="flex -space-x-2">
+<img class="w-8 h-8 rounded-full border-2 border-white" data-alt="portrait of a young man with a friendly expression in outdoor setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXVnigFtTYTeza3jpRYNITN8seevrII3VyqmIS4betqqS7QU1wp2SLu9vH0ZM-jeQJNG0gT72CGEUfVBnV4gMvq9zo_CmlYQcdLpgedLID9bTzCCQcRZI0gJudNLUA8VdJUcuszrUtpxKqQufCe-4d1zilpAlNMS4NUx2oWIKTxsrRpojCU5Eb3vw-VpTVcE7yl4vedCoWCCeILGNa0fRlXctVGLVm_Do7jSZFvOOycDHfKFCFLO9yCSbxNIwOQgDhJjGQgaZvKgk"/>
+<img class="w-8 h-8 rounded-full border-2 border-white" data-alt="headshot of a woman with glasses and confident smile in minimalist studio" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWjMoLFeVzyZ6O02F73TtpGwqquFr0t5wcy7gxspNA0nvpMtAPI86vvVNoWD5YHIKmvV5twg0Bwo0tdbu_RmWiHwuyGrgvRoeduLGtEFK7SZAubWuo_8dHeBKsFO-zREC4N-gcrE9ktTl0KITjOWJXXee4zL_XAjrXoANx9GLCFqPv2mD84JsadBQmq9g6J2rXoDjnqM7fxZ9jUZ6Q4x4gJ5w0B3gRgCCj8Mrw3a2HvGWjz6LFUKJlXi2EVa7F0Rfpt9ZiW9JVrbE"/>
+<div class="w-8 h-8 rounded-full bg-surface-container-high border-2 border-white flex items-center justify-center text-[10px] font-bold text-on-surface-variant">+12</div>
+</div>
+</div>
+<h3 class="font-headline font-bold text-xl mb-1">College Friends</h3>
+<p class="text-on-surface-variant text-sm mb-4">Planning: Weekend Tahoe Trip</p>
+<div class="flex gap-2">
+<button class="flex-1 py-2 rounded-lg bg-surface-container-high text-on-surface font-semibold text-xs transition-colors hover:bg-surface-dim">
+<span class="material-symbols-outlined align-middle text-[16px] mr-1">share</span> Share Link
+                        </button>
+<button class="w-12 h-10 flex items-center justify-center rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-dim">
+<span class="material-symbols-outlined">qr_code_2</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Smaller Circle Card -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-sm shadow-primary/5">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3">
+<span class="material-symbols-outlined">family_history</span>
+</div>
+<h3 class="font-headline font-bold text-base mb-1">The Family</h3>
+<p class="text-on-surface-variant text-xs mb-3">5 Members</p>
+<div class="w-full h-1 bg-surface-container-high rounded-full overflow-hidden">
+<div class="w-1/4 h-full bg-primary rounded-full"></div>
+</div>
+</div>
+<!-- Smaller Circle Card -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-sm shadow-primary/5">
+<div class="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center text-secondary mb-3">
+<span class="material-symbols-outlined">fitness_center</span>
+</div>
+<h3 class="font-headline font-bold text-base mb-1">Gym Squad</h3>
+<p class="text-on-surface-variant text-xs mb-3">8 Members</p>
+<div class="w-full h-1 bg-surface-container-high rounded-full overflow-hidden">
+<div class="w-3/4 h-full bg-secondary rounded-full"></div>
+</div>
+</div>
+</section>
+<!-- Create New Circle FAB-style Button -->
+<button class="w-full primary-gradient text-white rounded-xl py-4 font-headline font-bold text-lg shadow-xl shadow-primary/20 flex items-center justify-center gap-2 mb-12 active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-weight="fill">add_circle</span>
+            Create New Circle
+        </button>
+<!-- Contact Sync / Find Friends Section -->
+<section class="bg-primary-container text-white rounded-2xl p-6 mb-12 relative overflow-hidden">
+<div class="absolute right-0 bottom-0 opacity-10 pointer-events-none">
+<span class="material-symbols-outlined text-[120px]">contacts</span>
+</div>
+<div class="relative z-10">
+<h2 class="font-headline font-bold text-xl mb-2">Find your people</h2>
+<p class="text-primary-fixed text-sm mb-5 opacity-90 leading-relaxed">Sync your contacts to find friends already on W8VR or invite them to join your circles.</p>
+<button class="bg-white text-primary font-bold px-6 py-2.5 rounded-lg text-sm shadow-sm hover:bg-on-primary-container transition-colors">
+                    Find Friends
+                </button>
+</div>
+</section>
+<!-- Discover Public Circles -->
+<section>
+<div class="flex items-center justify-between mb-6">
+<h2 class="font-headline font-bold text-2xl tracking-tight text-on-surface">Discover</h2>
+<button class="text-primary font-bold text-sm">View All</button>
+</div>
+<div class="space-y-4">
+<!-- Discover Card 1 -->
+<div class="flex items-center p-4 bg-surface-container-low rounded-xl group hover:bg-surface-container-high transition-colors">
+<div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+<img alt="Study Group" class="w-full h-full object-cover" data-alt="group of college students studying together with laptops and coffee in a modern bright library" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFGZvcOX3q_y3ATbkBmRVYwghFHaY2NfRexEPTUXjqzNNAE8h8UASE4RHHKg4eyfdApD3gIfxaDSTKp4gMqhDlZuvzB1AXKuOVkXBKSqKsnLFTtffkDuQ3NEoOmwJzVrgTaC9J_EiPeFF6Zli7XdpwUYOqyANzwGKgyOMMfXRwcrT0LcaZjaHnP8A1iBb8rH30FrlO87_qS78wifYBbUEP46gA9-B5T0TvlUoafo97Kq-B6T7knUSFtYa-QyhIfdR8mb0dd0IK57M"/>
+</div>
+<div class="ml-4 flex-grow">
+<div class="flex items-center gap-2 mb-0.5">
+<span class="label-md text-[10px] bg-white/60 px-1.5 py-0.5 rounded text-on-surface-variant border border-outline-variant/20 uppercase tracking-tighter">Campus</span>
+<span class="text-xs text-secondary font-medium flex items-center">
+<span class="material-symbols-outlined text-[12px] mr-1">group</span> 1.2k
+                            </span>
+</div>
+<h3 class="font-bold text-on-surface">SF Design Collective</h3>
+<p class="text-on-surface-variant text-xs line-clamp-1">Bi-weekly meetups for local creators.</p>
+</div>
+<button class="ml-2 w-10 h-10 rounded-full bg-white flex items-center justify-center text-primary shadow-sm hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+<!-- Discover Card 2 -->
+<div class="flex items-center p-4 bg-surface-container-low rounded-xl group hover:bg-surface-container-high transition-colors">
+<div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+<img alt="Hiking" class="w-full h-full object-cover" data-alt="scenic view of mountains with silhouettes of hikers during a vibrant sunrise with orange and purple sky" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQ0UxA-huStL_ibYegEbLRGYsnoK9ttVcJDn1CzJLEbE8BsH4xh1Yo9szSA1hNQ3X9eJFg6V_v_uX87eU2uMbEu91gLvwN3QyDxWmuraI8rZjfqe1FZ-RrOz_14eT0FnR3x42l-0B-mmi8EpuaDh-yDjzMKNZOr5C6tS_jykYo0tLH-SVYxfeFb3W9pT17Lcgzg5kzM7-dQpDoPabJ27H5v950p0GLPfkwxGpm0jO8ydvmoAPqbd_wYmJhOW6nQJRskwB_LMNzNeI"/>
+</div>
+<div class="ml-4 flex-grow">
+<div class="flex items-center gap-2 mb-0.5">
+<span class="label-md text-[10px] bg-white/60 px-1.5 py-0.5 rounded text-on-surface-variant border border-outline-variant/20 uppercase tracking-tighter">Nature</span>
+<span class="text-xs text-secondary font-medium flex items-center">
+<span class="material-symbols-outlined text-[12px] mr-1">group</span> 450
+                            </span>
+</div>
+<h3 class="font-bold text-on-surface">Bay Area Trekkers</h3>
+<p class="text-on-surface-variant text-xs line-clamp-1">Exploring the best hidden trails together.</p>
+</div>
+<button class="ml-2 w-10 h-10 rounded-full bg-white flex items-center justify-center text-primary shadow-sm hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+<!-- Discover Card 3 -->
+<div class="flex items-center p-4 bg-surface-container-low rounded-xl group hover:bg-surface-container-high transition-colors">
+<div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+<img alt="Reading" class="w-full h-full object-cover" data-alt="aesthetic overhead shot of an open book next to a ceramic cup of tea on a rustic wooden table with soft lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYTY16CCVwUK-wI_eoJ43yAQMPnuMRzFOofoAKKydojJ1hnMkkKEpkRkZ3Oj8JgXuA3DdpUeYniwNpbI2tRMiTJbJpKDMR6-YwjnT-uGfEyaOkjPRbUtwU-rM7WL82_qXPNCPOnYV_50pCn0FwPsnITgkHDH74DAOFNW6swPlwD1ie_NUqjkYQKXPVwdbcuXhHnsFOi2OJCMPQM1qKRJ2IRvAi0TJf4K6i6bcG-qZLC7fKL3lhiAOxZTMuBUz6vj_8BN-vhszDw_U"/>
+</div>
+<div class="ml-4 flex-grow">
+<div class="flex items-center gap-2 mb-0.5">
+<span class="label-md text-[10px] bg-white/60 px-1.5 py-0.5 rounded text-on-surface-variant border border-outline-variant/20 uppercase tracking-tighter">Culture</span>
+<span class="text-xs text-secondary font-medium flex items-center">
+<span class="material-symbols-outlined text-[12px] mr-1">group</span> 890
+                            </span>
+</div>
+<h3 class="font-bold text-on-surface">Modern Lit Society</h3>
+<p class="text-on-surface-variant text-xs line-clamp-1">Monthly wine and discussion nights.</p>
+</div>
+<button class="ml-2 w-10 h-10 rounded-full bg-white flex items-center justify-center text-primary shadow-sm hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full rounded-t-3xl z-50 glass-header shadow-[0_-8px_24px_rgba(67,67,213,0.06)]">
+<div class="flex justify-around items-center pb-6 pt-3 px-4 w-full max-w-md mx-auto">
+<a class="flex flex-col items-center justify-center text-slate-400 hover:text-[#5D5FEF] transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">style</span>
+<span class="font-headline font-bold text-[10px] uppercase tracking-wider mt-1">Feed</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 hover:text-[#5D5FEF] transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">explore</span>
+<span class="font-headline font-bold text-[10px] uppercase tracking-wider mt-1">Discovery</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 hover:text-[#5D5FEF] transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="font-headline font-bold text-[10px] uppercase tracking-wider mt-1">Post</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#5D5FEF] scale-110 transition-transform active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="font-headline font-bold text-[10px] uppercase tracking-wider mt-1">Circles</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 hover:text-[#5D5FEF] transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-headline font-bold text-[10px] uppercase tracking-wider mt-1">Alerts</span>
+</a>
+</div>
+</nav>
+</body></html>

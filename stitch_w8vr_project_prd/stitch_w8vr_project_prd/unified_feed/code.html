@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>W8VR Unified Feed</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-tertiary": "#ffffff",
+              "on-primary": "#ffffff",
+              "on-error-container": "#93000a",
+              "on-secondary-fixed-variant": "#294e3f",
+              "background": "#f8f9fa",
+              "surface-tint": "#4849da",
+              "surface-variant": "#e1e3e4",
+              "primary-container": "#5d5fef",
+              "outline": "#767586",
+              "surface-dim": "#d9dadb",
+              "on-secondary-fixed": "#002115",
+              "on-background": "#191c1d",
+              "inverse-on-surface": "#f0f1f2",
+              "inverse-surface": "#2e3132",
+              "surface-container-low": "#f3f4f5",
+              "surface-container-highest": "#e1e3e4",
+              "on-tertiary-fixed-variant": "#404752",
+              "error-container": "#ffdad6",
+              "on-surface": "#191c1d",
+              "surface-container": "#edeeef",
+              "on-tertiary-fixed": "#151c25",
+              "on-tertiary-container": "#f5f7ff",
+              "tertiary-fixed": "#dce3f0",
+              "primary": "#4343d5",
+              "on-secondary-container": "#476c5b",
+              "secondary-container": "#c3ecd7",
+              "secondary-fixed": "#c3ecd7",
+              "tertiary": "#535a64",
+              "on-surface-variant": "#464555",
+              "secondary": "#416656",
+              "surface": "#f8f9fa",
+              "tertiary-container": "#6b727d",
+              "outline-variant": "#c7c4d7",
+              "surface-bright": "#f8f9fa",
+              "on-error": "#ffffff",
+              "surface-container-high": "#e7e8e9",
+              "on-primary-fixed": "#07006c",
+              "inverse-primary": "#c1c1ff",
+              "error": "#ba1a1a",
+              "on-primary-fixed-variant": "#2e2bc2",
+              "on-secondary": "#ffffff",
+              "surface-container-lowest": "#ffffff",
+              "tertiary-fixed-dim": "#c0c7d3",
+              "secondary-fixed-dim": "#a8cfbc",
+              "primary-fixed-dim": "#c1c1ff",
+              "primary-fixed": "#e1e0ff",
+              "on-primary-container": "#faf7ff"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .status-ring-pulse {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body min-h-screen pb-32 selection:bg-primary-fixed">
+<!-- Top App Bar (Shared Component) -->
+<header class="fixed top-0 w-full z-50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl shadow-sm shadow-[#4343d508]">
+<div class="flex justify-between items-center px-6 py-3 w-full max-w-md mx-auto">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Close-up portrait of a friendly young man with short dark hair in a bright outdoor setting, soft bokeh background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKM00b42zOfRZwOldqxztwb6PodZk8i9Bf38Rf9bSfjs-Cfkgh15Mfol6KEL5vxDowlfJHRy-CKjuknPbl9xeTQluYf3EwLkTJ6YcotzIwRrIvYHc9ImNVQuyWv4hlsmacVVQNsbmmzXKEcu2pkQ6jhpqmzrS-_wuFAXn2Mdz8JeWOq5--YPQI4be5RyzYfcMsYOjPzhb_kRlgEcVuR3I5ocdN4uxAt8csLlZssRZcrZJZhCv5lr1wq2U7Mv3-5wgvVQPIMIDamlM"/>
+</div>
+</div>
+<h1 class="text-[#5D5FEF] dark:text-[#7e7ff4] font-['Plus_Jakarta_Sans'] font-black tracking-tight text-2xl">W8VR</h1>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="search">search</span>
+</button>
+</div>
+</header>
+<main class="pt-20 px-4 w-full max-w-md mx-auto">
+<!-- Horizontal Category Chips -->
+<section class="mt-4 mb-8">
+<div class="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+<button class="flex-none px-5 py-2.5 rounded-full bg-primary-container text-on-primary-container font-headline font-bold text-sm shadow-sm">
+                    All Events
+                </button>
+<button class="flex-none px-5 py-2.5 rounded-full bg-surface-container-high text-on-surface-variant font-headline font-medium text-sm hover:bg-surface-container-highest transition-colors">
+                    Active
+                </button>
+<button class="flex-none px-5 py-2.5 rounded-full bg-surface-container-high text-on-surface-variant font-headline font-medium text-sm hover:bg-surface-container-highest transition-colors">
+                    Dining
+                </button>
+<button class="flex-none px-5 py-2.5 rounded-full bg-surface-container-high text-on-surface-variant font-headline font-medium text-sm hover:bg-surface-container-highest transition-colors">
+                    Entertainment
+                </button>
+<button class="flex-none px-5 py-2.5 rounded-full bg-surface-container-high text-on-surface-variant font-headline font-medium text-sm hover:bg-surface-container-highest transition-colors">
+                    Wellness
+                </button>
+</div>
+</section>
+<!-- Feed List -->
+<div class="space-y-10">
+<!-- Event Card 1: Status Aware (Confirmed) -->
+<article class="relative group">
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_12px_32px_-12px_rgba(67,67,213,0.12)] border-l-[6px] border-primary transition-transform duration-300 hover:-translate-y-1">
+<div class="relative h-56">
+<img alt="Event Image" class="w-full h-full object-cover" data-alt="Interior of a modern high-end rooftop restaurant at night with warm hanging lights and city skyline visible through windows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYzlBHSBFmZ2L_q7l59oukZEP8ZPOodZwp95d283YczEok9AvmiFrozvfHVLVeJSSLH-0PS4cfOiDsQMdojk7xhceJ2srHOdE6Ycw_gpFA05HX2ZE2lYAWTanTOxOhABDJluD5Vvj6OCSiKfqubaWlP7r1A7OtaSBC2S4Y2Q4_AhbT5k9_l__Ujclc4DyNzvk8VPYjA7TvlU1KcE8ywrtPbWMyQFjO3Hq6nhYvD5PTuIMcH4jpkPwdxn_DrJHdiU_h4Y5O4w2M9fc"/>
+<div class="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="location_on" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<span class="text-[11px] font-bold text-on-background uppercase tracking-wider">0.8 mi away</span>
+</div>
+<!-- Status Ring Overlay -->
+<div class="absolute -bottom-6 right-6 w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg p-1">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-secondary-container" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-width="4"></circle>
+<circle class="text-primary-container" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-dasharray="175.9" stroke-dashoffset="44" stroke-width="4"></circle>
+</svg>
+<span class="absolute text-[10px] font-black text-primary font-headline">75%</span>
+</div>
+</div>
+<div class="p-6 pb-4">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold text-secondary uppercase tracking-widest bg-secondary-container px-2 py-0.5 rounded">Joined Circle</span>
+<span class="text-on-surface-variant font-headline font-bold text-sm">7:30 PM Today</span>
+</div>
+<h3 class="text-2xl font-headline font-extrabold text-on-surface leading-tight mb-2 tracking-tight">Vanguard Social Dinner</h3>
+<p class="text-on-surface-variant text-sm line-clamp-2 font-medium">Exclusive evening of curated networking at The Glass House Rooftop.</p>
+</div>
+<div class="px-6 py-4 bg-primary-fixed/30 flex items-center justify-between">
+<div class="flex -space-x-2">
+<div class="w-7 h-7 rounded-full border-2 border-white bg-slate-200 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="close-up of a smiling woman with glasses" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAyK0sg7nBIRkm-r1VLRKS7hrmSV-BncbrQQFxFxVT2CKS2HHHBhb5YXcqeeB0dHh6ODEdlFY8aNemLWL7pnoglTixcr1E0XNU7xBXcy588OOiFBdI_oG_p8ecdl6QNfmBfWdbW86P16FI-KPEuBSyUZpx8a-6FeiTUZ51_3byWzrrBa5AkJ_w-j7DJu5uPc1a8SOeBYsfStL9yehMU8CSdJh6NMDKoQh3s1Nlqnu3ecEhp0eS2SDqxsZYO39MZ91vJBEsZkqYG9Gs"/>
+</div>
+<div class="w-7 h-7 rounded-full border-2 border-white bg-slate-200 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Portrait of a man with a beard" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAK5rPKCa3K3VEIDj-ikpmG3aCIBs5LyJaCbRIO_uB8jKQ0QIGcP1Q7cHZFtdO_mx_D4vnIo_6BAD-movxEXnDzCtbqZg506nZNwF7R2__nlC2XPRtuPFykUk7fs6xsT_jwTTp36Pq6VpRMnQWTW-LAwIej_ljrM_C8PDzipJJhqLvpH9_sNpNUAUT1I24uaAKA8zdujf8RRX_Tt1WTvwQDtwd4adIVM7UUAi4dZKwLuSLNZ1Chs7seG3tS5rn4Q_Ih-4iZxgMz6Pk"/>
+</div>
+<div class="w-7 h-7 rounded-full border-2 border-white bg-primary-container flex items-center justify-center">
+<span class="text-[9px] text-white font-bold">+2</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-xs font-bold text-primary">Attending</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Event Card 2: Public Event -->
+<article class="relative">
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_12px_32px_-12px_rgba(67,67,213,0.12)] transition-transform duration-300 hover:-translate-y-1">
+<div class="relative h-56">
+<img alt="Event Image" class="w-full h-full object-cover" data-alt="Group of people hiking through a vibrant green pine forest with sunlight filtering through the canopy" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcdtwo3NBXiqfRdHxzHJxsdiYRUBsG-cyyUnB6ViqRRSvb3rXTAwdQ_mMS1L3EC6oQREYsJ6E1rCKqyyJjx1iQY_SCmcuXxmHRtwh7JEUZRe4LTGssdC-Eea1j3w2A3mTYij088jJ3gjwZTYHQuKs9F2wX66jDR_9j-3rvnQd584FZ7FSz56jxvpsGizIucR3WdzbCUendaHdspqZwmxlrfs1vkli37xqndgXfiNR-2YY7VS1O5697jVbRNBjyGD3kbJDiGP2hoEw"/>
+<div class="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="location_on" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<span class="text-[11px] font-bold text-on-background uppercase tracking-wider">4.2 mi away</span>
+</div>
+</div>
+<div class="p-6 pb-4">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold text-tertiary uppercase tracking-widest bg-surface-container-high px-2 py-0.5 rounded">Public Event</span>
+<span class="text-on-surface-variant font-headline font-bold text-sm">Sat, 9:00 AM</span>
+</div>
+<h3 class="text-2xl font-headline font-extrabold text-on-surface leading-tight mb-2 tracking-tight">Morning Ridge Trail</h3>
+<p class="text-on-surface-variant text-sm font-medium">Medium-intensity 5k hike followed by breakfast at the trailhead cafe.</p>
+</div>
+<div class="px-6 py-4 flex items-center justify-between border-t border-surface-container">
+<span class="text-xs font-medium text-on-surface-variant">12 others interested</span>
+<button class="bg-primary text-white text-xs font-bold px-5 py-2 rounded-full hover:bg-primary-container transition-all active:scale-95">
+                            RSVP Now
+                        </button>
+</div>
+</div>
+</article>
+<!-- Event Card 3: Urgency (Status Pulse) -->
+<article class="relative">
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_12px_32px_-12px_rgba(67,67,213,0.12)] transition-transform duration-300 hover:-translate-y-1">
+<div class="relative h-56">
+<img alt="Event Image" class="w-full h-full object-cover" data-alt="Atmospheric shot of a live music performance with moody blue and purple stage lighting and silhouetted crowd" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRIr6zaWDlVx9aJnwA8XQ2Ix3zB8LiBDNzH5SUxdCUo2PrBSYfDMdiXSNyX2G9NMyiBUAMFqVIq6W75hT1T7kMCQz6rqQdtwrWDyeCXFtbyNMhVwTQL4ls_rGyIIYlxwNPBof943T3WjXK-ZSk6Gv9O7mItT1OPfoLMyzBAIygsaSu8ZSLeScdmZL_2uFai9xq7F_joFkM3Po_IDsJwUBlvCFBSCGML3RhxS9ScXrBxmR_LlxlG3RhTjZHMncuTywzOhbqq2TWQJE"/>
+<div class="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="location_on" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<span class="text-[11px] font-bold text-on-background uppercase tracking-wider">1.5 mi away</span>
+</div>
+<!-- Pulse Status -->
+<div class="absolute top-4 left-4 bg-error text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 status-ring-pulse">
+<span class="material-symbols-outlined text-[14px]" data-icon="bolt" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<span class="text-[10px] font-black uppercase tracking-tighter">Filling Fast</span>
+</div>
+</div>
+<div class="p-6 pb-4">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold text-secondary uppercase tracking-widest bg-secondary-container px-2 py-0.5 rounded">Jazz Collective</span>
+<span class="text-on-surface-variant font-headline font-bold text-sm">Tomorrow, 9:00 PM</span>
+</div>
+<h3 class="text-2xl font-headline font-extrabold text-on-surface leading-tight mb-2 tracking-tight">Underground Vinyl Set</h3>
+<p class="text-on-surface-variant text-sm font-medium">A curated selection of rare soul and jazz imports in a cozy basement setting.</p>
+</div>
+<div class="px-6 py-4 bg-tertiary-fixed/30 flex items-center justify-between">
+<span class="text-xs font-bold text-tertiary-container">Pending RSVP</span>
+<div class="flex gap-2">
+<button class="p-2 rounded-full hover:bg-white transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="close">close</span>
+</button>
+<button class="bg-white text-primary text-xs font-bold px-5 py-2 rounded-full shadow-sm hover:bg-primary hover:text-white transition-all">
+                                I'm In
+                            </button>
+</div>
+</div>
+</div>
+</article>
+</div>
+</main>
+<!-- Floating Action Button -->
+<button class="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary-container text-white shadow-[0_8px_24px_rgba(67,67,213,0.3)] flex items-center justify-center z-50 transition-transform active:scale-90 hover:scale-105">
+<span class="material-symbols-outlined text-3xl" data-icon="add">add</span>
+</button>
+<!-- Bottom Navigation Bar (Shared Component) -->
+<nav class="fixed bottom-0 w-full rounded-t-3xl z-50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl shadow-[0_-8px_24px_rgba(67,67,213,0.06)]">
+<div class="flex justify-around items-center pb-6 pt-3 px-4 w-full max-w-md mx-auto">
+<!-- Active: Feed -->
+<a class="flex flex-col items-center justify-center text-[#5D5FEF] dark:text-[#7e7ff4] scale-110 transition-transform" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="style" style="font-variation-settings: 'FILL' 1;">style</span>
+<span class="font-['Inter'] font-bold text-[10px] uppercase tracking-wider">Feed</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-[#5D5FEF] transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="explore">explore</span>
+<span class="font-['Inter'] font-bold text-[10px] uppercase tracking-wider">Discovery</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-[#5D5FEF] transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="add_circle">add_circle</span>
+<span class="font-['Inter'] font-bold text-[10px] uppercase tracking-wider">Post</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-[#5D5FEF] transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="group">group</span>
+<span class="font-['Inter'] font-bold text-[10px] uppercase tracking-wider">Circles</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-[#5D5FEF] transition-all active:scale-90 duration-150 relative" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="notifications">notifications</span>
+<span class="font-['Inter'] font-bold text-[10px] uppercase tracking-wider">Alerts</span>
+<span class="absolute top-0 right-1 w-2 h-2 bg-error rounded-full"></span>
+</a>
+</div>
+</nav>
+</body></html>

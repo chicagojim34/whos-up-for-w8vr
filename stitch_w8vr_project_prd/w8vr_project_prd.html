@@ -1,0 +1,68 @@
+PRD: Who’s Up for W8VR? (Project Codename)
+Author: [Your Name/Role]
+Status: Draft / For Review
+Date: March 24, 2026
+
+1. Executive Summary
+Social isolation and the "activation energy" required to organize group hangouts are at an all-time high. Existing tools are either too professional (LinkedIn/Eventbrite), too broad (Facebook), or too focused on 1:1 interaction (iMessage/WhatsApp).
+The Core Problem: Group messages (WhatsApp/iMessage) create "Coordination Chaos." Hosts struggle to track RSVPs across dozens of texts, while participants are bombarded with notifications for events they aren't attending. W8VR (pronounced "Whatever") is a mobile-first platform that eliminates this noise, providing a streamlined intent-broadcast system for friend circles and public communities.
+
+2. Goals & Objectives
+Primary Goal: Increase the frequency of real-world social interactions by reducing coordination friction.
+Success Metrics:
+- L7/L28 Engagement: Number of events joined per user per month.
+- Noise Reduction: % decrease in non-essential notifications compared to baseline group chats.
+- Host Conversion: % of users who move from "Joiner" to "Host."
+- Friction Metric: Time from "Event Created" to "Capacity Reached."
+
+3. User Personas
+- The Catalyst (Host): Wants to organize but dreads the "who's in?" follow-up chase.
+- The Joiner (User): Wants to see what's happening but is "muted" on most group chats.
+- The Explorer (Public): Looking for community-led events without needing to be in the "inner circle."
+
+4. Functional Requirements
+4.1. Core User Features (The Joiner)
+- Unified Feed (P0): Ranked list of events from "Joined Circles" and "Public".
+- Event Categories (P0): Filter/Browse by type (Sports, Dining, etc.).
+- Smart Muting (P0): Non-RSVPs are excluded from updates.
+- Notification Tiers (P1): Only "Close Friends" new events or "Yes" RSVP updates.
+- Discovery Map (P1): Map-view of events.
+- My Schedule (P2): Calendar view.
+
+4.2. Hosting & Logistics (The Catalyst)
+- Event Creator (P0): Simple What/Where/When flow.
+- Segmented Broadcast (P0): Updates to specific RSVP groups.
+- Response Dashboard (P0): Real-time list of Yes/No/Maybe/Waitlist.
+- Capacity Management (P0): Max spots + auto-waitlist.
+- Privacy Toggles (P0): Private, Hidden, or Open.
+- Waitlist Promotion (P1): Auto-notification for replacements.
+
+4.3. Social Graph & Identity
+- Circle Management (P0): Create/Join "Circles".
+- Contact Sync (P0): Match mobile contacts.
+- Safety Tools (P0): Block, report, and remove.
+- Group Sharing (P1): Deep links/QR codes.
+
+5. Event Taxonomy
+Categories: Active, Dining, Entertainment, Home/Social, Creative, Professional, Community.
+
+6. Design Language
+6.1. Visual Principles
+- Frictionless: Minimal text; use cards and chips.
+- Status-Aware: Cards change based on RSVP status.
+- Action-Oriented: "Post an Event" button is most prominent.
+
+6.2. The Palette
+- Primary: Electric Indigo (#5D5FEF)
+- Secondary: Soft Mint (#D1FAE5)
+- Quiet: Dusty Gray (#9CA3AF)
+- Surface: Off-White (#F9FAFB)
+
+6.3. Component Specs
+- The Event Card: Top: Image/Icon; Middle: Title + Proximity; Bottom: Status Badge.
+- The Status Ring: Circular progress bar showing capacity (Green=Open, Red=Full).
+
+7. Technical Considerations
+- Communication Model: Announcement platform, not chat. "Logistic Threads" for comments.
+- Non-Goal: Full-featured IM. Deep-link to WhatsApp/iMessage for long-form social.
+- Data Privacy: Private addresses hidden until "Yes" RSVP.
