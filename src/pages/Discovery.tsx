@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, Lock, ArrowRight } from 'lucide-react';
+import { MapPin, Navigation, Lock, ArrowRight, Sparkles } from 'lucide-react';
 import cx from 'classnames';
 import { useApp } from '../hooks/useApp';
 import { useToast } from '../hooks/useToast';
 import { CATEGORY_DEFINITIONS, type EventCategory } from '../lib/categories';
 import { StatusRing } from '../components/StatusRing';
+import { LiveEventCatalogModal } from '../components/LiveEventCatalogModal';
 import { capacityPct, confirmedCount, rankEvents } from '../lib/events';
 import { formatDistance, formatWhen } from '../lib/datetime';
 
@@ -16,6 +17,7 @@ export default function Discovery() {
 
   const [selectedCategory, setSelectedCategory] = useState<EventCategory>('All Events');
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [isCatalogOpen, setIsCatalogOpen] = useState(false);
 
   const visibleEvents = useMemo(() => {
     const list = events.filter(
@@ -31,11 +33,21 @@ export default function Discovery() {
 
   return (
     <div className="flex flex-col pb-28 px-6 bg-surface animate-fade-in max-w-4xl mx-auto w-full">
-      <header className="mt-4 mb-4">
-        <h1 className="font-headline font-black text-3xl text-text-dark">Discovery map</h1>
-        <p className="text-text-medium text-sm mt-1">
-          What is happening nearby, with capacity at a glance.
-        </p>
+      <header className="mt-4 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="font-headline font-black text-3xl text-text-dark">Discovery map</h1>
+          <p className="text-text-medium text-sm mt-1">
+            What is happening nearby, with capacity at a glance.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsCatalogOpen(true)}
+          className="btn btn-primary text-xs py-2 px-3.5 flex items-center gap-1.5 shrink-0 self-start sm:self-auto font-headline font-bold shadow-sm"
+        >
+          <Sparkles size={14} />
+          <span>Explore Live Tours &amp; Games</span>
+        </button>
       </header>
 
       <div
@@ -254,6 +266,15 @@ export default function Discovery() {
           Private venues show a 500m radius until you RSVP yes
         </span>
       </div>
+
+      <LiveEventCatalogModal
+        isOpen={isCatalogOpen}
+        onClose={() => setIsCatalogOpen(false)}
+        onSelectEvent={event => {
+          setIsCatalogOpen(false);
+          navigate('/post', { state: { prefillEvent: event } });
+        }}
+      />
     </div>
   );
 }

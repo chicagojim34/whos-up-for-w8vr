@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, CheckCircle2, X, Zap, Search, VolumeX, RotateCcw, Clock } from 'lucide-react';
+import { MapPin, CheckCircle2, X, Zap, Search, VolumeX, RotateCcw, Clock, Sparkles } from 'lucide-react';
 import cx from 'classnames';
 import { useApp } from '../hooks/useApp';
 import { useToast } from '../hooks/useToast';
 import { CategoryChip } from '../components/CategoryChip';
 import { CATEGORY_DEFINITIONS, type EventCategory } from '../lib/categories';
 import { StatusRing } from '../components/StatusRing';
+import { LiveEventCatalogModal } from '../components/LiveEventCatalogModal';
 import { AvatarGroup } from '../components/AvatarGroup';
 import {
   capacityPct,
@@ -29,6 +30,7 @@ export default function Feed() {
   const [activeCategory, setActiveCategory] = useState<EventCategory>('All Events');
   const [searchQuery, setSearchQuery] = useState('');
   const [showMuted, setShowMuted] = useState(false);
+  const [isCatalogOpen, setIsCatalogOpen] = useState(false);
 
   const query = searchQuery.trim().toLowerCase();
 
@@ -113,6 +115,37 @@ export default function Feed() {
             />
           ))}
         </div>
+      </div>
+
+      {/* Live Tour Discovery Banner */}
+      <div className="px-6 mb-4">
+        <button
+          type="button"
+          onClick={() => setIsCatalogOpen(true)}
+          className="w-full p-3.5 bg-gradient-to-r from-primary-fixed/50 via-surface-low to-secondary-container/40 rounded-2xl border border-primary/20 flex items-center justify-between gap-3 text-left hover:shadow-xs transition-all cursor-pointer group"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+              <Sparkles size={18} />
+            </span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-headline font-bold text-xs text-text-dark truncate">
+                  Looking for concerts, sports, or comedy to host?
+                </span>
+                <span className="badge bg-primary text-white text-[9px] uppercase font-bold tracking-wider shrink-0">
+                  Live Catalog
+                </span>
+              </div>
+              <p className="text-[11px] text-text-medium mt-0.5 truncate">
+                Browse 134,000+ live events from Ticketmaster &amp; SeatGeek with 1-click group RSVP setup
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-headline font-bold text-primary shrink-0 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+            Browse →
+          </span>
+        </button>
       </div>
 
       {/* Grid */}
@@ -353,6 +386,15 @@ export default function Feed() {
           </button>
         </div>
       )}
+
+      <LiveEventCatalogModal
+        isOpen={isCatalogOpen}
+        onClose={() => setIsCatalogOpen(false)}
+        onSelectEvent={event => {
+          setIsCatalogOpen(false);
+          navigate('/post', { state: { prefillEvent: event } });
+        }}
+      />
     </div>
   );
 }

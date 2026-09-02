@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Calendar,
   Clock,
@@ -34,6 +34,8 @@ import {
   type AutoPullEvent,
   type EventSubType,
 } from '../services/eventAutoPull';
+import { searchLiveEventCatalog } from '../services/liveEventCatalog';
+import { LiveEventCatalogModal } from '../components/LiveEventCatalogModal';
 
 const COVER_OPTIONS = [
   { id: 'neon', label: 'Neon midnight', url: '/neon_midnight_1774367472687.png' },
@@ -59,6 +61,9 @@ function defaultDate(): string {
 
 export default function PostEvent() {
   const navigate = useNavigate();
+  const locationHook = useLocation();
+  const prefill = (locationHook.state as { prefillEvent?: AutoPullEvent } | null)?.prefillEvent;
+
   const { createEvent, circles } = useApp();
   const toast = useToast();
 
@@ -67,35 +72,37 @@ export default function PostEvent() {
   // Auto-Pull & Ticketed Event State
   const [autoSearchQuery, setAutoSearchQuery] = useState('');
   const [autoSuggestions, setAutoSuggestions] = useState<AutoPullEvent[]>([]);
-  const [isTicketedEvent, setIsTicketedEvent] = useState(false);
-  const [eventSubType, setEventSubType] = useState<EventSubType | undefined>();
-  const [performerOrTeam, setPerformerOrTeam] = useState('');
-  const [showtime, setShowtime] = useState('8:00 PM');
-  const [doorsTime, setDoorsTime] = useState('6:30 PM');
-  const [meetupTime, setMeetupTime] = useState('5:30 PM');
-  const [meetupLocation, setMeetupLocation] = useState('');
-  const [venueAddress, setVenueAddress] = useState('');
-  const [ticketUrl, setTicketUrl] = useState('');
-  const [ticketSectionInfo, setTicketSectionInfo] = useState('');
-  const [priceRange, setPriceRange] = useState('');
-  const [bagPolicy, setBagPolicy] = useState('');
-  const [ageRestriction, setAgeRestriction] = useState('');
-  const [lineup, setLineup] = useState<string[]>([]);
+  const [isTicketedEvent, setIsTicketedEvent] = useState(Boolean(prefill));
+  const [eventSubType, setEventSubType] = useState<EventSubType | undefined>(prefill?.eventSubType);
+  const [performerOrTeam, setPerformerOrTeam] = useState(prefill?.performerOrTeam || '');
+  const [showtime, setShowtime] = useState(prefill?.showtime || '8:00 PM');
+  const [doorsTime, setDoorsTime] = useState(prefill?.doorsTime || '6:30 PM');
+  const [meetupTime, setMeetupTime] = useState(prefill?.suggestedMeetupTime || '5:30 PM');
+  const [meetupLocation, setMeetupLocation] = useState(prefill?.suggestedMeetupLocation || '');
+  const [venueAddress, setVenueAddress] = useState(prefill?.venueAddress || '');
+  const [ticketUrl, setTicketUrl] = useState(prefill?.ticketUrl || '');
+  const [ticketSectionInfo, setTicketSectionInfo] = useState(prefill?.ticketSectionInfo || '');
+  const [priceRange, setPriceRange] = useState(prefill?.priceRange || '');
+  const [bagPolicy, setBagPolicy] = useState(prefill?.bagPolicy || '');
+  const [ageRestriction, setAgeRestriction] = useState(prefill?.ageRestriction || 'All Ages');
+  const [lineup, setLineup] = useState<string[]>(prefill?.lineup || []);
   const [customImageUrl, setCustomImageUrl] = useState('');
-  const [pulledImagePresets, setPulledImagePresets] = useState<string[]>([]);
+  const [pulledImagePresets, setPulledImagePresets] = useState<string[]>(
+    prefill ? [prefill.image, ...(prefill.additionalImages || [])] : []
+  );
 
   // Step 1
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState<EventCategory>('Active');
-  const [coverImage, setCoverImage] = useState(COVER_OPTIONS[0].url);
-  const [vibe, setVibe] = useState('');
+  const [title, setTitle] = useState(prefill?.title || '');
+  const [category, setCategory] = useState<EventCategory>(prefill ? 'Entertainment' : 'Active');
+  const [coverImage, setCoverImage] = useState(prefill?.image || COVER_OPTIONS[0].url);
+  const [vibe, setVibe] = useState(prefill?.description || '');
   const [gameId, setGameId] = useState('');
 
   // Step 2
   const [date, setDate] = useState(defaultDate);
   const [time, setTime] = useState('20:00');
   const [locationType, setLocationType] = useState<'physical' | 'virtual'>('physical');
-  const [location, setLocation] = useState('');
+  const [location, setLocation] = useState(prefill?.venue || '');
   const [exactAddress, setExactAddress] = useState('');
   const [virtualLink, setVirtualLink] = useState('');
 
@@ -143,14 +150,36 @@ export default function PostEvent() {
     setStep(s => (s + 1) as 1 | 2 | 3);
   };
 
-  const handleAutoSearchChange = (q: string) => {
+  const [isCatalogModalOpen, setIsCatalogModalOpen] = useState(false);
+
+  const handleAutoSearchChange = async (q: string) => {
     setAutoSearchQuery(q);
     if (!q.trim()) {
       setAutoSuggestions([]);
       return;
     }
-    const results = searchAutoPullEvents(q);
-    setAutoSuggestions(results);
+    const localResults = searchAutoPullEvents(q);
+    setAutoSuggestions(localResults);
+
+    if (q.trim().length >= 2) {
+      try {
+        const liveResults = await searchLiveEventCatalog({ keyword: q, size: 6 });
+        if (liveResults.length > 0) {
+          const seen = new Set(localResults.map(e => `${e.performerOrTeam.toLowerCase()}-${e.date}`));
+          const merged = [...localResults];
+          for (const live of liveResults) {
+            const key = `${live.performerOrTeam.toLowerCase()}-${live.date}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              merged.push(live);
+            }
+          }
+          setAutoSuggestions(merged.slice(0, 8));
+        }
+      } catch {
+        // preserve local results
+      }
+    }
   };
 
   const handleSelectAutoEvent = (autoEvt: AutoPullEvent) => {
@@ -294,12 +323,16 @@ export default function PostEvent() {
                     <Sparkles size={15} />
                     <span>Auto-Pull Live Event Details</span>
                   </div>
-                  <span className="badge bg-primary text-white font-bold text-[9px] uppercase tracking-widest">
-                    Live Catalog
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsCatalogModalOpen(true)}
+                    className="badge bg-primary hover:bg-primary-dark text-white font-bold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer py-1 px-2.5 shadow-2xs"
+                  >
+                    <Sparkles size={11} /> Browse Full Catalog (134k+ Live)
+                  </button>
                 </div>
                 <p className="text-xs text-text-medium mb-3">
-                  Search concerts, sports, comedy, festivals, or paste a Ticketmaster / SeatGeek / AXS URL.
+                  Search live concerts, sports, comedy, or paste a Ticketmaster / SeatGeek / AXS URL.
                 </p>
 
                 <div className="relative">
@@ -330,6 +363,19 @@ export default function PostEvent() {
                       Parse URL
                     </button>
                   )}
+                </div>
+
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-[10px] text-text-medium font-medium">
+                    ⚡ Live sync with Ticketmaster &amp; SeatGeek
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsCatalogModalOpen(true)}
+                    className="text-[11px] font-headline font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    Open Live Catalog Browser →
+                  </button>
                 </div>
 
                 {/* Auto Suggestions Dropdown */}
@@ -1274,6 +1320,12 @@ export default function PostEvent() {
           )}
         </div>
       </FloatingBar>
+
+      <LiveEventCatalogModal
+        isOpen={isCatalogModalOpen}
+        onClose={() => setIsCatalogModalOpen(false)}
+        onSelectEvent={handleSelectAutoEvent}
+      />
     </div>
   );
 }
