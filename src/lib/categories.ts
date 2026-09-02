@@ -6,11 +6,20 @@ import {
   Paintbrush,
   Briefcase,
   HeartHandshake,
+  Gamepad2,
   Sparkles,
   type LucideIcon,
 } from 'lucide-react';
 
-/** The PRD's seven-category taxonomy, plus the "everything" pseudo-filter. */
+/**
+ * The PRD's seven-category taxonomy, plus "Online/Play" and the "everything"
+ * pseudo-filter.
+ *
+ * Online/Play is an addition to the PRD's seven. An online game is not an
+ * in-person Entertainment outing and not a Home/Social game night — it has no
+ * venue, and the async ones have no start time either — so folding it into an
+ * existing category would have made the feed filter lie.
+ */
 export type EventCategory =
   | 'All Events'
   | 'Active'
@@ -19,7 +28,8 @@ export type EventCategory =
   | 'Home/Social'
   | 'Creative'
   | 'Professional'
-  | 'Community';
+  | 'Community'
+  | 'Online/Play';
 
 export interface CategoryDefinition {
   label: EventCategory;
@@ -36,6 +46,7 @@ export const CATEGORY_DEFINITIONS: CategoryDefinition[] = [
   { label: 'Creative', icon: Paintbrush, desc: 'Workshops, arts and crafts, jams' },
   { label: 'Professional', icon: Briefcase, desc: 'Networking, coworking, tech talks' },
   { label: 'Community', icon: HeartHandshake, desc: 'Volunteering, local causes' },
+  { label: 'Online/Play', icon: Gamepad2, desc: 'Word games, chess, party games with your circle' },
 ];
 
 /** Categories a host can actually choose (everything but the pseudo-filter). */

@@ -7,6 +7,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ShareSheet } from '../components/ShareSheet';
 import { Avatar } from '../components/Avatar';
+import { CirclePlaySection } from '../components/CirclePlaySection';
 import { StatusRing } from '../components/StatusRing';
 import NotFound from './NotFound';
 import { ME } from '../types';
@@ -180,6 +181,8 @@ export default function CircleDetail() {
           </ul>
         )}
       </section>
+
+      {circle.isJoined && <CirclePlaySection circle={circle} />}
 
       {/* Members */}
       <section>

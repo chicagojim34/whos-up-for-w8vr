@@ -81,6 +81,36 @@ with an urgency pulse from 90% — the PRD's "green = open, red = full".
   notifies the promoted guest and the host.
 - **RSVP is idempotent.** Pressing "Going" twice is a no-op, not a toggle.
 
+## Online games
+
+`src/lib/games.ts` is the catalogue of games a circle can play together — NYT
+Games, Words with Friends, Chess.com, Board Game Arena, Jackbox and others.
+Each entry records how a session runs (`daily`, `async`, `live`), which
+platforms it is on, and how people join each other (`handle`, `roomCode`,
+`link`, `share`).
+
+**On "linking accounts".** None of these services offer public OAuth or a
+friend API to third parties — you cannot sign a user into Words with Friends
+or read their NYT friend list from outside. So `gameHandles` is a *directory*,
+not a connected login: you save the username you already use, your circles can
+read it, and a tap opens the game. Anything that claimed to be a real account
+link here would be lying to the user.
+
+Game links are ordinary `https` URLs on purpose. On iOS and Android a
+universal link opens the installed app and falls back to the web version,
+which is more reliable than guessing at `scheme://` URLs that fail silently
+when the app is not installed.
+
+Circle recommendations (`recommendForCircle`) rank by how many members already
+have a handle saved, then by how little coordination the game needs — daily
+and turn-based games outrank live ones, because a circle that struggles to
+pick a restaurant will not get eight people online at once.
+
+`Online/Play` is an eighth category on top of the PRD's seven. An online game
+is neither an in-person Entertainment outing nor a Home/Social game night — it
+has no venue, and the async ones have no start time — so folding it into an
+existing category would have made the feed filter lie.
+
 ## Demo state
 
 State persists to `localStorage` under `w8vr.v3.*`. Reads are guarded — a
