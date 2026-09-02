@@ -148,9 +148,23 @@ export interface NotificationTiers {
   publicNearby: boolean;
 }
 
+export type UserRole = 'admin' | 'moderator' | 'user';
+
+export interface RoleAssignment {
+  userId: string;
+  userName: string;
+  role: UserRole;
+  assignedBy: string;
+  assignedAt: number;
+}
+
 export interface UserProfile {
   id: string;
   name: string;
+  email?: string;
+  role: UserRole;
+  photoURL?: string;
+  authProvider?: 'google' | 'password' | 'demo';
   tagline: string;
   homeCity: string;
   notifications: NotificationTiers;

@@ -8,14 +8,18 @@ import {
   LayoutDashboard,
   Calendar,
   RotateCcw,
+  LogIn,
 } from 'lucide-react';
 import cx from 'classnames';
 
 import { AppProvider } from './context/AppContext';
+import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './hooks/useAuth';
 import { useApp } from './hooks/useApp';
 import { useDeviceMode, type DeviceMode } from './hooks/useDeviceMode';
 import { Avatar } from './components/Avatar';
 import { ConfirmDialog } from './components/ConfirmDialog';
+import { AuthModal } from './components/AuthModal';
 import { useConfirm } from './hooks/useConfirm';
 import Feed from './pages/Feed';
 import PostEvent from './pages/PostEvent';
@@ -40,7 +44,8 @@ const NAV_ITEMS = [
 const Navigation = ({ isDesktop }: { isDesktop: boolean }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { alerts, user, resetToDefaults } = useApp();
+  const { alerts, resetToDefaults } = useApp();
+  const { user: authUser, openAuthModal, isAuthenticated } = useAuth();
   const confirm = useConfirm();
 
   const unreadAlertsCount = alerts.filter(a => a.unread).length;
@@ -111,14 +116,36 @@ const Navigation = ({ isDesktop }: { isDesktop: boolean }) => {
         <div className="flex flex-col gap-3 w-full mt-auto pt-4">
           <button
             onClick={() => navigate('/settings')}
-            className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-surface-low hover:bg-surface-high transition-colors text-left w-full"
+            className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-surface-low hover:bg-surface-high transition-colors text-left w-full cursor-pointer group"
           >
-            <Avatar name={user.name} size={36} />
-            <span className="flex flex-col">
-              <span className="font-headline font-bold text-xs text-text-dark">{user.name}</span>
-              <span className="text-[10px] font-bold text-primary">{user.tagline}</span>
+            <div className="relative">
+              <Avatar name={authUser.name} size={36} />
+              {authUser.role === 'admin' && (
+                <span
+                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center text-[9px] shadow-2xs"
+                  title="System Admin"
+                >
+                  👑
+                </span>
+              )}
+            </div>
+            <span className="flex flex-col min-w-0">
+              <span className="font-headline font-bold text-xs text-text-dark truncate">{authUser.name}</span>
+              <span className="text-[10px] font-bold text-primary truncate">
+                {authUser.role === 'admin' ? '👑 Admin' : authUser.tagline}
+              </span>
             </span>
           </button>
+
+          {!isAuthenticated && (
+            <button
+              type="button"
+              onClick={openAuthModal}
+              className="btn btn-primary text-xs py-2 w-full flex items-center justify-center gap-1.5 font-bold shadow-2xs cursor-pointer"
+            >
+              <LogIn size={13} /> Sign in / Register
+            </button>
+          )}
 
           <button
             onClick={handleReset}
@@ -178,24 +205,50 @@ const Header = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useApp();
+  const { user: authUser, openAuthModal, isAuthenticated } = useAuth();
   const isPost = location.pathname === '/post';
 
   return (
     <header className="app-header">
       <button
-        className="flex items-center gap-2.5"
-        onClick={() => navigate('/')}
-        aria-label="W8VR home"
+        className="flex items-center gap-2.5 cursor-pointer"
+        onClick={() => navigate('/settings')}
+        aria-label="W8VR user profile & settings"
       >
-        <Avatar name={user.name} size={32} />
-        <span className="logo">W8VR</span>
+        <div className="relative">
+          <Avatar name={authUser.name} size={32} />
+          {authUser.role === 'admin' && (
+            <span
+              className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center text-[9px] shadow-2xs"
+              title="Admin"
+            >
+              👑
+            </span>
+          )}
+        </div>
+        <div className="flex flex-col text-left">
+          <span className="logo leading-none">W8VR</span>
+          <span className="text-[9px] font-bold text-primary truncate max-w-[90px]">
+            {authUser.name.split(' ')[0]} {authUser.role === 'admin' && '👑'}
+          </span>
+        </div>
       </button>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
         {viewportMode !== 'mobile' && (
           <DeviceSwitcher mode={mode} isOverridden={isOverridden} setMode={setMode} />
         )}
+
+        {!isAuthenticated && (
+          <button
+            type="button"
+            onClick={openAuthModal}
+            className="btn btn-outline text-xs py-1.5 px-2.5 flex items-center gap-1 font-bold shadow-2xs cursor-pointer"
+          >
+            <LogIn size={13} /> Sign In
+          </button>
+        )}
+
         {isPost ? (
           <span className="badge bg-primary-fixed text-primary-container text-[10px] font-bold">
             CREATOR MODE
@@ -216,6 +269,7 @@ const Header = ({
 function AppContent() {
   const location = useLocation();
   const { mode, viewportMode, isOverridden, setMode } = useDeviceMode();
+  const { isAuthModalOpen, closeAuthModal } = useAuth();
   const isPost = location.pathname === '/post';
   const isEventDetail = location.pathname.startsWith('/event/');
 
@@ -265,6 +319,8 @@ function AppContent() {
           </Routes>
         </main>
       </div>
+
+      <AuthModal isOpen={isAuthModalOpen} onClose={closeAuthModal} />
     </div>
   );
 }
@@ -272,9 +328,11 @@ function AppContent() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AppProvider>
-        <AppContent />
-      </AppProvider>
+      <AuthProvider>
+        <AppProvider>
+          <AppContent />
+        </AppProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

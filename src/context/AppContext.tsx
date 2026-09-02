@@ -20,8 +20,9 @@ import {
   INITIAL_EVENTS,
   INITIAL_USER,
 } from '../lib/seed';
-import { clearAllSlices, isArray, isObject, loadSlice, saveSlice } from '../lib/storage';
+import { clearAllSlices, isArray, loadSlice, saveSlice } from '../lib/storage';
 import { attendeesWith, myRsvp, spotsLeft, waitlistQueue } from '../lib/events';
+import { useAuth } from '../hooks/useAuth';
 
 export type RsvpIntent = 'going' | 'maybe' | 'no';
 
@@ -128,9 +129,7 @@ const uid = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile>(() =>
-    loadSlice('user', INITIAL_USER, isObject)
-  );
+  const { user, updateCurrentUserProfile } = useAuth();
   const [events, setEvents] = useState<EventItem[]>(() =>
     loadSlice('events', INITIAL_EVENTS, isArray)
   );
@@ -145,7 +144,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
   const [reports, setReports] = useState<ReportItem[]>(() => loadSlice('reports', [], isArray));
 
-  useEffect(() => saveSlice('user', user), [user]);
   useEffect(() => saveSlice('events', events), [events]);
   useEffect(() => saveSlice('circles', circles), [circles]);
   useEffect(() => saveSlice('alerts', alerts), [alerts]);
@@ -531,14 +529,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const blockUser = useCallback(
     (userId: string, name: string) => {
-      setUser(prev =>
-        prev.blockedIds.includes(userId)
-          ? prev
-          : {
-              ...prev,
-              blockedIds: [...prev.blockedIds, userId],
-              closeFriendIds: prev.closeFriendIds.filter(id => id !== userId),
-            }
+      if (!user.blockedIds.includes(userId)) {
+        updateCurrentUserProfile({ blockedIds: [...user.blockedIds, userId] });
+      }
+      setEvents(prev =>
+        prev.map(e =>
+          e.hostId === userId
+            ? { ...e, muted: true }
+            : { ...e, comments: e.comments.filter(c => c.authorId !== userId) }
+        )
       );
       pushAlert({
         type: 'circle',
@@ -547,40 +546,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         desc: 'Their events and messages are hidden from you. You can undo this in Settings.',
       });
     },
-    [pushAlert]
+    [user.blockedIds, updateCurrentUserProfile, pushAlert]
   );
 
-  const unblockUser = useCallback((userId: string) => {
-    setUser(prev => ({ ...prev, blockedIds: prev.blockedIds.filter(id => id !== userId) }));
-  }, []);
+  const unblockUser = useCallback(
+    (userId: string) => {
+      updateCurrentUserProfile({ blockedIds: user.blockedIds.filter((id: string) => id !== userId) });
+    },
+    [user.blockedIds, updateCurrentUserProfile]
+  );
 
-  const toggleCloseFriend = useCallback((userId: string) => {
-    setUser(prev => ({
-      ...prev,
-      closeFriendIds: prev.closeFriendIds.includes(userId)
-        ? prev.closeFriendIds.filter(id => id !== userId)
-        : [...prev.closeFriendIds, userId],
-    }));
-  }, []);
+  const toggleCloseFriend = useCallback(
+    (userId: string) => {
+      updateCurrentUserProfile({
+        closeFriendIds: user.closeFriendIds.includes(userId)
+          ? user.closeFriendIds.filter((id: string) => id !== userId)
+          : [...user.closeFriendIds, userId],
+      });
+    },
+    [user.closeFriendIds, updateCurrentUserProfile]
+  );
 
   /**
    * Saves the username you use on a service. Not an OAuth link — these games
    * have no public login for third parties — so it is a handle your circles
    * can read and act on.
    */
-  const linkGameAccount = useCallback((gameId: string, handle: string) => {
-    const trimmed = handle.trim();
-    if (!trimmed) return;
-    setUser(prev => ({ ...prev, gameHandles: { ...prev.gameHandles, [gameId]: trimmed } }));
-  }, []);
+  const linkGameAccount = useCallback(
+    (gameId: string, handle: string) => {
+      const trimmed = handle.trim();
+      if (!trimmed) return;
+      updateCurrentUserProfile({ gameHandles: { ...user.gameHandles, [gameId]: trimmed } });
+    },
+    [user.gameHandles, updateCurrentUserProfile]
+  );
 
-  const unlinkGameAccount = useCallback((gameId: string) => {
-    setUser(prev => {
-      const next = { ...prev.gameHandles };
+  const unlinkGameAccount = useCallback(
+    (gameId: string) => {
+      const next = { ...user.gameHandles };
       delete next[gameId];
-      return { ...prev, gameHandles: next };
-    });
-  }, []);
+      updateCurrentUserProfile({ gameHandles: next });
+    },
+    [user.gameHandles, updateCurrentUserProfile]
+  );
 
   const reportEvent = useCallback(
     (eventId: string, reason: string, note: string) => {
@@ -607,27 +615,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateNotifications = useCallback(
     (patch: Partial<Omit<NotificationTiers, 'logistics'>>) => {
-      setUser(prev => ({ ...prev, notifications: { ...prev.notifications, ...patch } }));
+      updateCurrentUserProfile({ notifications: { ...user.notifications, ...patch } });
     },
-    []
+    [user.notifications, updateCurrentUserProfile]
   );
 
   const updateProfile = useCallback(
     (patch: Partial<Pick<UserProfile, 'name' | 'tagline' | 'homeCity'>>) => {
-      setUser(prev => ({ ...prev, ...patch }));
+      updateCurrentUserProfile(patch);
     },
-    []
+    [updateCurrentUserProfile]
   );
 
   const resetToDefaults = useCallback(() => {
     clearAllSlices(SLICES);
-    setUser(INITIAL_USER);
+    updateCurrentUserProfile(INITIAL_USER);
     setEvents(INITIAL_EVENTS);
     setCircles(INITIAL_CIRCLES);
     setAlerts(INITIAL_ALERTS);
     setContacts(INITIAL_CONTACTS);
     setReports([]);
-  }, []);
+  }, [updateCurrentUserProfile]);
 
   // ---------------------------------------------------------- Selections ---
 

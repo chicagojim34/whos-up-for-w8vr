@@ -62,6 +62,9 @@ const HOUR = 3_600_000;
 export const INITIAL_USER: UserProfile = {
   id: ME,
   name: 'Felix Vance',
+  email: 'felix.vance@w8vr.app',
+  role: 'admin',
+  authProvider: 'demo',
   tagline: 'HOST • AUSTIN, TX',
   homeCity: 'Austin, TX',
   notifications: {
@@ -77,6 +80,17 @@ export const INITIAL_USER: UserProfile = {
     wwf: 'felix_vance',
     chesscom: 'felixvance',
   },
+};
+
+export const INITIAL_USER_ROLES: Record<string, import('../types').UserRole> = {
+  [ME]: 'admin',
+  u0: 'admin',      // Aneka Rao
+  u1: 'moderator',  // Jocelyn Park
+  u2: 'user',       // Marcus Bell
+  u3: 'moderator',  // Elena Rostova
+  u11: 'admin',     // Priya Nair
+  u15: 'admin',     // Kofi Mensah
+  u18: 'admin',     // Oscar Lindqvist
 };
 
 export const INITIAL_EVENTS: EventItem[] = [

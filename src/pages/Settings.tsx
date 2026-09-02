@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
-import { Bell, ShieldOff, Flag, UserCheck, RotateCcw, Gamepad2, Radio } from 'lucide-react';
+import { Bell, ShieldOff, Flag, UserCheck, RotateCcw, Gamepad2, Radio, Crown, LogIn, LogOut, ShieldCheck } from 'lucide-react';
 import cx from 'classnames';
 import { useApp } from '../hooks/useApp';
+import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import { useConfirm } from '../hooks/useConfirm';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Avatar } from '../components/Avatar';
 import { GameAccounts } from '../components/GameAccounts';
+import { AdminRoleManager } from '../components/AdminRoleManager';
 import { formatAgo } from '../lib/datetime';
 import {
   getTicketmasterKey,
@@ -57,7 +59,6 @@ const ToggleRow = ({ id, title, description, checked, disabled, onChange }: Togg
 
 export default function Settings() {
   const {
-    user,
     events,
     circles,
     reports,
@@ -66,6 +67,7 @@ export default function Settings() {
     toggleCloseFriend,
     resetToDefaults,
   } = useApp();
+  const { user: authUser, isAdmin, isAuthenticated, openAuthModal, logout } = useAuth();
   const toast = useToast();
   const confirm = useConfirm();
 
@@ -83,18 +85,18 @@ export default function Settings() {
     const seen = new Map<string, string>();
     for (const circle of circles.filter(c => c.isJoined)) {
       for (const m of circle.memberList) {
-        if (m.id !== user.id) seen.set(m.id, m.name);
+        if (m.id !== authUser.id) seen.set(m.id, m.name);
       }
     }
     return [...seen.entries()].map(([id, name]) => ({ id, name })).slice(0, 12);
-  }, [circles, user.id]);
+  }, [circles, authUser.id]);
 
   const blockedPeople = useMemo(() => {
     const names = new Map<string, string>();
     for (const e of events) names.set(e.hostId, e.hostName);
     for (const c of circles) for (const m of c.memberList) names.set(m.id, m.name);
-    return user.blockedIds.map(id => ({ id, name: names.get(id) ?? 'Someone you blocked' }));
-  }, [user.blockedIds, events, circles]);
+    return authUser.blockedIds.map(id => ({ id, name: names.get(id) ?? 'Someone you blocked' }));
+  }, [authUser.blockedIds, events, circles]);
 
   const handleReset = async () => {
     const ok = await confirm.ask({
@@ -118,11 +120,77 @@ export default function Settings() {
         </p>
       </header>
 
-      <div className="flex items-center gap-4 p-4 bg-surface-lowest rounded-2xl shadow-sm mb-8">
-        <Avatar name={user.name} size={52} />
-        <div className="min-w-0">
-          <p className="font-headline font-bold text-base text-text-dark">{user.name}</p>
-          <p className="text-xs text-text-medium">{user.homeCity}</p>
+      {/* Account & Firebase Auth Card */}
+      <div className="p-5 bg-surface-lowest rounded-3xl shadow-sm border border-gray-100 mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="relative">
+            <Avatar name={authUser.name} size={56} />
+            {authUser.role === 'admin' && (
+              <span
+                className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center shadow-sm"
+                title="System Admin"
+              >
+                <Crown size={14} />
+              </span>
+            )}
+            {authUser.role === 'moderator' && (
+              <span
+                className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center shadow-sm"
+                title="Moderator"
+              >
+                <ShieldCheck size={14} />
+              </span>
+            )}
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-headline font-black text-lg text-text-dark truncate">
+                {authUser.name}
+              </p>
+              <span
+                className={cx(
+                  'badge text-[10px] font-black uppercase tracking-wider',
+                  authUser.role === 'admin' && 'bg-primary text-white',
+                  authUser.role === 'moderator' && 'bg-secondary text-white',
+                  authUser.role === 'user' && 'bg-surface-high text-text-medium'
+                )}
+              >
+                {authUser.role === 'admin' ? '👑 Admin' : authUser.role === 'moderator' ? '🛡️ Moderator' : '👤 Member'}
+              </span>
+              <span className="badge bg-surface-low text-text-light text-[9px] uppercase font-bold tracking-wider">
+                {authUser.authProvider === 'google' ? 'Google Auth' : authUser.authProvider === 'password' ? 'Password' : 'Demo Account'}
+              </span>
+            </div>
+            <p className="text-xs text-text-medium mt-0.5 font-mono truncate">
+              {authUser.email || `${authUser.name.toLowerCase().replace(/\s+/g, '.')}@w8vr.app`}
+            </p>
+            <p className="text-[11px] text-text-light mt-0.5">{authUser.homeCity}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+          <button
+            type="button"
+            onClick={openAuthModal}
+            className="btn btn-outline text-xs py-2 px-3 flex items-center gap-1.5 font-headline font-bold cursor-pointer"
+          >
+            <LogIn size={14} />
+            <span>Switch Account</span>
+          </button>
+          {isAuthenticated && (
+            <button
+              type="button"
+              onClick={async () => {
+                await logout();
+                toast.show('Logged out successfully');
+              }}
+              className="btn btn-ghost text-xs text-error hover:bg-error-container/20 py-2 px-3 flex items-center gap-1.5 font-bold cursor-pointer"
+            >
+              <LogOut size={14} />
+              <span>Log Out</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -147,22 +215,22 @@ export default function Settings() {
           <ToggleRow
             id="tier-close"
             title="Close friends post something new"
-            description={`Only the ${user.closeFriendIds.length} people you have marked below.`}
-            checked={user.notifications.closeFriends}
+            description={`Only the ${authUser.closeFriendIds.length} people you have marked below.`}
+            checked={authUser.notifications.closeFriends}
             onChange={v => updateNotifications({ closeFriends: v })}
           />
           <ToggleRow
             id="tier-circle"
             title="Circle activity"
             description="New events and member changes in circles you have joined."
-            checked={user.notifications.circleActivity}
+            checked={authUser.notifications.circleActivity}
             onChange={v => updateNotifications({ circleActivity: v })}
           />
           <ToggleRow
             id="tier-public"
             title="Public events near you"
             description="Anything happening within a few miles. Noisiest tier — off by default."
-            checked={user.notifications.publicNearby}
+            checked={authUser.notifications.publicNearby}
             onChange={v => updateNotifications({ publicNearby: v })}
           />
         </div>
@@ -179,7 +247,7 @@ export default function Settings() {
 
         <ul className="flex flex-wrap gap-2 list-none">
           {people.map(person => {
-            const active = user.closeFriendIds.includes(person.id);
+            const active = authUser.closeFriendIds.includes(person.id);
             return (
               <li key={person.id}>
                 <button
@@ -272,6 +340,23 @@ export default function Settings() {
             </button>
           </div>
         </div>
+      </section>
+
+      {/* Admin Portal & Role Assignment Section */}
+      <section className="mb-10 p-6 bg-gradient-to-br from-primary-fixed/20 via-surface-low to-surface-lowest rounded-3xl border border-primary/20">
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="font-headline font-black text-xl text-text-dark flex items-center gap-2">
+            <Crown size={22} className="text-primary" aria-hidden="true" /> Admin Portal &amp; Role Management
+          </h2>
+          <span className="badge bg-primary text-white text-[10px] font-bold uppercase tracking-wider">
+            {isAdmin ? 'Full Admin Access' : 'Role Directory'}
+          </span>
+        </div>
+        <p className="text-xs text-text-medium mb-6 leading-relaxed">
+          Assign, promote, and manage Admin and Moderator roles for other community members, friends, and co-hosts.
+        </p>
+
+        <AdminRoleManager />
       </section>
 
       {/* Blocked */}
