@@ -1,23 +1,22 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Calendar as CalendarIcon, 
   MapPin, 
-  CheckCircle2, 
   Clock, 
-  Download, 
   ArrowRight, 
-  Sparkles,
-  CalendarCheck2
+  CalendarCheck2,
+  Calendar
 } from 'lucide-react';
 import cx from 'classnames';
 import { useApp } from '../context/AppContext';
 import { StatusRing } from '../components/StatusRing';
+import { CalendarSubscribeModal } from '../components/CalendarSubscribeModal';
 
 export default function Schedule() {
   const navigate = useNavigate();
   const { events } = useApp();
   const [filter, setFilter] = useState<'all' | 'attending' | 'pending'>('all');
+  const [isSubscribeModalOpen, setIsSubscribeModalOpen] = useState(false);
 
   const scheduledEvents = events.filter(e => {
     if (filter === 'attending') return e.status === 'Attending';
@@ -25,14 +24,10 @@ export default function Schedule() {
     return e.status === 'Attending' || e.status === 'Pending RSVP' || e.status === 'Waitlisted';
   });
 
-  const handleExportCalendar = () => {
-    alert('Calendar sync active! Your events have been synced to your Apple/Google Calendar.');
-  };
-
   return (
     <div className="flex-col pb-28 px-6 bg-surface animate-fade-in max-w-4xl mx-auto w-full">
       {/* Header */}
-      <div className="mt-4 mb-4 flex justify-between items-end">
+      <div className="mt-4 mb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
           <h1 className="font-headline font-black text-3xl text-text-dark">My Schedule</h1>
           <p className="text-text-medium text-sm mt-1">
@@ -40,12 +35,28 @@ export default function Schedule() {
           </p>
         </div>
         <button
-          onClick={handleExportCalendar}
-          className="btn btn-secondary text-xs py-2 px-3.5 flex items-center gap-1.5 shrink-0"
-          title="Sync with Apple or Google Calendar"
+          onClick={() => setIsSubscribeModalOpen(true)}
+          className="btn btn-primary text-xs py-2.5 px-4 flex items-center gap-1.5 shrink-0 shadow-neon cursor-pointer self-start sm:self-auto"
+          title="Subscribe in Apple Calendar, Google Calendar, or Outlook"
         >
-          <Download size={14} /> Sync Calendar
+          <Calendar size={15} /> Subscribe to Calendar
         </button>
+      </div>
+
+      {/* Live Subscription Banner */}
+      <div
+        onClick={() => setIsSubscribeModalOpen(true)}
+        className="mb-4 p-3 bg-primary-fixed/30 border border-primary/20 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-primary-fixed/40 transition-colors shadow-2xs"
+      >
+        <div className="flex items-center gap-2 text-xs font-semibold text-text-dark">
+          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <span>
+            <strong>Live Calendar Feed:</strong> Syncs to Apple Calendar, Google Calendar & Outlook.
+          </span>
+        </div>
+        <span className="text-[11px] font-bold text-primary flex items-center gap-1">
+          Subscribe / Sync Feed →
+        </span>
       </div>
 
       {/* Filter Tabs */}
@@ -113,6 +124,11 @@ export default function Schedule() {
                 <span className="badge bg-secondary-container text-on-secondary-container text-[9px] font-bold">
                   {event.category}
                 </span>
+                {event.eventSubType && (
+                  <span className="badge bg-primary-fixed text-primary text-[9px] font-bold uppercase">
+                    {event.eventSubType}
+                  </span>
+                )}
                 <span
                   className={cx('badge text-[9px] font-bold', {
                     'bg-green-100 text-green-900': event.status === 'Attending',
@@ -127,10 +143,34 @@ export default function Schedule() {
                 {event.title}
               </h3>
 
+              {event.performerOrTeam && (
+                <div className="text-xs font-headline font-bold text-primary truncate">
+                  ⭐ {event.performerOrTeam}
+                </div>
+              )}
+
+              {/* Dual Time Pill in Schedule */}
+              {event.showtime && event.meetupTime ? (
+                <div className="flex items-center gap-2 mt-1 text-xs font-bold text-text-dark">
+                  <span className="text-primary flex items-center gap-1">
+                    <Clock size={12} /> Meet: {event.meetupTime}
+                  </span>
+                  <span className="text-text-light">•</span>
+                  <span className="text-secondary font-extrabold">
+                    Show: {event.showtime}
+                  </span>
+                </div>
+              ) : null}
+
               <div className="flex flex-wrap items-center gap-3 text-xs text-text-medium mt-1">
                 <span className="flex items-center gap-1">
                   <MapPin size={13} className="text-primary" /> {event.location}
                 </span>
+                {event.meetupLocation && (
+                  <span className="text-[11px] text-text-light truncate">
+                    (Pre-meet: {event.meetupLocation})
+                  </span>
+                )}
                 <span>• {event.confirmed} Guests going</span>
               </div>
             </div>
@@ -160,6 +200,13 @@ export default function Schedule() {
           </button>
         </div>
       )}
+
+      {/* Calendar Subscription Modal */}
+      <CalendarSubscribeModal
+        isOpen={isSubscribeModalOpen}
+        onClose={() => setIsSubscribeModalOpen(false)}
+        events={events}
+      />
     </div>
   );
 }

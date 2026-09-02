@@ -14,7 +14,12 @@ import {
   Users, 
   Sparkles,
   Share2,
-  ExternalLink
+  ExternalLink,
+  Clock,
+  Ticket,
+  ShieldCheck,
+  Info,
+  Check
 } from 'lucide-react';
 import cx from 'classnames';
 import { useApp } from '../context/AppContext';
@@ -36,6 +41,7 @@ export default function EventDetails() {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [hasTicket, setHasTicket] = useState(false);
 
   const spotsLeft = Math.max(0, event.maxSpots - event.confirmed);
   const isFull = spotsLeft === 0;
@@ -59,6 +65,18 @@ export default function EventDetails() {
     setReportReason('');
   };
 
+  const handleToggleTicket = () => {
+    const nextState = !hasTicket;
+    setHasTicket(nextState);
+    if (nextState) {
+      addComment(event.id, "🎟️ I've got my ticket! Ready for the show.");
+    }
+  };
+
+  const mapSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    (event.venueAddress || event.location) + ' ' + (event.location || '')
+  )}`;
+
   return (
     <div className="flex-col pb-[190px] min-h-screen bg-surface animate-fade-in">
       {/* Hero Header with Image */}
@@ -68,20 +86,20 @@ export default function EventDetails() {
         <div className="hero-overlay">
           {/* Top Row: Back Button & Actions */}
           <div className="flex justify-between items-center w-full">
-            <button onClick={() => navigate('/')} className="back-btn-float" title="Go back">
+            <button onClick={() => navigate('/')} className="back-btn-float cursor-pointer" title="Go back">
               <ChevronLeft size={24} strokeWidth={2.5} />
             </button>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsShareModalOpen(true)}
-                className="back-btn-float"
+                className="back-btn-float cursor-pointer"
                 title="Share event"
               >
                 <Share2 size={20} />
               </button>
               <button
                 onClick={() => setIsReportModalOpen(true)}
-                className="back-btn-float"
+                className="back-btn-float cursor-pointer"
                 title="Report event"
               >
                 <Flag size={18} />
@@ -91,10 +109,15 @@ export default function EventDetails() {
 
           {/* Bottom Content: Title & Badges */}
           <div className="text-white">
-            <div className="flex gap-2 mb-3">
+            <div className="flex flex-wrap gap-2 mb-3">
               <span className="badge bg-white/20 backdrop-blur-md text-[10px] uppercase font-bold text-white tracking-widest px-3 border border-white/15">
                 {event.category}
               </span>
+              {event.eventSubType && (
+                <span className="badge bg-primary text-[10px] uppercase font-bold text-white tracking-widest px-3 shadow-sm">
+                  {event.eventSubType}
+                </span>
+              )}
               <span className="badge bg-green-100/95 text-[10px] uppercase font-bold text-green-900 tracking-widest px-3 flex items-center gap-1.5 border border-green-200/50">
                 {event.privacy === 'public' ? (
                   <>
@@ -102,7 +125,7 @@ export default function EventDetails() {
                   </>
                 ) : (
                   <>
-                    <Lock size={11} /> {event.type.includes('CIRCLE') ? 'Circle Only' : 'Hidden Link'}
+                    <Lock size={11} /> {event.type?.includes('CIRCLE') ? 'Circle Only' : 'Hidden Link'}
                   </>
                 )}
               </span>
@@ -112,9 +135,15 @@ export default function EventDetails() {
               {event.title}
             </h1>
 
-            <div className="flex flex-wrap gap-4 mt-4 text-xs opacity-95 font-semibold text-white">
+            {event.performerOrTeam && (
+              <div className="text-sm font-headline font-bold text-secondary-fixed mt-1">
+                Starring / Matchup: <span className="underline decoration-secondary-fixed/50">{event.performerOrTeam}</span>
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-4 mt-3 text-xs opacity-95 font-semibold text-white">
               <div className="flex items-center gap-1.5">
-                <Calendar size={15} className="text-primary-fixed" /> {event.timeLabel}
+                <Calendar size={15} className="text-primary-fixed" /> {event.date} • {event.timeLabel}
               </div>
               <div className="flex items-center gap-1.5">
                 <MapPin size={15} className="text-primary-fixed" /> {event.location}
@@ -140,10 +169,173 @@ export default function EventDetails() {
             </div>
             <button
               onClick={() => setIsBroadcastModalOpen(true)}
-              className="btn btn-primary text-xs py-2 px-4"
+              className="btn btn-primary text-xs py-2 px-4 cursor-pointer"
             >
               📢 Broadcast
             </button>
+          </div>
+        )}
+
+        {/* DUAL-TIME SCHEDULE MATRIX */}
+        {(event.showtime || event.meetupTime) && (
+          <div className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm border border-primary/15">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-primary text-white flex items-center justify-center shadow-sm">
+                  <Clock size={16} />
+                </div>
+                <div>
+                  <h3 className="font-headline font-black text-lg text-text-dark">
+                    Dual-Time Outing Schedule
+                  </h3>
+                  <p className="text-xs text-text-medium">
+                    When the group meets vs. when the show officially starts
+                  </p>
+                </div>
+              </div>
+              <span className="badge bg-primary-fixed text-primary text-[10px] font-bold">
+                Synced Plan ✨
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+              {/* Step 1: Meetup Time */}
+              <div className="p-4 bg-primary/8 border-2 border-primary rounded-2xl flex flex-col justify-between shadow-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-headline font-black text-primary uppercase tracking-wider">
+                    1. GROUP MEETUP
+                  </span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-primary animate-ping" />
+                </div>
+                <div className="text-2xl font-headline font-black text-primary mt-2">
+                  {event.meetupTime || event.time}
+                </div>
+                <div className="text-xs font-semibold text-text-dark mt-1 line-clamp-2">
+                  📍 {event.meetupLocation || 'Pre-event spot near venue'}
+                </div>
+                <span className="text-[10px] text-text-medium mt-1">Gather with W8VR crew</span>
+              </div>
+
+              {/* Step 2: Doors Open */}
+              <div className="p-4 bg-surface-container-low rounded-2xl flex flex-col justify-between">
+                <span className="text-[10px] font-headline font-bold text-text-light uppercase tracking-wider">
+                  2. DOORS OPEN
+                </span>
+                <div className="text-2xl font-headline font-black text-text-medium mt-2">
+                  {event.doorsTime || '1 hr before'}
+                </div>
+                <div className="text-xs font-semibold text-text-medium mt-1 line-clamp-2">
+                  🚪 {event.location} Gates Open
+                </div>
+                <span className="text-[10px] text-text-light mt-1">Ticket scanning & bag check</span>
+              </div>
+
+              {/* Step 3: Official Showtime */}
+              <div className="p-4 bg-secondary-container/50 border border-secondary/30 rounded-2xl flex flex-col justify-between">
+                <span className="text-[10px] font-headline font-black text-secondary uppercase tracking-wider">
+                  3. OFFICIAL SHOWTIME
+                </span>
+                <div className="text-2xl font-headline font-black text-secondary mt-2">
+                  {event.showtime || event.time}
+                </div>
+                <div className="text-xs font-semibold text-on-secondary-container mt-1 line-clamp-2">
+                  ⚡ {event.performerOrTeam || 'Main Performance'} Starts
+                </div>
+                <span className="text-[10px] text-secondary mt-1">Curtain up / Tip-off</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TICKET & SEATING COORDINATION HUB */}
+        {(event.ticketUrl || event.ticketSectionInfo || event.isTicketedEvent) && (
+          <div className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm border border-secondary/20 flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold">
+                  <Ticket size={20} />
+                </div>
+                <div>
+                  <h3 className="font-headline font-bold text-lg text-text-dark">
+                    Ticket & Seating Coordination
+                  </h3>
+                  <p className="text-xs text-text-medium">
+                    Seat near the crew and coordinate ticket purchases
+                  </p>
+                </div>
+              </div>
+
+              {event.ticketUrl && (
+                <a
+                  href={event.ticketUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-primary text-xs py-2 px-4 flex items-center gap-1.5 self-start sm:self-auto shrink-0 shadow-neon cursor-pointer"
+                >
+                  <ExternalLink size={13} /> Buy Official Tickets
+                </a>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {event.ticketSectionInfo && (
+                <div className="p-3.5 bg-surface-container-low rounded-2xl">
+                  <span className="text-[10px] font-headline font-bold text-text-light uppercase tracking-wider block mb-1">
+                    TARGET GROUP SECTION
+                  </span>
+                  <div className="text-xs font-bold text-text-dark">
+                    {event.ticketSectionInfo}
+                  </div>
+                </div>
+              )}
+
+              {event.priceRange && (
+                <div className="p-3.5 bg-surface-container-low rounded-2xl">
+                  <span className="text-[10px] font-headline font-bold text-text-light uppercase tracking-wider block mb-1">
+                    ESTIMATED PRICE RANGE
+                  </span>
+                  <div className="text-xs font-bold text-text-dark">
+                    {event.priceRange}
+                  </div>
+                </div>
+              )}
+
+              <div className="p-3.5 bg-surface-container-low rounded-2xl flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-headline font-bold text-text-light uppercase tracking-wider block mb-0.5">
+                    YOUR TICKET STATUS
+                  </span>
+                  <span className="text-xs font-bold text-text-dark">
+                    {hasTicket ? 'Ticket Acquired ✅' : 'Need Ticket'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleToggleTicket}
+                  className={cx('px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer', {
+                    'bg-green-600 text-white shadow-sm': hasTicket,
+                    'bg-surface-lowest text-text-medium border border-gray-200 hover:bg-surface-high': !hasTicket,
+                  })}
+                >
+                  {hasTicket ? <Check size={14} className="inline mr-1" /> : null}
+                  {hasTicket ? 'I Have Mine' : 'Mark Got Ticket'}
+                </button>
+              </div>
+            </div>
+
+            {/* Lineup Chips */}
+            {event.lineup && event.lineup.length > 0 && (
+              <div className="pt-2 border-t border-gray-100 flex items-center gap-2 flex-wrap text-xs">
+                <span className="font-bold text-text-light text-[11px] uppercase tracking-wider">
+                  Lineup / Guests:
+                </span>
+                {event.lineup.map((artist, idx) => (
+                  <span key={idx} className="badge bg-surface-low text-text-dark font-semibold text-[11px]">
+                    {artist}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -236,13 +428,18 @@ export default function EventDetails() {
           </div>
         </div>
 
-        {/* Logistics & Location Card */}
+        {/* Venue, Logistics & Entry Policies */}
         <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm flex flex-col gap-4">
           <div className="flex justify-between items-center">
-            <h3 className="font-headline font-bold text-lg text-text-dark">Location & Logistics</h3>
-            <span className="text-xs font-bold text-primary flex items-center gap-1 cursor-pointer">
+            <h3 className="font-headline font-bold text-lg text-text-dark">Location & Venue Logistics</h3>
+            <a
+              href={mapSearchUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-bold text-primary flex items-center gap-1 cursor-pointer hover:underline"
+            >
               <ExternalLink size={14} /> Open Maps
-            </span>
+            </a>
           </div>
 
           <div className="p-4 bg-surface-container-low rounded-xl flex items-center gap-3">
@@ -251,9 +448,51 @@ export default function EventDetails() {
             </div>
             <div className="flex-1">
               <div className="font-bold text-sm text-text-dark">{event.location}</div>
-              <div className="text-xs text-text-light">{event.distance} • Address unlocked for confirmed RSVPs</div>
+              <div className="text-xs text-text-light">
+                {event.venueAddress || event.distance} • Address unlocked for attendees
+              </div>
             </div>
           </div>
+
+          {/* Pre-Event Gathering Spot */}
+          {event.meetupLocation && (
+            <div className="p-3.5 bg-primary-fixed/20 border border-primary/20 rounded-xl flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center shrink-0">
+                <Users size={16} />
+              </div>
+              <div>
+                <span className="text-[10px] font-headline font-bold text-primary uppercase tracking-wider block">
+                  PRE-EVENT MEETUP LOCATION
+                </span>
+                <div className="text-xs font-bold text-text-dark">{event.meetupLocation}</div>
+              </div>
+            </div>
+          )}
+
+          {/* Policies & Entry Rules */}
+          {(event.bagPolicy || event.ageRestriction) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-gray-100 text-xs">
+              {event.bagPolicy && (
+                <div className="flex items-start gap-2">
+                  <ShieldCheck size={16} className="text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-text-dark block">Bag Policy</span>
+                    <span className="text-text-medium text-[11px]">{event.bagPolicy}</span>
+                  </div>
+                </div>
+              )}
+
+              {event.ageRestriction && (
+                <div className="flex items-start gap-2">
+                  <Info size={16} className="text-secondary shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-text-dark block">Age Requirement</span>
+                    <span className="text-text-medium text-[11px]">{event.ageRestriction}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Coordination Thread (Comments) */}
@@ -316,7 +555,7 @@ export default function EventDetails() {
           <div className="thread-input-wrapper">
             <input
               type="text"
-              placeholder="Ask a logistics question or share update..."
+              placeholder="Ask about tickets, carpools, pre-drinks..."
               className="thread-input"
               value={commentText}
               onChange={e => setCommentText(e.target.value)}
@@ -324,7 +563,7 @@ export default function EventDetails() {
                 if (e.key === 'Enter') handleSendComment();
               }}
             />
-            <button onClick={handleSendComment} className="thread-send-btn" title="Post message">
+            <button onClick={handleSendComment} className="thread-send-btn cursor-pointer" title="Post message">
               <Send size={16} />
             </button>
           </div>
@@ -337,7 +576,7 @@ export default function EventDetails() {
           <div className="rsvp-bar">
             <button
               onClick={() => rsvpEvent(event.id, 'going')}
-              className={cx('rsvp-btn', {
+              className={cx('rsvp-btn cursor-pointer', {
                 'active-going': event.status === 'Attending' || event.status === 'Waitlisted',
               })}
             >
@@ -355,13 +594,13 @@ export default function EventDetails() {
             </button>
             <button
               onClick={() => rsvpEvent(event.id, 'maybe')}
-              className={cx('rsvp-btn', { 'active-maybe': event.status === 'Pending RSVP' })}
+              className={cx('rsvp-btn cursor-pointer', { 'active-maybe': event.status === 'Pending RSVP' })}
             >
               Maybe
             </button>
             <button
               onClick={() => rsvpEvent(event.id, 'no')}
-              className={cx('rsvp-btn', { 'active-no': event.status === 'Declined' })}
+              className={cx('rsvp-btn cursor-pointer', { 'active-no': event.status === 'Declined' })}
             >
               No
             </button>
@@ -397,7 +636,7 @@ export default function EventDetails() {
         <div className="flex gap-2 border-b border-gray-100 pb-3 mb-4">
           <button
             onClick={() => setAttendeeTab('confirmed')}
-            className={cx('px-4 py-1.5 rounded-full text-xs font-bold transition-all', {
+            className={cx('px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer', {
               'bg-primary text-white': attendeeTab === 'confirmed',
               'bg-surface-high text-text-medium': attendeeTab !== 'confirmed',
             })}
@@ -406,7 +645,7 @@ export default function EventDetails() {
           </button>
           <button
             onClick={() => setAttendeeTab('maybe')}
-            className={cx('px-4 py-1.5 rounded-full text-xs font-bold transition-all', {
+            className={cx('px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer', {
               'bg-primary text-white': attendeeTab === 'maybe',
               'bg-surface-high text-text-medium': attendeeTab !== 'maybe',
             })}
@@ -415,7 +654,7 @@ export default function EventDetails() {
           </button>
           <button
             onClick={() => setAttendeeTab('waitlist')}
-            className={cx('px-4 py-1.5 rounded-full text-xs font-bold transition-all', {
+            className={cx('px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer', {
               'bg-primary text-white': attendeeTab === 'waitlist',
               'bg-surface-high text-text-medium': attendeeTab !== 'waitlist',
             })}
@@ -475,7 +714,7 @@ export default function EventDetails() {
               <button
                 type="button"
                 onClick={() => setBroadcastTarget('all')}
-                className={cx('flex-1 py-2 rounded-xl text-xs font-bold', {
+                className={cx('flex-1 py-2 rounded-xl text-xs font-bold cursor-pointer', {
                   'bg-primary text-white': broadcastTarget === 'all',
                   'bg-surface-high text-text-medium': broadcastTarget !== 'all',
                 })}
@@ -485,7 +724,7 @@ export default function EventDetails() {
               <button
                 type="button"
                 onClick={() => setBroadcastTarget('yes')}
-                className={cx('flex-1 py-2 rounded-xl text-xs font-bold', {
+                className={cx('flex-1 py-2 rounded-xl text-xs font-bold cursor-pointer', {
                   'bg-primary text-white': broadcastTarget === 'yes',
                   'bg-surface-high text-text-medium': broadcastTarget !== 'yes',
                 })}
@@ -495,7 +734,7 @@ export default function EventDetails() {
               <button
                 type="button"
                 onClick={() => setBroadcastTarget('waitlist')}
-                className={cx('flex-1 py-2 rounded-xl text-xs font-bold', {
+                className={cx('flex-1 py-2 rounded-xl text-xs font-bold cursor-pointer', {
                   'bg-primary text-white': broadcastTarget === 'waitlist',
                   'bg-surface-high text-text-medium': broadcastTarget !== 'waitlist',
                 })}
@@ -509,14 +748,14 @@ export default function EventDetails() {
             <label className="text-xs font-bold text-text-medium mb-1 block">Message</label>
             <textarea
               rows={3}
-              placeholder="e.g., Moving to the second floor terrace! Grab a seat near the lounge."
+              placeholder="e.g., Moving to the front terrace at Scholz Garten before heading into Moody!"
               value={broadcastMessage}
               onChange={e => setBroadcastMessage(e.target.value)}
               className="input-field text-sm"
             />
           </div>
 
-          <button onClick={handleSendBroadcast} className="btn btn-primary w-full py-3">
+          <button onClick={handleSendBroadcast} className="btn btn-primary w-full py-3 cursor-pointer">
             Send Announcement
           </button>
         </div>
@@ -548,7 +787,7 @@ export default function EventDetails() {
               alert('Link copied to clipboard!');
               setIsShareModalOpen(false);
             }}
-            className="btn btn-primary w-full py-3"
+            className="btn btn-primary w-full py-3 cursor-pointer"
           >
             Copy Invite Link
           </button>
@@ -580,7 +819,7 @@ export default function EventDetails() {
           <button
             disabled={!reportReason}
             onClick={handleReportEvent}
-            className="btn btn-primary w-full py-3 disabled:opacity-50"
+            className="btn btn-primary w-full py-3 disabled:opacity-50 cursor-pointer"
           >
             Submit Report
           </button>

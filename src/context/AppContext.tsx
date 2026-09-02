@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { type EventCategory } from '../components/CategoryChip';
+import { type EventSubType } from '../services/eventAutoPull';
 
 export interface Comment {
   id: string;
@@ -40,6 +41,21 @@ export interface EventItem {
   muted?: boolean;
   coords: { x: number; y: number }; // Relative coordinates for map (0-100%)
   comments: Comment[];
+  // Auto-pulled & Ticketed Event properties
+  isTicketedEvent?: boolean;
+  eventSubType?: EventSubType;
+  performerOrTeam?: string;
+  showtime?: string; // Official showtime / game start (e.g., "8:00 PM")
+  doorsTime?: string; // Doors open (e.g., "6:30 PM")
+  meetupTime?: string; // Host gathering time (e.g., "5:30 PM")
+  meetupLocation?: string; // Pre-event gathering spot
+  ticketUrl?: string;
+  ticketSectionInfo?: string;
+  priceRange?: string;
+  lineup?: string[];
+  venueAddress?: string;
+  bagPolicy?: string;
+  ageRestriction?: string;
 }
 
 export interface CircleItem {
@@ -78,6 +94,157 @@ export interface ContactItem {
 }
 
 const INITIAL_EVENTS: EventItem[] = [
+  {
+    id: 'e-billie',
+    title: 'Billie Eilish: Hit Me Hard and Soft Tour',
+    description: 'Immersive stage visuals, 360-degree acoustic arrangements, and full stadium energy at Moody Center.',
+    type: 'ENTERTAINMENT',
+    category: 'Entertainment',
+    image: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&q=80&w=1200',
+    timeLabel: 'Meet 5:30 PM • Show 8:00 PM',
+    date: 'Fri, Nov 14',
+    time: '5:30 PM',
+    distance: '1.2 MI AWAY',
+    location: 'Moody Center ATX',
+    venueAddress: '2001 Robert Dedman Dr, Austin, TX 78712',
+    capacity: 88,
+    maxSpots: 16,
+    status: 'Attending',
+    avatars: ['Felix', 'Aneka', 'Sarah', 'Leo'],
+    confirmed: 14,
+    maybe: 5,
+    interested: 112,
+    waitlist: 2,
+    fillingFast: true,
+    vibe: "Massive tour stop! We're meeting early at Scholz Garten for drinks and giant pretzels before walking over through the plaza together. Most of the crew has tickets in Section 114.",
+    isHost: true,
+    hostName: 'You',
+    privacy: 'public',
+    coords: { x: 38, y: 42 },
+    isTicketedEvent: true,
+    eventSubType: 'Concert',
+    performerOrTeam: 'Billie Eilish',
+    showtime: '8:00 PM',
+    doorsTime: '6:30 PM',
+    meetupTime: '5:30 PM',
+    meetupLocation: 'Scholz Garten (pre-drinks & food, 5 min walk to Moody Center)',
+    ticketUrl: 'https://www.ticketmaster.com',
+    ticketSectionInfo: 'Section 114, Rows 12-16 (or GA Floor)',
+    priceRange: '$95 - $285',
+    lineup: ['Billie Eilish', 'FINNEAS (Special Guest)', 'Nat & Alex Wolff'],
+    bagPolicy: 'Clear bags only (max 12"x6"x12") or small clutches under 4.5"x6.5"',
+    ageRestriction: 'All Ages',
+    comments: [
+      {
+        id: 'cb-1',
+        user: 'You (Host)',
+        avatar: 'Felix',
+        text: 'Heads up crew: Doors are at 6:30 PM, but we are gathering at Scholz Garten at 5:30 PM sharp for beers & food!',
+        time: '3h ago',
+        isHost: true,
+      },
+      {
+        id: 'cb-2',
+        user: 'Aneka',
+        avatar: 'Aneka',
+        text: 'Just grabbed my ticket in Sec 114 Row 14! See you all at Scholz.',
+        time: '1h ago',
+        isHost: false,
+      }
+    ]
+  },
+  {
+    id: 'e-austinfc',
+    title: 'Austin FC vs. LA Galaxy',
+    description: 'Western Conference soccer clash under the Texas twilight with non-stop supporter brass bands and chants.',
+    type: 'SPORTS CIRCLE',
+    category: 'Active',
+    image: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=1200',
+    timeLabel: 'Meet 5:00 PM • Kickoff 7:30 PM',
+    date: 'Sat, Oct 25',
+    time: '5:00 PM',
+    distance: '3.8 MI AWAY',
+    location: 'Q2 Stadium, Austin',
+    venueAddress: '10414 McKalla Pl, Austin, TX 78758',
+    capacity: 70,
+    maxSpots: 20,
+    status: 'Pending RSVP',
+    avatars: ['Marcus', 'David', 'Elena'],
+    confirmed: 14,
+    maybe: 6,
+    interested: 85,
+    waitlist: 0,
+    vibe: "High energy matchday! Meeting at Hopsquad Brewing for pre-game pints, then joining the supporter march into Q2 at 6:15 PM. Wear Verde & Black!",
+    isHost: false,
+    hostName: 'Marcus',
+    privacy: 'public',
+    coords: { x: 72, y: 30 },
+    isTicketedEvent: true,
+    eventSubType: 'Sports',
+    performerOrTeam: 'Austin FC vs. LA Galaxy',
+    showtime: '7:30 PM',
+    doorsTime: '6:00 PM',
+    meetupTime: '5:00 PM',
+    meetupLocation: 'Hopsquad Brewing (Austin FC supporter march begins at 6:15 PM)',
+    ticketUrl: 'https://www.seatgeek.com/austin-fc',
+    ticketSectionInfo: 'Section 103 (Supporter Section) or Sec 128',
+    priceRange: '$42 - $135',
+    lineup: ['Austin FC', 'LA Galaxy'],
+    bagPolicy: 'Clear bag policy (12"x12"x6"). Expect beer showers in the supporter section!',
+    ageRestriction: 'All Ages',
+    comments: [
+      {
+        id: 'ca-1',
+        user: 'Marcus (Host)',
+        avatar: 'Marcus',
+        text: 'Bring your scarves! Supporter march heads out at 6:15 PM from Hopsquad.',
+        time: '4h ago',
+        isHost: true,
+      }
+    ]
+  },
+  {
+    id: 'e-bargatze',
+    title: 'Nate Bargatze: The Be Funny Tour',
+    description: 'Relatable deadpan stand-up comedy and hilarious observations from the comedy star.',
+    type: 'COMEDY SHOW',
+    category: 'Entertainment',
+    image: 'https://images.unsplash.com/photo-1585699324551-f6c309eedeca?auto=format&fit=crop&q=80&w=1200',
+    timeLabel: 'Meet 5:15 PM • Show 7:00 PM',
+    date: 'Sat, Nov 08',
+    time: '5:15 PM',
+    distance: '1.4 MI AWAY',
+    location: 'Bass Concert Hall',
+    venueAddress: '2350 Robert Dedman Dr, Austin, TX 78712',
+    capacity: 90,
+    maxSpots: 10,
+    status: 'RSVP Now',
+    avatars: ['Julian', 'Maya'],
+    confirmed: 9,
+    maybe: 3,
+    interested: 64,
+    waitlist: 0,
+    fillingFast: true,
+    vibe: "Need some solid laughs. We are grabbing early burgers & beers at Crown & Anchor Pub before heading across the street for the 7:00 PM show.",
+    isHost: false,
+    hostName: 'Julian',
+    privacy: 'circle',
+    coords: { x: 42, y: 46 },
+    isTicketedEvent: true,
+    eventSubType: 'Comedy',
+    performerOrTeam: 'Nate Bargatze',
+    showtime: '7:00 PM',
+    doorsTime: '6:00 PM',
+    meetupTime: '5:15 PM',
+    meetupLocation: 'Crown & Anchor Pub for burgers & pints',
+    ticketUrl: 'https://www.ticketmaster.com',
+    ticketSectionInfo: 'Orchestra Center Rows K-P',
+    priceRange: '$55 - $175',
+    lineup: ['Nate Bargatze', 'Julian McCullough', 'Stephen Bargatze'],
+    bagPolicy: 'Small clutches under 5"x7". No phone recording allowed during comedy sets.',
+    ageRestriction: 'All Ages (Clean comedy)',
+    comments: []
+  },
   {
     id: 'e1',
     title: 'Vanguard Social Dinner',
@@ -409,7 +576,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [events, setEvents] = useState<EventItem[]>(() => {
-    const saved = localStorage.getItem('w8vr_events_v2');
+    const saved = localStorage.getItem('w8vr_events_v3');
     return saved ? JSON.parse(saved) : INITIAL_EVENTS;
   });
 
@@ -429,7 +596,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   useEffect(() => {
-    localStorage.setItem('w8vr_events_v2', JSON.stringify(events));
+    localStorage.setItem('w8vr_events_v3', JSON.stringify(events));
   }, [events]);
 
   useEffect(() => {
@@ -535,16 +702,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const createEvent = (newEventData: Partial<EventItem>): EventItem => {
     const id = 'e' + (events.length + 1) + '-' + Date.now();
+    const eventTime = newEventData.meetupTime || newEventData.time || '8:00 PM';
+    const timeLabel = newEventData.showtime && newEventData.meetupTime
+      ? `Meet ${newEventData.meetupTime} • Show ${newEventData.showtime}`
+      : `${newEventData.time || '8:00 PM'} ${newEventData.date || 'Today'}`;
+
     const created: EventItem = {
       id,
       title: newEventData.title || 'Untitled Gathering',
       description: newEventData.description || 'Community hangout on W8VR.',
-      type: newEventData.privacy === 'circle' ? 'JOINED CIRCLE' : 'PUBLIC EVENT',
+      type: newEventData.eventSubType
+        ? newEventData.eventSubType.toUpperCase()
+        : newEventData.privacy === 'circle'
+        ? 'JOINED CIRCLE'
+        : 'PUBLIC EVENT',
       category: newEventData.category || 'Active',
       image: newEventData.image || '/neon_midnight_1774367472687.png',
-      timeLabel: `${newEventData.time || '8:00 PM'} ${newEventData.date || 'Today'}`,
+      timeLabel: newEventData.timeLabel || timeLabel,
       date: newEventData.date || 'Today',
-      time: newEventData.time || '8:00 PM',
+      time: eventTime,
       distance: '0.2 MI AWAY',
       location: newEventData.location || 'Downtown Hub',
       isVirtual: newEventData.isVirtual || false,
@@ -563,12 +739,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       hostName: 'You',
       privacy: newEventData.privacy || 'public',
       coords: { x: 50 + (Math.random() * 20 - 10), y: 50 + (Math.random() * 20 - 10) },
+      // Ticketed & auto-pull properties
+      isTicketedEvent: newEventData.isTicketedEvent || false,
+      eventSubType: newEventData.eventSubType,
+      performerOrTeam: newEventData.performerOrTeam,
+      showtime: newEventData.showtime,
+      doorsTime: newEventData.doorsTime,
+      meetupTime: newEventData.meetupTime,
+      meetupLocation: newEventData.meetupLocation,
+      ticketUrl: newEventData.ticketUrl,
+      ticketSectionInfo: newEventData.ticketSectionInfo,
+      priceRange: newEventData.priceRange,
+      lineup: newEventData.lineup,
+      venueAddress: newEventData.venueAddress,
+      bagPolicy: newEventData.bagPolicy,
+      ageRestriction: newEventData.ageRestriction,
       comments: [
         {
           id: 'cm-' + Date.now(),
           user: 'You (Host)',
           avatar: 'Felix',
-          text: 'Welcome everyone! Let me know if you have any questions before the event.',
+          text: newEventData.meetupTime && newEventData.showtime
+            ? `Welcome! Official showtime is ${newEventData.showtime}, but let's gather at ${newEventData.meetupTime} at ${newEventData.meetupLocation || newEventData.location || 'the venue'}.`
+            : 'Welcome everyone! Let me know if you have any questions before the event.',
           time: 'Just now',
           isHost: true,
         }
@@ -714,6 +907,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetToDefaults = () => {
+    localStorage.removeItem('w8vr_events_v3');
     localStorage.removeItem('w8vr_events_v2');
     localStorage.removeItem('w8vr_circles_v2');
     localStorage.removeItem('w8vr_alerts_v2');

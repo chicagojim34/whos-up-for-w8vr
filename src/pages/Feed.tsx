@@ -18,6 +18,8 @@ export default function Feed() {
     const matchesSearch = 
       event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       event.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (event.performerOrTeam && event.performerOrTeam.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (event.eventSubType && event.eventSubType.toLowerCase().includes(searchQuery.toLowerCase())) ||
       event.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
@@ -31,7 +33,7 @@ export default function Feed() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-light" size={18} />
           <input
             type="text"
-            placeholder="Search events, vibes, or locations..."
+            placeholder="Search events, artists, teams, or venues..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="input-field pl-11 py-3 text-sm rounded-full bg-surface-high border-none focus:bg-surface-lowest"
@@ -130,15 +132,19 @@ export default function Feed() {
                   <span className="font-bold">{event.distance}</span>
                 </div>
 
-                {/* Filling Fast Banner */}
-                {event.fillingFast && (
-                  <div
-                    style={{ position: 'absolute', top: 14, left: 14 }}
-                    className="badge bg-red-600 text-white flex items-center gap-1 font-black tracking-widest text-[9px]"
-                  >
-                    <Zap size={11} fill="white" /> FILLING FAST
-                  </div>
-                )}
+                {/* Event SubType or Filling Fast Banner */}
+                <div style={{ position: 'absolute', top: 14, left: 14 }} className="flex flex-col gap-1">
+                  {event.fillingFast && (
+                    <div className="badge bg-red-600 text-white flex items-center gap-1 font-black tracking-widest text-[9px]">
+                      <Zap size={11} fill="white" /> FILLING FAST
+                    </div>
+                  )}
+                  {event.eventSubType && (
+                    <div className="badge bg-black/70 backdrop-blur-md text-white font-bold tracking-widest text-[9px] uppercase">
+                      {event.eventSubType}
+                    </div>
+                  )}
+                </div>
 
                 {/* Signature Status Ring in Bottom Right of Image */}
                 <div style={{ position: 'absolute', bottom: 12, right: 14, zIndex: 10 }}>
@@ -147,23 +153,23 @@ export default function Feed() {
               </div>
 
               {/* Content Section */}
-              <div className="px-8 pb-8 pt-6 flex-col gap-4">
+              <div className="px-8 pb-8 pt-6 flex-col gap-3">
                 {/* Meta Row */}
                 <div className="flex justify-between items-center text-xs font-bold">
                   <span
                     className={cx('px-2.5 py-1 rounded-md text-[10px] uppercase font-headline tracking-widest', {
-                      'bg-secondary-container text-on-secondary-container': event.type === 'JOINED CIRCLE',
-                      'bg-surface-high text-text-medium': event.type !== 'JOINED CIRCLE',
+                      'bg-secondary-container text-on-secondary-container': event.type === 'JOINED CIRCLE' || event.type === 'SPORTS CIRCLE',
+                      'bg-surface-high text-text-medium': event.type !== 'JOINED CIRCLE' && event.type !== 'SPORTS CIRCLE',
                     })}
                   >
                     {event.type}
                   </span>
-                  <span className="text-text-dark font-headline font-extrabold opacity-85">
+                  <span className="text-primary font-headline font-black text-xs">
                     {event.timeLabel}
                   </span>
                 </div>
 
-                {/* Title & Description */}
+                {/* Title & Performer */}
                 <div>
                   <h3
                     className="font-headline font-black text-2xl tracking-tight text-text-dark group-hover:text-primary transition-colors"
@@ -171,9 +177,29 @@ export default function Feed() {
                   >
                     {event.title}
                   </h3>
+
+                  {event.performerOrTeam && (
+                    <div className="text-xs font-headline font-bold text-primary mt-1">
+                      ⭐ {event.performerOrTeam}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-1.5 text-xs text-text-medium mt-1">
+                    <MapPin size={13} className="text-primary shrink-0" />
+                    <span className="line-clamp-1">{event.location}</span>
+                  </div>
+
                   <p className="text-sm text-text-medium leading-relaxed mt-2 line-clamp-2">
                     {event.description}
                   </p>
+
+                  {event.ticketSectionInfo && (
+                    <div className="mt-2.5">
+                      <span className="badge bg-secondary-container text-on-secondary-container text-[10px] font-bold">
+                        🎟️ {event.ticketSectionInfo}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Action & Attendees Row */}
