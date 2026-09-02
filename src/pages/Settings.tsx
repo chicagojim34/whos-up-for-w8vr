@@ -1,5 +1,20 @@
 import { useMemo, useState } from 'react';
-import { Bell, ShieldOff, Flag, UserCheck, RotateCcw, Gamepad2, Radio, Crown, LogIn, LogOut, ShieldCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  Bell, 
+  ShieldOff, 
+  Flag, 
+  UserCheck, 
+  RotateCcw, 
+  Gamepad2, 
+  Radio, 
+  Crown, 
+  LogIn, 
+  LogOut, 
+  ShieldCheck, 
+  Sparkles, 
+  ArrowRight 
+} from 'lucide-react';
 import cx from 'classnames';
 import { useApp } from '../hooks/useApp';
 import { useAuth } from '../hooks/useAuth';
@@ -58,6 +73,7 @@ const ToggleRow = ({ id, title, description, checked, disabled, onChange }: Togg
 );
 
 export default function Settings() {
+  const navigate = useNavigate();
   const {
     events,
     circles,
@@ -429,6 +445,32 @@ export default function Settings() {
             ))}
           </ul>
         )}
+      </section>
+
+      {/* Demo Sandbox & Scenarios Link Card */}
+      <section className="mb-10 p-5 bg-gradient-to-r from-gray-900 to-gray-950 rounded-3xl text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="badge bg-amber-400 text-gray-950 font-black text-[10px] uppercase tracking-wider px-2 py-0.5">
+              Interactive
+            </span>
+            <h3 className="font-headline font-bold text-base text-white flex items-center gap-1.5">
+              <Sparkles size={16} className="text-amber-400" /> Demo Sandbox &amp; Playground
+            </h3>
+          </div>
+          <p className="text-xs text-gray-300 leading-relaxed max-w-md">
+            Test persona switching (Admin, Mod, Attendee, Gamer), run guided live concert scenarios, and test real-time ticketing APIs.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => navigate('/demo')}
+          className="btn bg-white text-gray-950 hover:bg-gray-100 font-headline font-bold text-xs py-2 px-3.5 flex items-center justify-center gap-1.5 shrink-0 shadow-sm cursor-pointer"
+        >
+          <span>Open Playground</span>
+          <ArrowRight size={14} />
+        </button>
       </section>
 
       <section>

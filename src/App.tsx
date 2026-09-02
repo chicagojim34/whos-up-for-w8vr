@@ -9,6 +9,7 @@ import {
   Calendar,
   RotateCcw,
   LogIn,
+  Sparkles,
 } from 'lucide-react';
 import cx from 'classnames';
 
@@ -20,6 +21,7 @@ import { useDeviceMode, type DeviceMode } from './hooks/useDeviceMode';
 import { Avatar } from './components/Avatar';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { AuthModal } from './components/AuthModal';
+import { DemoToolbar } from './components/DemoToolbar';
 import { useConfirm } from './hooks/useConfirm';
 import Feed from './pages/Feed';
 import PostEvent from './pages/PostEvent';
@@ -30,6 +32,7 @@ import Discovery from './pages/Discovery';
 import Alerts from './pages/Alerts';
 import Schedule from './pages/Schedule';
 import Settings from './pages/Settings';
+import DemoPlayground from './pages/DemoPlayground';
 import NotFound from './pages/NotFound';
 
 const NAV_ITEMS = [
@@ -39,6 +42,7 @@ const NAV_ITEMS = [
   { path: '/circles', label: 'CIRCLES', icon: Users },
   { path: '/schedule', label: 'SCHEDULE', icon: Calendar },
   { path: '/alerts', label: 'ALERTS', icon: Bell },
+  { path: '/demo', label: 'DEMO', icon: Sparkles },
 ];
 
 const Navigation = ({ isDesktop }: { isDesktop: boolean }) => {
@@ -314,6 +318,7 @@ function AppContent() {
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/alerts" element={<Alerts />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/demo" element={<DemoPlayground />} />
             <Route path="/event/:id" element={<EventDetails />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
@@ -321,6 +326,7 @@ function AppContent() {
       </div>
 
       <AuthModal isOpen={isAuthModalOpen} onClose={closeAuthModal} />
+      <DemoToolbar />
     </div>
   );
 }
