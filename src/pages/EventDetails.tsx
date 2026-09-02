@@ -19,6 +19,7 @@ import {
   ShieldOff,
   Video,
   Clock,
+  Copy,
 } from 'lucide-react';
 import cx from 'classnames';
 import { useApp } from '../hooks/useApp';
@@ -30,6 +31,8 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ShareSheet } from '../components/ShareSheet';
 import { FloatingBar } from '../components/FloatingBar';
 import { Avatar } from '../components/Avatar';
+import { GameMark, GameModeChip, PlatformList } from '../components/GameBadge';
+import { JOIN_LABEL, MODE_LABEL, findGame, playersInCircle } from '../lib/games';
 import NotFound from './NotFound';
 import { ME, type BroadcastTarget, type RsvpStatus } from '../types';
 import {
@@ -64,7 +67,8 @@ const ROSTER_TABS: { key: RsvpStatus; label: string }[] = [
 export default function EventDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { findEvent, rsvpEvent, addComment, sendHostBroadcast, reportEvent, blockUser } = useApp();
+  const { findEvent, findCircle, user, rsvpEvent, addComment, sendHostBroadcast, reportEvent, blockUser } =
+    useApp();
   const toast = useToast();
   const confirm = useConfirm();
 
@@ -107,6 +111,10 @@ export default function EventDetails() {
   const going = confirmedCount(event);
   const eventUrl = `${window.location.origin}/event/${event.id}`;
   const addressVisible = canSeeExactAddress(event);
+  const game = findGame(event.game?.gameId);
+  const eventCircle = findCircle(event.circleId);
+  const gamePlayers =
+    game && eventCircle ? playersInCircle(eventCircle, game.id, ME) : [];
 
   const counts: Record<RsvpStatus, number> = {
     going,
@@ -383,6 +391,105 @@ export default function EventDetails() {
             </div>
           </div>
         </section>
+
+        {/* The game */}
+        {game && (
+          <section className="bg-surface-lowest rounded-2xl p-6 shadow-sm flex flex-col gap-4">
+            <div className="flex items-start gap-3">
+              <GameMark game={game} size={48} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="font-headline font-bold text-lg text-text-dark">{game.name}</h2>
+                  <GameModeChip label={MODE_LABEL[game.mode]} />
+                </div>
+                <p className="text-xs text-text-medium mt-0.5">
+                  {game.publisher} · {game.players}
+                </p>
+                <PlatformList game={game} className="mt-1.5" />
+              </div>
+            </div>
+
+            <p className="text-sm text-text-medium leading-relaxed">{game.blurb}</p>
+
+            <p className="text-xs text-text-medium p-3 bg-surface-low rounded-xl">
+              <span className="font-bold text-text-dark">{JOIN_LABEL[game.joinBy]}.</span>
+              {game.caveat && <span className="block mt-1">{game.caveat}</span>}
+            </p>
+
+            {event.game?.roomCode && (
+              <div className="flex items-center justify-between gap-3 p-3 bg-primary-fixed rounded-xl">
+                <span className="min-w-0">
+                  <span className="block text-[10px] font-bold text-primary-container uppercase tracking-wider">
+                    Room code
+                  </span>
+                  <span className="block font-mono font-black text-2xl text-text-dark tracking-[0.2em]">
+                    {event.game.roomCode}
+                  </span>
+                </span>
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(event.game!.roomCode!);
+                      toast.show('Room code copied');
+                    } catch {
+                      toast.show('Could not copy — read it off the screen', 'warning');
+                    }
+                  }}
+                  className="btn btn-secondary text-xs py-2 px-3 shrink-0 flex items-center gap-1.5"
+                >
+                  <Copy size={13} aria-hidden="true" /> Copy
+                </button>
+              </div>
+            )}
+
+            {gamePlayers.length > 0 && (
+              <div>
+                <h3 className="text-xs font-bold text-text-medium mb-2">
+                  Usernames from this circle
+                </h3>
+                <ul className="flex flex-col gap-2 list-none">
+                  {gamePlayers.map(person => (
+                    <li
+                      key={person.id}
+                      className="flex items-center gap-3 p-2 bg-surface-low rounded-xl"
+                    >
+                      <Avatar name={person.name} size={28} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-bold text-xs text-text-dark truncate">
+                          {person.name}
+                        </span>
+                        <span className="block font-mono text-[11px] text-text-medium truncate">
+                          {person.handle}
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-2">
+              <a
+                href={event.game?.inviteUrl || game.url}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="btn btn-primary flex-1 min-w-40 py-3 flex items-center justify-center gap-2"
+              >
+                <ExternalLink size={15} aria-hidden="true" />
+                {event.game?.inviteUrl ? 'Join the table' : `Open ${game.name}`}
+              </a>
+              {game.handleLabel && !user.gameHandles[game.id] && (
+                <Link to="/settings" className="btn btn-secondary py-3 px-4 text-sm">
+                  Add your username
+                </Link>
+              )}
+            </div>
+
+            <p className="text-[11px] text-text-light text-center">
+              Opens the app if you have it installed, the website if not.
+            </p>
+          </section>
+        )}
 
         {/* Location */}
         <section className="bg-surface-lowest rounded-2xl p-6 shadow-sm flex flex-col gap-4">

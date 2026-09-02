@@ -21,6 +21,8 @@ import cx from 'classnames';
 import { useApp } from '../hooks/useApp';
 import { useToast } from '../hooks/useToast';
 import { SELECTABLE_CATEGORIES, type EventCategory } from '../lib/categories';
+import { GAMES, JOIN_LABEL, MODE_LABEL, findGame, needsStartTime } from '../lib/games';
+import { GameMark, GameModeChip, PlatformList } from '../components/GameBadge';
 import { StatusRing } from '../components/StatusRing';
 import { FloatingBar } from '../components/FloatingBar';
 import { formatWhen } from '../lib/datetime';
@@ -59,6 +61,7 @@ export default function PostEvent() {
   const [category, setCategory] = useState<EventCategory>('Active');
   const [coverImage, setCoverImage] = useState(COVER_OPTIONS[0].url);
   const [vibe, setVibe] = useState('');
+  const [gameId, setGameId] = useState('');
 
   // Step 2
   const [date, setDate] = useState(defaultDate);
@@ -73,22 +76,34 @@ export default function PostEvent() {
   const [autoWaitlist, setAutoWaitlist] = useState(true);
   const [privacy, setPrivacy] = useState<'public' | 'circle' | 'hidden'>('public');
   const [circleId, setCircleId] = useState<string>('');
+  const [roomCode, setRoomCode] = useState('');
+  const [inviteUrl, setInviteUrl] = useState('');
 
   const joinedCircles = circles.filter(c => c.isJoined);
+  const isOnline = category === 'Online/Play';
+  const game = findGame(gameId);
+  /** An online game is played in the game, so there is no venue to collect. */
+  const skipVenue = Boolean(game);
   const startsAt = useMemo(() => new Date(`${date}T${time}`).toISOString(), [date, time]);
   const validStart = !Number.isNaN(new Date(`${date}T${time}`).getTime());
 
   const stepErrors: Record<number, string | null> = {
-    1: title.trim() ? null : 'Give the event a name first.',
+    1: !title.trim()
+      ? 'Give the event a name first.'
+      : isOnline && !gameId
+        ? 'Pick which game you are playing.'
+        : null,
     2: !validStart
       ? 'Pick a date and a start time.'
-      : locationType === 'physical'
-        ? location.trim()
-          ? null
-          : 'Say where it is happening.'
-        : virtualLink.trim()
-          ? null
-          : 'Paste the room link.',
+      : skipVenue
+        ? null
+        : locationType === 'physical'
+          ? location.trim()
+            ? null
+            : 'Say where it is happening.'
+          : virtualLink.trim()
+            ? null
+            : 'Paste the room link.',
     3: privacy === 'circle' && !circleId ? 'Choose which circle can see it.' : null,
   };
 
@@ -115,11 +130,22 @@ export default function PostEvent() {
       image: coverImage,
       vibe,
       startsAt,
-      location:
-        locationType === 'physical' ? location.trim() : 'Online — link shared on RSVP',
-      exactAddress: locationType === 'physical' ? exactAddress.trim() || undefined : undefined,
-      isVirtual: locationType === 'virtual',
-      virtualLink: locationType === 'virtual' ? virtualLink.trim() : undefined,
+      location: game
+        ? `Online — ${game.name}`
+        : locationType === 'physical'
+          ? location.trim()
+          : 'Online — link shared on RSVP',
+      exactAddress:
+        !game && locationType === 'physical' ? exactAddress.trim() || undefined : undefined,
+      isVirtual: Boolean(game) || locationType === 'virtual',
+      virtualLink: game ? game.url : locationType === 'virtual' ? virtualLink.trim() : undefined,
+      game: game
+        ? {
+            gameId: game.id,
+            roomCode: roomCode.trim() || undefined,
+            inviteUrl: inviteUrl.trim() || undefined,
+          }
+        : undefined,
       maxSpots: capacity,
       autoWaitlist,
       privacy,
@@ -218,6 +244,48 @@ export default function PostEvent() {
                 </div>
               </fieldset>
 
+              {isOnline && (
+                <fieldset className="border-0 p-0 m-0 animate-slide-up">
+                  <legend className="text-xs font-bold text-text-dark mb-1">Which game?</legend>
+                  <p className="text-[11px] text-text-light mb-2">
+                    Daily and turn-based games do not need everyone free at the same time.
+                  </p>
+                  <div className="grid grid-cols-1 @xl:grid-cols-2 gap-2">
+                    {GAMES.map(g => {
+                      const selected = gameId === g.id;
+                      return (
+                        <button
+                          key={g.id}
+                          type="button"
+                          onClick={() => setGameId(selected ? '' : g.id)}
+                          aria-pressed={selected}
+                          className={cx(
+                            'p-3 rounded-2xl flex items-start gap-3 text-left transition-all',
+                            selected
+                              ? 'bg-primary-fixed ring-2 ring-primary'
+                              : 'bg-surface-low hover:bg-surface-high'
+                          )}
+                        >
+                          <GameMark game={g} size={36} />
+                          <span className="min-w-0">
+                            <span className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-headline font-bold text-xs text-text-dark">
+                                {g.name}
+                              </span>
+                              <GameModeChip label={MODE_LABEL[g.mode]} />
+                            </span>
+                            <span className="block text-[11px] text-text-medium mt-0.5 line-clamp-2">
+                              {g.blurb}
+                            </span>
+                            <PlatformList game={g} className="mt-1" />
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+              )}
+
               <fieldset className="border-0 p-0 m-0">
                 <legend className="text-xs font-bold text-text-dark mb-2">Cover</legend>
                 <div className="grid grid-cols-4 gap-2">
@@ -313,6 +381,23 @@ export default function PostEvent() {
                 </div>
               </div>
 
+              {skipVenue && game ? (
+                <div className="p-4 bg-surface-low rounded-2xl flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    <GameMark game={game} size={40} />
+                    <div className="min-w-0">
+                      <p className="font-headline font-bold text-sm text-text-dark">{game.name}</p>
+                      <p className="text-xs text-text-medium">{JOIN_LABEL[game.joinBy]}</p>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-text-light">
+                    {needsStartTime(game)
+                      ? 'Everyone plays at once, so the time above is the one that matters.'
+                      : 'No fixed start — the time above is just when you are kicking it off.'}
+                  </p>
+                </div>
+              ) : (
+                <>
               <fieldset className="border-0 p-0 m-0">
                 <legend className="text-xs font-bold text-text-dark mb-1.5">Location type</legend>
                 <div className="flex bg-surface-low p-1 rounded-xl gap-1">
@@ -419,6 +504,8 @@ export default function PostEvent() {
                   </p>
                 </div>
               )}
+                </>
+              )}
             </div>
           )}
 
@@ -500,6 +587,44 @@ export default function PostEvent() {
                   />
                 </button>
               </div>
+
+              {game && (game.joinBy === 'roomCode' || game.joinBy === 'link') && (
+                <div className="flex flex-col gap-3 animate-slide-up">
+                  {game.joinBy === 'roomCode' ? (
+                    <div>
+                      <label htmlFor="ev-room" className="text-xs font-bold text-text-dark mb-1.5 block">
+                        Room code (optional)
+                      </label>
+                      <input
+                        id="ev-room"
+                        type="text"
+                        value={roomCode}
+                        onChange={e => setRoomCode(e.target.value.toUpperCase())}
+                        placeholder="WXYZ"
+                        maxLength={8}
+                        className="input-field text-sm font-mono uppercase"
+                      />
+                      <p className="text-[11px] text-text-light mt-1.5">
+                        Add it now or later — guests see it on the event page.
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <label htmlFor="ev-invite" className="text-xs font-bold text-text-dark mb-1.5 block">
+                        Party link (optional)
+                      </label>
+                      <input
+                        id="ev-invite"
+                        type="url"
+                        value={inviteUrl}
+                        onChange={e => setInviteUrl(e.target.value)}
+                        placeholder="https://..."
+                        className="input-field text-sm"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
 
               <fieldset className="border-0 p-0 m-0">
                 <legend className="text-xs font-bold text-text-dark mb-2">Who can see it</legend>

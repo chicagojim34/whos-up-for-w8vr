@@ -28,6 +28,18 @@ export type BroadcastTarget = 'all' | 'going' | 'waitlist';
 
 export type Privacy = 'public' | 'circle' | 'hidden';
 
+/** An online game attached to an event. See lib/games.ts for the catalogue. */
+export interface EventGame {
+  gameId: string;
+  /** Room code for live games (Jackbox and friends). */
+  roomCode?: string;
+  /** One-off table or party link, when the game issues one. */
+  inviteUrl?: string;
+}
+
+/** gameId → the username that person uses on that service. */
+export type GameHandles = Record<string, string>;
+
 export interface EventItem {
   id: string;
   title: string;
@@ -43,6 +55,8 @@ export interface EventItem {
   exactAddress?: string;
   isVirtual?: boolean;
   virtualLink?: string;
+  /** Set when this event is a session of an online game. */
+  game?: EventGame;
   maxSpots: number;
   autoWaitlist: boolean;
   attendees: Attendee[];
@@ -63,6 +77,8 @@ export interface CircleMember {
   id: string;
   name: string;
   role: 'Creator' | 'Admin' | 'Host' | 'Captain' | 'Member';
+  /** Handles this person has shared with the circle. */
+  gameHandles?: GameHandles;
 }
 
 export interface CircleItem {
@@ -124,6 +140,11 @@ export interface UserProfile {
   notifications: NotificationTiers;
   blockedIds: string[];
   closeFriendIds: string[];
+  /**
+   * Your username on each service. These services have no public OAuth, so
+   * this is a directory your circles can read — not a linked login.
+   */
+  gameHandles: GameHandles;
 }
 
 export interface ReportItem {

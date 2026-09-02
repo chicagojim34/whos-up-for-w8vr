@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600" role="img" aria-label="Daily word puzzle grid">
+  <rect width="800" height="600" fill="#f7f7f2"/>
+  <g transform="translate(196 118)">
+    <g fill="#6aaa64">
+      <rect width="92" height="92" rx="8"/><rect x="104" width="92" height="92" rx="8"/>
+    </g>
+    <rect x="208" width="92" height="92" rx="8" fill="#c9b458"/>
+    <g fill="#d3d6da"><rect x="312" width="92" height="92" rx="8"/><rect x="416" width="92" height="92" rx="8"/></g>
+
+    <g fill="#c9b458" y="104"><rect y="104" width="92" height="92" rx="8"/></g>
+    <g fill="#6aaa64"><rect x="104" y="104" width="92" height="92" rx="8"/><rect x="208" y="104" width="92" height="92" rx="8"/></g>
+    <g fill="#d3d6da"><rect x="312" y="104" width="92" height="92" rx="8"/><rect x="416" y="104" width="92" height="92" rx="8"/></g>
+
+    <g fill="#6aaa64">
+      <rect y="208" width="92" height="92" rx="8"/><rect x="104" y="208" width="92" height="92" rx="8"/>
+      <rect x="208" y="208" width="92" height="92" rx="8"/><rect x="312" y="208" width="92" height="92" rx="8"/>
+      <rect x="416" y="208" width="92" height="92" rx="8"/>
+    </g>
+  </g>
+  <text x="400" y="500" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="9" fill="#1a1a1a">SOLVED IN 3</text>
+</svg>

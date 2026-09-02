@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600" role="img" aria-label="Phones joining a party game on a shared screen">
+  <defs>
+    <linearGradient id="pg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2a1246"/><stop offset="1" stop-color="#e6266b"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#pg)"/>
+  <g opacity="0.9">
+    <rect x="230" y="120" width="340" height="210" rx="14" fill="#120a1f" stroke="#ffffff" stroke-opacity="0.28" stroke-width="3"/>
+    <rect x="256" y="150" width="140" height="16" rx="8" fill="#ffffff" fill-opacity="0.65"/>
+    <rect x="256" y="182" width="230" height="12" rx="6" fill="#ffffff" fill-opacity="0.3"/>
+    <rect x="256" y="208" width="188" height="12" rx="6" fill="#ffffff" fill-opacity="0.3"/>
+    <rect x="256" y="252" width="130" height="42" rx="12" fill="#e6266b"/>
+    <text x="321" y="280" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="20" font-weight="700" fill="#fff">ABCD</text>
+    <rect x="370" y="330" width="60" height="20" rx="4" fill="#120a1f"/>
+    <rect x="330" y="350" width="140" height="10" rx="5" fill="#120a1f"/>
+  </g>
+  <g fill="#ffffff" fill-opacity="0.16">
+    <rect x="120" y="380" width="90" height="150" rx="14"/>
+    <rect x="245" y="410" width="90" height="150" rx="14"/>
+    <rect x="370" y="392" width="90" height="150" rx="14"/>
+    <rect x="495" y="410" width="90" height="150" rx="14"/>
+    <rect x="620" y="380" width="90" height="150" rx="14"/>
+  </g>
+  <g fill="#ffe86b">
+    <circle cx="165" cy="430" r="9"/><circle cx="290" cy="460" r="9"/><circle cx="415" cy="442" r="9"/>
+    <circle cx="540" cy="460" r="9"/><circle cx="665" cy="430" r="9"/>
+  </g>
+</svg>

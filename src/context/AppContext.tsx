@@ -70,6 +70,8 @@ interface AppContextType {
   blockUser: (userId: string, name: string) => void;
   unblockUser: (userId: string) => void;
   toggleCloseFriend: (userId: string) => void;
+  linkGameAccount: (gameId: string, handle: string) => void;
+  unlinkGameAccount: (gameId: string) => void;
   reportEvent: (eventId: string, reason: string, note: string) => void;
   updateNotifications: (patch: Partial<Omit<NotificationTiers, 'logistics'>>) => void;
   updateProfile: (patch: Partial<Pick<UserProfile, 'name' | 'tagline' | 'homeCity'>>) => void;
@@ -91,6 +93,7 @@ export interface NewEventDraft {
   autoWaitlist: boolean;
   privacy: EventItem['privacy'];
   circleId?: string;
+  game?: EventItem['game'];
 }
 
 export interface NewCircleDraft {
@@ -291,6 +294,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         exactAddress: draft.exactAddress,
         isVirtual: draft.isVirtual,
         virtualLink: draft.virtualLink,
+        game: draft.game,
         maxSpots: draft.maxSpots,
         autoWaitlist: draft.autoWaitlist,
         attendees: [{ id: ME, name: user.name, status: 'going', joinedAt: Date.now() }],
@@ -529,6 +533,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   }, []);
 
+  /**
+   * Saves the username you use on a service. Not an OAuth link — these games
+   * have no public login for third parties — so it is a handle your circles
+   * can read and act on.
+   */
+  const linkGameAccount = useCallback((gameId: string, handle: string) => {
+    const trimmed = handle.trim();
+    if (!trimmed) return;
+    setUser(prev => ({ ...prev, gameHandles: { ...prev.gameHandles, [gameId]: trimmed } }));
+  }, []);
+
+  const unlinkGameAccount = useCallback((gameId: string) => {
+    setUser(prev => {
+      const next = { ...prev.gameHandles };
+      delete next[gameId];
+      return { ...prev, gameHandles: next };
+    });
+  }, []);
+
   const reportEvent = useCallback(
     (eventId: string, reason: string, note: string) => {
       const event = events.find(e => e.id === eventId);
@@ -652,6 +675,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       blockUser,
       unblockUser,
       toggleCloseFriend,
+      linkGameAccount,
+      unlinkGameAccount,
       reportEvent,
       updateNotifications,
       updateProfile,
@@ -684,6 +709,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       blockUser,
       unblockUser,
       toggleCloseFriend,
+      linkGameAccount,
+      unlinkGameAccount,
       reportEvent,
       updateNotifications,
       updateProfile,

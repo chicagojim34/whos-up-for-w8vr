@@ -72,6 +72,11 @@ export const INITIAL_USER: UserProfile = {
   },
   blockedIds: [],
   closeFriendIds: ['u0', 'u1', 'u2'],
+  gameHandles: {
+    nyt: 'felixv',
+    wwf: 'felix_vance',
+    chesscom: 'felixvance',
+  },
 };
 
 export const INITIAL_EVENTS: EventItem[] = [
@@ -277,6 +282,73 @@ export const INITIAL_EVENTS: EventItem[] = [
     coords: { x: 60, y: 30 },
     comments: [],
   },
+  {
+    id: 'e8',
+    title: 'Connections, before coffee',
+    description: 'Everyone plays the daily puzzle and drops their grid in the thread.',
+    category: 'Online/Play',
+    image: '/daily_puzzle.svg',
+    startsAt: dayAt(0, 8, 0),
+    distanceMi: 0,
+    location: 'Wherever you are',
+    isVirtual: true,
+    virtualLink: 'https://www.nytimes.com/games/connections',
+    game: { gameId: 'nyt' },
+    maxSpots: 20,
+    autoWaitlist: false,
+    attendees: [
+      { id: ME, name: 'Felix Vance', status: 'going', joinedAt: T0 },
+      { id: 'u0', name: 'Aneka Rao', status: 'going', joinedAt: T0 + 60_000 },
+      { id: 'u1', name: 'Jocelyn Park', status: 'going', joinedAt: T0 + 120_000 },
+      { id: 'u10', name: 'Sarah Miller', status: 'going', joinedAt: T0 + 180_000 },
+      { id: 'u7', name: 'Leo Marchetti', status: 'maybe', joinedAt: T0 + 240_000 },
+    ],
+    interested: 12,
+    vibe:
+      'No pressure and no start time — play it whenever you wake up, then post your grid. Spoilers go behind a warning until 10am.',
+    hostId: 'u0',
+    hostName: 'Aneka Rao',
+    privacy: 'circle',
+    circleId: 'c1',
+    coords: { x: 20, y: 18 },
+    comments: [
+      {
+        id: 'm6',
+        authorId: 'u1',
+        author: 'Jocelyn Park',
+        text: 'Purple category was brutal today. Two mistakes.',
+        createdAt: Date.now() - 30 * 60_000,
+      },
+    ],
+  },
+  {
+    id: 'e9',
+    title: 'Jackbox Friday',
+    description: 'Quiplash and Fibbage over a video call. Bring a second screen.',
+    category: 'Online/Play',
+    image: '/party_games.svg',
+    startsAt: dayAt(4, 20, 30),
+    distanceMi: 0,
+    location: 'Online — video call',
+    isVirtual: true,
+    virtualLink: 'https://jackbox.tv',
+    game: { gameId: 'jackbox', roomCode: 'WXYZ' },
+    maxSpots: 8,
+    autoWaitlist: true,
+    attendees: [
+      { id: ME, name: 'Felix Vance', status: 'going', joinedAt: T0 },
+      ...roster({ going: 4, maybe: 2, waitlist: 1 }, 1, T0),
+    ],
+    interested: 9,
+    vibe:
+      'I share my screen, you play on your phone at jackbox.tv with the room code. Eight players max, so grab a spot.',
+    hostId: ME,
+    hostName: 'Felix Vance',
+    privacy: 'circle',
+    circleId: 'c1',
+    coords: { x: 86, y: 15 },
+    comments: [],
+  },
 ];
 
 export const INITIAL_CIRCLES: CircleItem[] = [
@@ -290,11 +362,11 @@ export const INITIAL_CIRCLES: CircleItem[] = [
     isPrivate: true,
     categoryTag: 'FRIENDS',
     memberList: [
-      { id: ME, name: 'Felix Vance', role: 'Creator' },
-      { id: 'u0', name: 'Aneka Rao', role: 'Host' },
-      { id: 'u1', name: 'Jocelyn Park', role: 'Member' },
-      { id: 'u10', name: 'Sarah Miller', role: 'Member' },
-      { id: 'u7', name: 'Leo Marchetti', role: 'Member' },
+      { id: ME, name: 'Felix Vance', role: 'Creator', gameHandles: { nyt: 'felixv', wwf: 'felix_vance', chesscom: 'felixvance' } },
+      { id: 'u0', name: 'Aneka Rao', role: 'Host', gameHandles: { nyt: 'anekar', wwf: 'aneka_plays', bga: 'AnekaR' } },
+      { id: 'u1', name: 'Jocelyn Park', role: 'Member', gameHandles: { nyt: 'jocelynp', wwf: 'jos_words' } },
+      { id: 'u10', name: 'Sarah Miller', role: 'Member', gameHandles: { nyt: 'smiller', chesscom: 'sarahm_64' } },
+      { id: 'u7', name: 'Leo Marchetti', role: 'Member', gameHandles: { wwf: 'leo_m', bga: 'LeoM', duolingo: 'leomarchetti' } },
     ],
   },
   {
@@ -308,9 +380,9 @@ export const INITIAL_CIRCLES: CircleItem[] = [
     categoryTag: 'FAMILY',
     memberList: [
       { id: ME, name: 'Felix Vance', role: 'Member' },
-      { id: 'u30', name: 'Ruth Vance', role: 'Admin' },
-      { id: 'u31', name: 'Peter Vance', role: 'Member' },
-      { id: 'u32', name: 'Chloe Vance', role: 'Member' },
+      { id: 'u30', name: 'Ruth Vance', role: 'Admin', gameHandles: { nyt: 'ruthv', wwf: 'ruth_vance' } },
+      { id: 'u31', name: 'Peter Vance', role: 'Member', gameHandles: { wwf: 'pete_v' } },
+      { id: 'u32', name: 'Chloe Vance', role: 'Member', gameHandles: { nyt: 'chloev', duolingo: 'chloe_v' } },
     ],
   },
   {
@@ -324,9 +396,9 @@ export const INITIAL_CIRCLES: CircleItem[] = [
     categoryTag: 'FITNESS',
     memberList: [
       { id: ME, name: 'Felix Vance', role: 'Member' },
-      { id: 'u2', name: 'Marcus Bell', role: 'Captain' },
-      { id: 'u9', name: 'David Park', role: 'Member' },
-      { id: 'u3', name: 'Elena Rostova', role: 'Member' },
+      { id: 'u2', name: 'Marcus Bell', role: 'Captain', gameHandles: { duolingo: 'marcusb', pokemongo: '4821 9033 7715' } },
+      { id: 'u9', name: 'David Park', role: 'Member', gameHandles: { chesscom: 'dpark_chess' } },
+      { id: 'u3', name: 'Elena Rostova', role: 'Member', gameHandles: { nyt: 'elenar' } },
     ],
   },
   {

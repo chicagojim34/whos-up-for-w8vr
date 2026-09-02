@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
-import { Bell, ShieldOff, Flag, UserCheck, RotateCcw } from 'lucide-react';
+import { Bell, ShieldOff, Flag, UserCheck, RotateCcw, Gamepad2 } from 'lucide-react';
 import cx from 'classnames';
 import { useApp } from '../hooks/useApp';
 import { useToast } from '../hooks/useToast';
 import { useConfirm } from '../hooks/useConfirm';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Avatar } from '../components/Avatar';
+import { GameAccounts } from '../components/GameAccounts';
 import { formatAgo } from '../lib/datetime';
 
 interface ToggleRowProps {
@@ -183,6 +184,14 @@ export default function Settings() {
             );
           })}
         </ul>
+      </section>
+
+      {/* Game accounts */}
+      <section className="mb-10">
+        <h2 className="font-headline font-bold text-lg text-text-dark flex items-center gap-2 mb-1">
+          <Gamepad2 size={18} className="text-primary" aria-hidden="true" /> Game accounts
+        </h2>
+        <GameAccounts />
       </section>
 
       {/* Blocked */}
