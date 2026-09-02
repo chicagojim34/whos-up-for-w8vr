@@ -20,6 +20,7 @@ import {
   Video,
   Clock,
   Copy,
+  Ticket,
 } from 'lucide-react';
 import cx from 'classnames';
 import { useApp } from '../hooks/useApp';
@@ -49,7 +50,7 @@ import {
   waitlistCount,
   waitlistQueue,
 } from '../lib/events';
-import { formatAgo, formatDistance, formatWhen } from '../lib/datetime';
+import { formatAgo, formatDistance, formatWhen, formatTime } from '../lib/datetime';
 
 const REPORT_REASONS = [
   { value: 'spam', label: 'Spam or commercial advertisement' },
@@ -257,6 +258,12 @@ export default function EventDetails() {
               {event.title}
             </h1>
 
+            {event.performerOrTeam && (
+              <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white font-headline font-bold text-xs">
+                <span>⭐ Headline: {event.performerOrTeam}</span>
+              </div>
+            )}
+
             <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-4 text-xs opacity-95 font-semibold text-white">
               <span className="flex items-center gap-1.5">
                 <Calendar size={15} className="text-primary-fixed" aria-hidden="true" />
@@ -295,6 +302,143 @@ export default function EventDetails() {
             >
               Send update
             </button>
+          </section>
+        )}
+
+        {/* Dual-Time Outing Schedule Matrix */}
+        {(event.showtime || event.meetupTime || event.isTicketedEvent) && (
+          <section className="bg-surface-lowest rounded-3xl p-6 shadow-sm border border-primary/15">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-6 bg-primary rounded-full" aria-hidden="true" />
+                <h2 className="text-xl font-headline font-bold text-text-dark">Outing Schedule</h2>
+              </div>
+              <span className="badge bg-secondary-container text-on-secondary-container text-xs font-bold">
+                Dual-Time Sync
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Step 1: Meetup */}
+              <div className="p-4 bg-primary-fixed/30 rounded-2xl border border-primary/20">
+                <div className="text-[10px] font-headline font-black text-primary uppercase tracking-widest">
+                  STAGE 1 • PRE-EVENT MEETUP
+                </div>
+                <div className="font-headline font-black text-2xl text-primary mt-1">
+                  {event.meetupTime || formatTime(event.startsAt)}
+                </div>
+                <div className="text-xs font-bold text-text-dark mt-1 flex items-center gap-1">
+                  <MapPin size={13} className="text-primary shrink-0" />
+                  <span>{event.meetupLocation || 'Nearby Gathering Spot'}</span>
+                </div>
+                <div className="text-[11px] text-text-medium mt-1">
+                  Meet circle here for pre-drinks & food before entering.
+                </div>
+              </div>
+
+              {/* Step 2: Doors */}
+              <div className="p-4 bg-surface-low rounded-2xl border border-gray-100">
+                <div className="text-[10px] font-headline font-bold text-text-light uppercase tracking-widest">
+                  STAGE 2 • DOORS OPEN
+                </div>
+                <div className="font-headline font-black text-2xl text-text-dark mt-1">
+                  {event.doorsTime || '1h before show'}
+                </div>
+                <div className="text-xs font-bold text-text-dark mt-1">
+                  {event.location}
+                </div>
+                <div className="text-[11px] text-text-medium mt-1">
+                  Venue security checkpoints & gates open.
+                </div>
+              </div>
+
+              {/* Step 3: Showtime */}
+              <div className="p-4 bg-surface-low rounded-2xl border border-gray-100">
+                <div className="text-[10px] font-headline font-bold text-secondary uppercase tracking-widest">
+                  STAGE 3 • SHOWTIME / KICKOFF
+                </div>
+                <div className="font-headline font-black text-2xl text-secondary mt-1">
+                  {event.showtime || formatTime(event.startsAt)}
+                </div>
+                <div className="text-xs font-bold text-text-dark mt-1">
+                  Main Event on Stage
+                </div>
+                <div className="text-[11px] text-text-medium mt-1">
+                  {event.performerOrTeam ? `${event.performerOrTeam} begins` : 'Event begins promptly'}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Ticket & Seating Coordination Card */}
+        {(event.ticketUrl || event.ticketSectionInfo || event.isTicketedEvent) && (
+          <section className="bg-surface-lowest rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-6 bg-secondary rounded-full" aria-hidden="true" />
+                <h2 className="text-xl font-headline font-bold text-text-dark">Tickets & Seating</h2>
+              </div>
+              {event.priceRange && (
+                <span className="badge bg-surface-high font-bold text-xs text-text-dark">
+                  {event.priceRange}
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {event.ticketSectionInfo && (
+                <div className="p-4 bg-surface-low rounded-2xl">
+                  <span className="text-[10px] font-headline font-bold text-text-light uppercase tracking-wider block mb-1">
+                    TARGET GROUP SEATING SECTION
+                  </span>
+                  <div className="font-headline font-bold text-base text-text-dark flex items-center gap-1.5">
+                    <Ticket size={16} className="text-primary" />
+                    <span>{event.ticketSectionInfo}</span>
+                  </div>
+                  <div className="text-[11px] text-text-medium mt-1">
+                    Coordinate your seat purchases here so the circle sits together!
+                  </div>
+                </div>
+              )}
+
+              {event.ticketUrl && (
+                <div className="p-4 bg-primary-fixed/20 rounded-2xl flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] font-headline font-bold text-primary uppercase tracking-wider block mb-1">
+                      OFFICIAL TICKETS
+                    </span>
+                    <div className="text-xs text-text-medium mb-3">
+                      Purchase through official vendor or resale portal.
+                    </div>
+                  </div>
+                  <a
+                    href={event.ticketUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary text-xs py-2.5 px-4 flex items-center justify-center gap-2"
+                  >
+                    <span>Buy Official Tickets</span>
+                    <ExternalLink size={14} />
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {(event.bagPolicy || event.ageRestriction) && (
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100 text-xs text-text-medium">
+                {event.bagPolicy && (
+                  <span className="badge bg-surface-low text-text-dark text-xs py-1 px-2.5">
+                    🎒 Bag Policy: {event.bagPolicy}
+                  </span>
+                )}
+                {event.ageRestriction && (
+                  <span className="badge bg-surface-low text-text-dark text-xs py-1 px-2.5">
+                    🔞 Age: {event.ageRestriction}
+                  </span>
+                )}
+              </div>
+            )}
           </section>
         )}
 

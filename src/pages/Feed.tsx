@@ -8,7 +8,6 @@ import { CategoryChip } from '../components/CategoryChip';
 import { CATEGORY_DEFINITIONS, type EventCategory } from '../lib/categories';
 import { StatusRing } from '../components/StatusRing';
 import { AvatarGroup } from '../components/AvatarGroup';
-import { ME } from '../types';
 import {
   capacityPct,
   confirmedCount,
@@ -38,9 +37,15 @@ export default function Feed() {
       const matchesCategory = activeCategory === 'All Events' || event.category === activeCategory;
       if (!matchesCategory) return false;
       if (!query) return true;
-      return [event.title, event.location, event.description, event.vibe, event.category].some(
-        field => field.toLowerCase().includes(query)
-      );
+      return [
+        event.title,
+        event.location,
+        event.description,
+        event.vibe,
+        event.category,
+        event.performerOrTeam || '',
+        event.eventSubType || '',
+      ].some(field => field.toLowerCase().includes(query));
     });
     return {
       live: rankEvents(matches.filter(e => !e.muted)),
@@ -65,31 +70,28 @@ export default function Feed() {
   };
 
   return (
-    <div className="flex flex-col pb-12 animate-fade-in">
-      {/* Search & category filters */}
+    <div className="flex flex-col pb-24 animate-fade-in">
+      {/* Search & categories */}
       <div className="px-6 pt-2 pb-4 flex flex-col gap-3">
         <div className="relative">
-          <label htmlFor="feed-search" className="sr-only-text">
-            Search events
-          </label>
           <Search
             className="absolute left-4 top-1/2 -translate-y-1/2 text-text-light pointer-events-none"
             size={18}
             aria-hidden="true"
           />
           <input
-            id="feed-search"
             type="search"
-            placeholder="Search events, vibes, or locations..."
+            aria-label="Search events"
+            placeholder="Search events, artists, teams, vibes, or venues..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="input-field pl-11 pr-11 py-3 text-sm rounded-full bg-surface-high"
+            className="input-field pl-11 py-3 text-sm rounded-full bg-surface-high border-none focus:bg-surface-lowest"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-light hover:text-text-dark"
               aria-label="Clear search"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-light hover:text-text-dark p-1"
             >
               <X size={16} aria-hidden="true" />
             </button>
@@ -98,7 +100,7 @@ export default function Feed() {
 
         <div
           className="flex gap-2 overflow-x-auto pb-1 no-scrollbar"
-          role="group"
+          role="region"
           aria-label="Filter by category"
         >
           {CATEGORY_DEFINITIONS.map(cat => (
@@ -113,92 +115,123 @@ export default function Feed() {
         </div>
       </div>
 
-      {/* Event grid */}
-      <ul className="grid gap-8 px-6 list-none grid-cols-[repeat(auto-fill,minmax(min(340px,100%),1fr))]">
+      {/* Grid */}
+      <ul className="grid gap-6 px-6 list-none grid-cols-1 md:grid-cols-2">
         {live.map(event => {
-          const mine = myRsvp(event);
           const capacity = capacityPct(event);
           const going = confirmedCount(event);
-          const names = goingNames(event);
           const full = isFull(event);
+          const mine = myRsvp(event);
+          const names = goingNames(event);
 
           return (
             <li key={event.id}>
               <article
-                className={cx('card p-0 overflow-hidden relative rounded-3xl group h-full', {
-                  'card-attending': mine === 'going',
-                  'card-hosting': event.hostId === ME,
-                })}
+                className="card p-0 overflow-hidden relative rounded-3xl flex flex-col group h-full"
               >
-                {/* Cover */}
-                <div className="relative h-[230px]">
-                  <img
-                    src={event.image}
-                    alt=""
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
+              {/* Image banner */}
+              <div className="relative h-56 w-full">
+                <img
+                  src={event.image}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
 
-                  <span className="glass-panel badge flex items-center gap-1 text-xs absolute top-3.5 right-3.5">
-                    <MapPin size={13} className="text-primary" aria-hidden="true" />
-                    <span className="font-bold">{formatDistance(event.distanceMi)}</span>
-                  </span>
+                <span className="glass-panel badge flex items-center gap-1 text-xs absolute top-3.5 right-3.5">
+                  <MapPin size={13} className="text-primary" aria-hidden="true" />
+                  <span className="font-bold">{formatDistance(event.distanceMi)}</span>
+                </span>
 
+                <div className="absolute top-3.5 left-3.5 flex flex-col gap-1">
                   {isFillingFast(event) && (
-                    <span className="badge bg-error text-white flex items-center gap-1 font-black tracking-widest text-[9px] absolute top-3.5 left-3.5">
+                    <span className="badge bg-error text-white flex items-center gap-1 font-black tracking-widest text-[9px]">
                       <Zap size={11} fill="currentColor" aria-hidden="true" /> FILLING FAST
                     </span>
                   )}
                   {full && (
-                    <span className="badge bg-text-dark text-white font-black tracking-widest text-[9px] absolute top-3.5 left-3.5">
+                    <span className="badge bg-text-dark text-white font-black tracking-widest text-[9px]">
                       FULL
                     </span>
                   )}
-
-                  <StatusRing
-                    capacity={capacity}
-                    size={46}
-                    strokeWidth={4}
-                    variant="glass"
-                    srLabel={`${going} of ${event.maxSpots} spots taken`}
-                    className="absolute bottom-3 right-3.5 z-10"
-                  />
+                  {event.eventSubType && (
+                    <span className="badge bg-black/70 backdrop-blur-md text-white font-bold tracking-widest text-[9px] uppercase">
+                      {event.eventSubType}
+                    </span>
+                  )}
                 </div>
 
-                {/* Body */}
-                <div className="px-8 pb-8 pt-6 flex flex-col gap-4">
-                  <div className="flex justify-between items-center gap-3 text-xs font-bold">
-                    <span
-                      className={cx(
-                        'px-2.5 py-1 rounded-md text-[10px] uppercase font-headline tracking-widest',
-                        event.privacy === 'circle'
-                          ? 'bg-secondary-container text-on-secondary-container'
-                          : 'bg-surface-high text-text-medium'
-                      )}
+                <StatusRing
+                  capacity={capacity}
+                  size={46}
+                  strokeWidth={4}
+                  variant="glass"
+                  srLabel={`${going} of ${event.maxSpots} spots taken`}
+                  className="absolute bottom-3 right-3.5 z-10"
+                />
+              </div>
+
+              {/* Body */}
+              <div className="px-8 pb-8 pt-6 flex flex-col gap-4">
+                <div className="flex justify-between items-center gap-3 text-xs font-bold">
+                  <span
+                    className={cx(
+                      'px-2.5 py-1 rounded-md text-[10px] uppercase font-headline tracking-widest',
+                      event.privacy === 'circle'
+                        ? 'bg-secondary-container text-on-secondary-container'
+                        : 'bg-surface-high text-text-medium'
+                    )}
+                  >
+                    {eventKindLabel(event)}
+                  </span>
+                  <time
+                    dateTime={event.startsAt}
+                    className="text-text-dark font-headline font-extrabold opacity-85 text-right"
+                  >
+                    {formatWhen(event.startsAt)}
+                  </time>
+                </div>
+
+                <div>
+                  <h3 className="font-headline font-black text-2xl leading-[1.2] tracking-tight text-text-dark">
+                    <button
+                      onClick={() => navigate(`/event/${event.id}`)}
+                      className="text-left group-hover:text-primary transition-colors after:absolute after:inset-0 after:content-['']"
                     >
-                      {eventKindLabel(event)}
-                    </span>
-                    <time
-                      dateTime={event.startsAt}
-                      className="text-text-dark font-headline font-extrabold opacity-85 text-right"
-                    >
-                      {formatWhen(event.startsAt)}
-                    </time>
+                      {event.title}
+                    </button>
+                  </h3>
+
+                  {event.performerOrTeam && (
+                    <div className="text-xs font-headline font-bold text-primary mt-1">
+                      ⭐ {event.performerOrTeam}
+                    </div>
+                  )}
+
+                  {event.showtime && event.meetupTime ? (
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-primary mt-1">
+                      <Clock size={12} />
+                      <span>Meet {event.meetupTime} • Show {event.showtime}</span>
+                    </div>
+                  ) : null}
+
+                  <div className="flex items-center gap-1.5 text-xs text-text-medium mt-1">
+                    <MapPin size={12} className="text-primary shrink-0" aria-hidden="true" />
+                    <span className="line-clamp-1">{event.location}</span>
                   </div>
 
-                  <div>
-                    <h3 className="font-headline font-black text-2xl leading-[1.2] tracking-tight text-text-dark">
-                      <button
-                        onClick={() => navigate(`/event/${event.id}`)}
-                        className="text-left group-hover:text-primary transition-colors after:absolute after:inset-0 after:content-['']"
-                      >
-                        {event.title}
-                      </button>
-                    </h3>
-                    <p className="text-sm text-text-medium leading-relaxed mt-2 line-clamp-2">
-                      {event.description}
-                    </p>
-                  </div>
+                  <p className="text-sm text-text-medium leading-relaxed mt-2 line-clamp-2">
+                    {event.description}
+                  </p>
+
+                  {event.ticketSectionInfo && (
+                    <div className="mt-2.5">
+                      <span className="badge bg-secondary-container text-on-secondary-container text-[10px] font-bold">
+                        🎟️ {event.ticketSectionInfo}
+                      </span>
+                    </div>
+                  )}
+                </div>
 
                   <div className="flex justify-between items-center gap-3 mt-auto pt-5">
                     {names.length > 0 ? (

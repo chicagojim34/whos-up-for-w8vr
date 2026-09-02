@@ -94,6 +94,22 @@ export interface NewEventDraft {
   privacy: EventItem['privacy'];
   circleId?: string;
   game?: EventItem['game'];
+
+  // Ticketed & Dual-Time Fields
+  isTicketedEvent?: boolean;
+  eventSubType?: EventItem['eventSubType'];
+  performerOrTeam?: string;
+  showtime?: string;
+  doorsTime?: string;
+  meetupTime?: string;
+  meetupLocation?: string;
+  ticketUrl?: string;
+  ticketSectionInfo?: string;
+  priceRange?: string;
+  lineup?: string[];
+  venueAddress?: string;
+  bagPolicy?: string;
+  ageRestriction?: string;
 }
 
 export interface NewCircleDraft {
@@ -292,9 +308,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         distanceMi: 0.2,
         location: draft.location,
         exactAddress: draft.exactAddress,
+        venueAddress: draft.venueAddress,
         isVirtual: draft.isVirtual,
         virtualLink: draft.virtualLink,
         game: draft.game,
+        isTicketedEvent: draft.isTicketedEvent,
+        eventSubType: draft.eventSubType,
+        performerOrTeam: draft.performerOrTeam,
+        showtime: draft.showtime,
+        doorsTime: draft.doorsTime,
+        meetupTime: draft.meetupTime,
+        meetupLocation: draft.meetupLocation,
+        ticketUrl: draft.ticketUrl,
+        ticketSectionInfo: draft.ticketSectionInfo,
+        priceRange: draft.priceRange,
+        lineup: draft.lineup,
+        bagPolicy: draft.bagPolicy,
+        ageRestriction: draft.ageRestriction,
         maxSpots: draft.maxSpots,
         autoWaitlist: draft.autoWaitlist,
         attendees: [{ id: ME, name: user.name, status: 'going', joinedAt: Date.now() }],

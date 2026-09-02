@@ -1,27 +1,28 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Download, ArrowRight, CalendarCheck2, Clock } from 'lucide-react';
+import { MapPin, Download, ArrowRight, CalendarCheck2, Clock, Calendar } from 'lucide-react';
 import cx from 'classnames';
 import { useApp } from '../hooks/useApp';
 import { useToast } from '../hooks/useToast';
 import { StatusRing } from '../components/StatusRing';
+import { CalendarSubscribeModal } from '../components/CalendarSubscribeModal';
 import { capacityPct, confirmedCount, myRsvp } from '../lib/events';
 import { buildIcs, dayKey, formatDayHeading, formatTime, isPast } from '../lib/datetime';
 import type { EventItem } from '../types';
 
-type Filter = 'all' | 'going' | 'pending';
-
-const FILTERS: { key: Filter; label: string }[] = [
-  { key: 'all', label: 'Everything' },
+const FILTERS = [
+  { key: 'all', label: 'All scheduled' },
   { key: 'going', label: 'Confirmed' },
   { key: 'pending', label: 'Maybe & waitlist' },
-];
+] as const;
 
 export default function Schedule() {
-  const navigate = useNavigate();
   const { events } = useApp();
   const toast = useToast();
-  const [filter, setFilter] = useState<Filter>('all');
+  const navigate = useNavigate();
+
+  const [filter, setFilter] = useState<'all' | 'going' | 'pending'>('all');
+  const [isSubscribeModalOpen, setIsSubscribeModalOpen] = useState(false);
 
   /** Chronological, grouped by calendar day — possible only now that
    *  startsAt is a real timestamp rather than the string "Tomorrow". */
@@ -71,20 +72,52 @@ export default function Schedule() {
 
   return (
     <div className="flex flex-col pb-28 px-6 bg-surface animate-fade-in max-w-4xl mx-auto w-full">
-      <header className="mt-4 mb-4 flex justify-between items-end gap-4 flex-wrap">
+      <CalendarSubscribeModal
+        isOpen={isSubscribeModalOpen}
+        onClose={() => setIsSubscribeModalOpen(false)}
+        events={events}
+      />
+
+      <header className="mt-4 mb-3 flex justify-between items-end gap-4 flex-wrap">
         <div>
           <h1 className="font-headline font-black text-3xl text-text-dark">My schedule</h1>
           <p className="text-text-medium text-sm mt-1">
             Everything you have committed to, in the order it happens.
           </p>
         </div>
-        <button
-          onClick={handleExport}
-          className="btn btn-secondary text-xs py-2 px-3.5 flex items-center gap-1.5 shrink-0"
-        >
-          <Download size={14} aria-hidden="true" /> Export .ics
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsSubscribeModalOpen(true)}
+            className="btn btn-primary text-xs py-2 px-3.5 flex items-center gap-1.5 shrink-0 shadow-neon cursor-pointer"
+            title="Subscribe in Apple Calendar, Google Calendar, or Outlook"
+          >
+            <Calendar size={14} aria-hidden="true" /> Subscribe to Calendar
+          </button>
+          <button
+            onClick={handleExport}
+            className="btn btn-secondary text-xs py-2 px-3 flex items-center gap-1.5 shrink-0"
+            title="Download offline .ics file"
+          >
+            <Download size={14} aria-hidden="true" /> .ics
+          </button>
+        </div>
       </header>
+
+      {/* Live Calendar Subscription Status Banner */}
+      <div
+        onClick={() => setIsSubscribeModalOpen(true)}
+        className="mb-4 p-3 bg-primary-fixed/30 border border-primary/20 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-primary-fixed/40 transition-colors shadow-2xs"
+      >
+        <div className="flex items-center gap-2 text-xs font-semibold text-text-dark">
+          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <span>
+            <strong>Live Calendar Feed:</strong> Syncs to Apple Calendar, Google Calendar & Outlook.
+          </span>
+        </div>
+        <span className="text-[11px] font-bold text-primary flex items-center gap-1">
+          Subscribe / Sync Feed →
+        </span>
+      </div>
 
       <div
         className="flex gap-2 pb-3 mb-4 overflow-x-auto no-scrollbar"
@@ -166,10 +199,30 @@ export default function Schedule() {
                         {event.title}
                       </span>
 
+                      {event.performerOrTeam && (
+                        <span className="block text-xs font-headline font-bold text-primary truncate mt-0.5">
+                          ⭐ {event.performerOrTeam}
+                        </span>
+                      )}
+
+                      {event.meetupTime && event.showtime && (
+                        <span className="flex items-center gap-2 text-xs font-bold text-text-dark mt-1">
+                          <span className="text-primary flex items-center gap-1">
+                            <Clock size={11} /> Meet: {event.meetupTime}
+                          </span>
+                          <span className="text-text-light">•</span>
+                          <span className="text-secondary font-extrabold">
+                            Show: {event.showtime}
+                          </span>
+                        </span>
+                      )}
+
                       <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-medium mt-1">
                         <span className="flex items-center gap-1 min-w-0">
                           <MapPin size={13} className="text-primary shrink-0" aria-hidden="true" />
-                          <span className="truncate">{event.location}</span>
+                          <span className="truncate">
+                            {event.meetupLocation ? `${event.meetupLocation} (Meetup) / ${event.location}` : event.location}
+                          </span>
                         </span>
                         <span>{confirmedCount(event)} going</span>
                       </span>

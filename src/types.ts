@@ -71,6 +71,22 @@ export interface EventItem {
   /** Percent coordinates on the discovery map. */
   coords: { x: number; y: number };
   comments: Comment[];
+
+  // Ticketed & Dual-Time Properties
+  isTicketedEvent?: boolean;
+  eventSubType?: 'Concert' | 'Sports' | 'Comedy' | 'Theater' | 'Festival' | 'Other';
+  performerOrTeam?: string;
+  showtime?: string;
+  doorsTime?: string;
+  meetupTime?: string;
+  meetupLocation?: string;
+  ticketUrl?: string;
+  ticketSectionInfo?: string;
+  priceRange?: string;
+  lineup?: string[];
+  venueAddress?: string;
+  bagPolicy?: string;
+  ageRestriction?: string;
 }
 
 export interface CircleMember {
