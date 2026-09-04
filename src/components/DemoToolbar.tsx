@@ -37,7 +37,7 @@ export function DemoToolbar() {
           setDismissedState(false);
           localStorage.removeItem('w8vr_demo_toolbar_dismissed');
         }}
-        className="fixed bottom-4 right-4 z-40 bg-gray-900/90 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg hover:bg-black transition-transform hover:scale-105 cursor-pointer"
+        className="fixed bottom-4 right-4 z-60 bg-gray-900/90 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg hover:bg-black transition-transform hover:scale-105 cursor-pointer"
         title="Open Demo Sandbox Toolbar"
       >
         <Sparkles size={13} className="text-amber-400" />
@@ -70,7 +70,7 @@ export function DemoToolbar() {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-gray-900/95 backdrop-blur-md text-white border-t border-white/10 shadow-2xl transition-all">
+    <div className="fixed bottom-0 left-0 right-0 z-60 bg-gray-900/95 backdrop-blur-md text-white border-t border-white/10 shadow-2xl transition-all">
       {/* Expanded Persona Picker */}
       {isExpanded && (
         <div className="max-w-4xl mx-auto p-4 border-b border-white/10 animate-fade-in">
