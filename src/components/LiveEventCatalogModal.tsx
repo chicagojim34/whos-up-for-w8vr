@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import cx from 'classnames';
 import { searchLiveEventCatalog, getCachedLiveEvents } from '../services/liveEventCatalog';
-import type { AutoPullEvent, EventSubType } from '../services/eventAutoPull';
+import { type AutoPullEvent, type EventSubType, formatDisplayDate } from '../services/eventAutoPull';
 
 interface LiveEventCatalogModalProps {
   isOpen: boolean;
@@ -265,7 +265,7 @@ export function LiveEventCatalogModal({
                   {/* Date overlay */}
                   <div className="absolute bottom-3 left-3 right-3 text-white">
                     <span className="text-[11px] font-bold text-primary-fixed block uppercase tracking-wider">
-                      📅 {event.date}
+                      📅 {formatDisplayDate(event.date)}
                     </span>
                     <h4 className="font-headline font-black text-base leading-tight text-white truncate drop-shadow-sm">
                       {event.title}

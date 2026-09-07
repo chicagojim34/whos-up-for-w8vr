@@ -1,3 +1,5 @@
+import { resolveEventSchedule } from './venueScheduleResolver';
+
 export type EventSubType = 'Concert' | 'Sports' | 'Comedy' | 'Theater' | 'Festival' | 'Other';
 
 export interface AutoPullEvent {
@@ -23,10 +25,43 @@ export interface AutoPullEvent {
   bagPolicy: string;
   ageRestriction: string;
   description: string;
+  doorsConfirmed?: boolean;
+  doorsSource?: string;
+  venueGateInfo?: string;
 }
 
 export const POPULAR_EVENTS_CATALOG: AutoPullEvent[] = [
   // --- CONCERTS ---
+  {
+    id: 'evt-acdc-powerup-stl',
+    title: 'AC/DC – POWER UP TOUR 2026',
+    performerOrTeam: 'AC/DC',
+    eventSubType: 'Concert',
+    category: 'Entertainment',
+    venue: "The Dome at America's Center",
+    venueAddress: '701 Convention Plaza, St. Louis, MO 63101',
+    city: 'St. Louis, MO',
+    date: 'Tue, Sep 08',
+    showtime: '7:00 PM',
+    doorsTime: '5:00 PM',
+    suggestedMeetupTime: '4:30 PM',
+    suggestedMeetupLocation: "Meet outside The Dome at America's Center (near Main Gate / Entry A Plaza)",
+    image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&q=80&w=1200',
+    additionalImages: [
+      'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=1200',
+      'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&q=80&w=1200'
+    ],
+    ticketUrl: 'https://www.ticketmaster.com',
+    ticketSectionInfo: 'Section 114 / Lower Bowl or GA Floor',
+    priceRange: '$85 - $325',
+    lineup: ['AC/DC', 'Foo Fighters (Special Guests)'],
+    bagPolicy: 'Clear bags only (max 12"x6"x12") or small clutches under 4.5"x6.5". Cashless venue.',
+    ageRestriction: 'All Ages',
+    doorsConfirmed: true,
+    doorsSource: 'Explore St. Louis / Official Venue Guide',
+    venueGateInfo: 'Entry through Entry A, Entry B, Broadway Central, Entry C and Entry D. Accessible entrances at Gate A and Broadway Central. Floor tickets: Gate A or B (wristbands at Concourse Sections 115 & 140).',
+    description: "Official live concert event featuring AC/DC and Foo Fighters on the Power Up Tour at The Dome at America's Center. Group outing organized with W8VR."
+  },
   {
     id: 'evt-billie-eilish',
     title: 'Billie Eilish: Hit Me Hard and Soft Tour',
@@ -400,30 +435,194 @@ export const POPULAR_EVENTS_CATALOG: AutoPullEvent[] = [
   }
 ];
 
+const MONTH_INDEX: Record<string, number> = {
+  jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+  jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+};
+
 /**
- * Searches the catalog of events by artist, team, venue, city, or event title.
+ * Parses event dates into UNIX timestamps for chronological sorting (imminent/most recent first).
  */
-export function searchAutoPullEvents(query: string): AutoPullEvent[] {
-  if (!query || !query.trim()) {
-    return POPULAR_EVENTS_CATALOG.slice(0, 6);
+export function parseEventDateToTimestamp(dateStr?: string): number {
+  if (!dateStr || !dateStr.trim()) return Infinity;
+  const clean = dateStr.trim();
+
+  // 1. ISO YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}/.test(clean)) {
+    const ts = Date.parse(clean);
+    if (!isNaN(ts)) return ts;
   }
 
-  const clean = query.trim().toLowerCase();
-  const tokens = clean.split(/\s+/);
+  // 2. Formats like "Tue, Sep 08", "Sep 08", "Sep 8, 2026"
+  const match = clean.match(/(?:[A-Za-z]{3},?\s+)?([A-Za-z]{3})\s+(\d{1,2})(?:,?\s+(\d{4}))?/i);
+  if (match) {
+    const monthKey = match[1].toLowerCase();
+    const month = MONTH_INDEX[monthKey];
+    if (month !== undefined) {
+      const day = parseInt(match[2], 10);
+      const currentYear = new Date().getFullYear();
+      const year = match[3] ? parseInt(match[3], 10) : currentYear;
+      return new Date(year, month, day, 12, 0, 0).getTime();
+    }
+  }
 
-  return POPULAR_EVENTS_CATALOG.filter(evt => {
-    const haystack = [
-      evt.title,
-      evt.performerOrTeam,
-      evt.venue,
-      evt.city,
-      evt.eventSubType,
-      evt.category,
-      ...evt.lineup
-    ].join(' ').toLowerCase();
+  const fallback = Date.parse(clean);
+  return isNaN(fallback) ? Infinity : fallback;
+}
 
-    return tokens.every(token => haystack.includes(token));
+/**
+ * Standardizes display dates to human-friendly strings like "Tue, Sep 08".
+ */
+export function formatDisplayDate(dateStr?: string): string {
+  if (!dateStr || !dateStr.trim()) return 'Upcoming Date';
+  const clean = dateStr.trim();
+  if (/^[A-Za-z]{3},\s+[A-Za-z]{3}\s+\d{1,2}/.test(clean)) {
+    return clean;
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+    try {
+      const [year, month, day] = clean.split('-').map(Number);
+      const d = new Date(year, month - 1, day, 12, 0, 0);
+      return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: '2-digit' });
+    } catch {
+      return clean;
+    }
+  }
+  return clean;
+}
+
+/**
+ * Calculates a relevance score for an event based on artist, title, venue, city, and date.
+ */
+export function computeEventRelevance(
+  event: AutoPullEvent,
+  query: string,
+  userCity?: string
+): number {
+  if (!query || !query.trim()) {
+    if (userCity && event.city.toLowerCase().includes(userCity.toLowerCase())) {
+      return 50;
+    }
+    return 0;
+  }
+
+  const normalize = (s: string) =>
+    s.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+
+  const qRaw = query.trim().toLowerCase();
+  const qNorm = normalize(query);
+  const qTokens = qNorm.split(' ').filter(Boolean);
+  if (qTokens.length === 0) return 0;
+
+  const performerNorm = normalize(event.performerOrTeam);
+  const titleNorm = normalize(event.title);
+  const venueNorm = normalize(event.venue);
+  const cityNorm = normalize(event.city);
+  const lineupNorm = normalize((event.lineup || []).join(' '));
+  const fullHaystack = `${performerNorm} ${titleNorm} ${venueNorm} ${cityNorm} ${lineupNorm}`;
+  const haystackWords = fullHaystack.split(' ');
+
+  // For short tokens (<= 2 chars, like "ac" or "dc"), require whole-word match
+  // to avoid false-positives on unrelated words like "Zach" or "Places"
+  const isMatch = (words: string[], text: string, tok: string) => {
+    if (tok.length <= 2) {
+      return words.includes(tok);
+    }
+    return text.includes(tok);
+  };
+
+  const matchesAnyToken = qTokens.some(tok => isMatch(haystackWords, fullHaystack, tok));
+  const rawMatch =
+    event.performerOrTeam.toLowerCase().includes(qRaw) ||
+    event.title.toLowerCase().includes(qRaw) ||
+    event.venue.toLowerCase().includes(qRaw);
+
+  if (!matchesAnyToken && !rawMatch) return -1; // Not relevant
+
+  let score = 0;
+
+  // 1. Exact or near-exact match on performer or title (highest priority)
+  if (performerNorm === qNorm || event.performerOrTeam.toLowerCase() === qRaw) {
+    score += 1500;
+  } else if (titleNorm === qNorm || event.title.toLowerCase() === qRaw) {
+    score += 1200;
+  } else if (performerNorm.startsWith(qNorm) || qNorm.startsWith(performerNorm)) {
+    score += 800;
+  } else if (performerNorm.includes(qNorm)) {
+    score += 600;
+  } else if (titleNorm.includes(qNorm)) {
+    score += 500;
+  }
+
+  // 2. All tokens present
+  const matchesAllTokens = qTokens.every(tok => isMatch(haystackWords, fullHaystack, tok));
+  if (matchesAllTokens) {
+    score += 300;
+  }
+
+  // 3. Token-by-token scoring with word-boundary awareness
+  for (const token of qTokens) {
+    const perfWords = performerNorm.split(' ');
+    if (perfWords.includes(token)) score += 150;
+    else if (token.length > 2 && performerNorm.includes(token)) score += 60;
+
+    const titleWords = titleNorm.split(' ');
+    if (titleWords.includes(token)) score += 100;
+    else if (token.length > 2 && titleNorm.includes(token)) score += 40;
+
+    const venueWords = venueNorm.split(' ');
+    if (venueWords.includes(token)) score += 80;
+    else if (token.length > 2 && venueNorm.includes(token)) score += 30;
+
+    const cityWords = cityNorm.split(' ');
+    if (cityWords.includes(token)) score += 100;
+    else if (token.length > 2 && cityNorm.includes(token)) score += 40;
+
+    const lineupWords = lineupNorm.split(' ');
+    if (lineupWords.includes(token)) score += 60;
+    else if (token.length > 2 && lineupNorm.includes(token)) score += 20;
+  }
+
+  // 4. User's City / Query City match bonus
+  if (userCity) {
+    const uCityNorm = normalize(userCity);
+    if (cityNorm.includes(uCityNorm) || uCityNorm.includes(cityNorm)) {
+      score += 150;
+    }
+  }
+
+  // 5. Confirmed schedule bonus
+  if (event.doorsConfirmed) {
+    score += 30;
+  }
+
+  return score;
+}
+
+/**
+ * Searches the catalog of events with relevance ranking and chronological date sorting.
+ */
+export function searchAutoPullEvents(query: string, userCity?: string): AutoPullEvent[] {
+  if (!query || !query.trim()) {
+    return [...POPULAR_EVENTS_CATALOG].sort((a, b) => {
+      const aUserCity = userCity && a.city.toLowerCase().includes(userCity.toLowerCase()) ? 1 : 0;
+      const bUserCity = userCity && b.city.toLowerCase().includes(userCity.toLowerCase()) ? 1 : 0;
+      if (aUserCity !== bUserCity) return bUserCity - aUserCity;
+      return parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date);
+    }).slice(0, 8);
+  }
+
+  const scored = POPULAR_EVENTS_CATALOG
+    .map(evt => ({ evt, score: computeEventRelevance(evt, query, userCity) }))
+    .filter(item => item.score > 0);
+
+  scored.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    // Tie-breaker: most recent / imminent date first
+    return parseEventDateToTimestamp(a.evt.date) - parseEventDateToTimestamp(b.evt.date);
   });
+
+  return scored.map(item => item.evt);
 }
 
 /**
@@ -475,6 +674,12 @@ export function parseEventUrlOrText(input: string): AutoPullEvent | null {
     inferredType = 'Festival';
   }
 
+  const resolved = resolveEventSchedule({
+    venueName: 'Local Arena / Music Hall',
+    rawShowtimeStr: '8:00 PM',
+    promoterNotes: raw,
+  });
+
   return {
     id: `parsed-${Date.now()}`,
     title: extractedTitle.length > 50 ? extractedTitle.slice(0, 50) + '...' : extractedTitle,
@@ -485,17 +690,20 @@ export function parseEventUrlOrText(input: string): AutoPullEvent | null {
     venueAddress: 'Downtown District',
     city: 'Metro Area',
     date: 'Upcoming Weekend',
-    showtime: '8:00 PM',
-    doorsTime: '6:30 PM',
-    suggestedMeetupTime: '5:30 PM',
+    showtime: resolved.showtime,
+    doorsTime: resolved.doorsTime,
+    suggestedMeetupTime: resolved.suggestedMeetupTime,
     suggestedMeetupLocation: 'Meet outside main gate / plaza bar',
     image: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&q=80&w=1200',
     ticketUrl: isTicketUrl ? raw : 'https://www.ticketmaster.com',
     ticketSectionInfo: 'General Admission / Lower Bowl',
     priceRange: '$50 - $150',
     lineup: [extractedTitle],
-    bagPolicy: 'Venue clear bag policy applies.',
+    bagPolicy: resolved.bagPolicy || 'Venue clear bag policy applies.',
     ageRestriction: 'All Ages',
+    doorsConfirmed: resolved.doorsConfirmed,
+    doorsSource: resolved.source,
+    venueGateInfo: resolved.venueGateInfo,
     description: `Auto-pulled live gathering for ${extractedTitle}. Group outing organized on W8VR.`
   };
 }

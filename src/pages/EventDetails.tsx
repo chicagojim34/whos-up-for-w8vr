@@ -21,6 +21,8 @@ import {
   Clock,
   Copy,
   Ticket,
+  RefreshCw,
+  ShieldCheck,
 } from 'lucide-react';
 import cx from 'classnames';
 import { useApp } from '../hooks/useApp';
@@ -34,6 +36,7 @@ import { FloatingBar } from '../components/FloatingBar';
 import { Avatar } from '../components/Avatar';
 import { GameMark, GameModeChip, PlatformList } from '../components/GameBadge';
 import { JOIN_LABEL, MODE_LABEL, findGame, playersInCircle } from '../lib/games';
+import { SyncScheduleModal } from '../components/SyncScheduleModal';
 import NotFound from './NotFound';
 import { ME, type BroadcastTarget, type RsvpStatus } from '../types';
 import {
@@ -68,8 +71,17 @@ const ROSTER_TABS: { key: RsvpStatus; label: string }[] = [
 export default function EventDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { findEvent, findCircle, user, rsvpEvent, addComment, sendHostBroadcast, reportEvent, blockUser } =
-    useApp();
+  const {
+    findEvent,
+    findCircle,
+    user,
+    rsvpEvent,
+    addComment,
+    sendHostBroadcast,
+    reportEvent,
+    blockUser,
+    updateEvent,
+  } = useApp();
   const toast = useToast();
   const confirm = useConfirm();
 
@@ -81,6 +93,7 @@ export default function EventDetails() {
   const [broadcastOpen, setBroadcastOpen] = useState(false);
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [broadcastTarget, setBroadcastTarget] = useState<BroadcastTarget>('all');
+  const [syncScheduleOpen, setSyncScheduleOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [reportNote, setReportNote] = useState('');
@@ -296,27 +309,70 @@ export default function EventDetails() {
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => setBroadcastOpen(true)}
-              className="btn btn-primary text-xs py-2 px-4"
-            >
-              Send update
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSyncScheduleOpen(true)}
+                className="btn bg-white hover:bg-gray-50 text-text-dark text-xs py-2 px-3 flex items-center gap-1.5 font-bold shadow-2xs cursor-pointer border border-primary/20"
+              >
+                <RefreshCw size={13} className="text-primary" />
+                <span>Sync Schedule</span>
+              </button>
+              <button
+                onClick={() => setBroadcastOpen(true)}
+                className="btn btn-primary text-xs py-2 px-4"
+              >
+                Send update
+              </button>
+            </div>
           </section>
         )}
 
         {/* Dual-Time Outing Schedule Matrix */}
         {(event.showtime || event.meetupTime || event.isTicketedEvent) && (
           <section className="bg-surface-lowest rounded-3xl p-6 shadow-sm border border-primary/15">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="w-1.5 h-6 bg-primary rounded-full" aria-hidden="true" />
                 <h2 className="text-xl font-headline font-bold text-text-dark">Outing Schedule</h2>
+                {event.doorsTimeConfirmed && (
+                  <span className="badge bg-emerald-100 text-emerald-800 text-[10px] font-bold flex items-center gap-1">
+                    <CheckCircle2 size={11} className="text-emerald-600" />
+                    <span>Venue Verified</span>
+                  </span>
+                )}
               </div>
-              <span className="badge bg-secondary-container text-on-secondary-container text-xs font-bold">
-                Dual-Time Sync
-              </span>
+              <div className="flex items-center gap-2">
+                {host && (
+                  <button
+                    type="button"
+                    onClick={() => setSyncScheduleOpen(true)}
+                    className="px-2.5 py-1 rounded-lg bg-surface-low hover:bg-surface-high text-xs font-bold text-text-dark transition-colors flex items-center gap-1 cursor-pointer border border-gray-200 shadow-2xs"
+                  >
+                    <RefreshCw size={12} className="text-primary" />
+                    <span>Sync Live Schedule</span>
+                  </button>
+                )}
+                <span className="badge bg-secondary-container text-on-secondary-container text-xs font-bold">
+                  Dual-Time Sync
+                </span>
+              </div>
             </div>
+
+            {/* Verification & Sync Notice */}
+            {event.doorsTimeSource && (
+              <div className="mb-3.5 px-3 py-1.5 rounded-xl bg-surface-low border border-gray-100 flex items-center justify-between text-[11px] text-text-medium">
+                <span className="flex items-center gap-1 font-medium truncate">
+                  <CheckCircle2 size={12} className="text-emerald-600 shrink-0" />
+                  <span className="truncate">Schedule Source: {event.doorsTimeSource}</span>
+                </span>
+                {event.lastScheduleSync?.updatedAt && (
+                  <span className="text-[10px] text-text-light shrink-0 ml-2">
+                    Verified {formatAgo(event.lastScheduleSync.updatedAt)}
+                  </span>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {/* Step 1: Meetup */}
@@ -338,8 +394,15 @@ export default function EventDetails() {
 
               {/* Step 2: Doors */}
               <div className="p-4 bg-surface-low rounded-2xl border border-gray-100">
-                <div className="text-[10px] font-headline font-bold text-text-light uppercase tracking-widest">
-                  STAGE 2 • DOORS OPEN
+                <div className="flex items-center justify-between">
+                  <div className="text-[10px] font-headline font-bold text-text-light uppercase tracking-widest">
+                    STAGE 2 • DOORS OPEN
+                  </div>
+                  {event.doorsTimeConfirmed && (
+                    <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
+                      <CheckCircle2 size={10} /> Confirmed
+                    </span>
+                  )}
                 </div>
                 <div className="font-headline font-black text-2xl text-text-dark mt-1">
                   {event.doorsTime || '1h before show'}
@@ -368,6 +431,21 @@ export default function EventDetails() {
                 </div>
               </div>
             </div>
+
+            {/* Venue Entry & Gate Access Instructions */}
+            {event.venueGateInfo && (
+              <div className="mt-3.5 p-3.5 bg-primary-fixed/20 rounded-2xl border border-primary/20 flex items-start gap-2.5">
+                <ShieldCheck size={16} className="text-primary shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <span className="text-[10px] font-headline font-bold text-primary uppercase tracking-wider block">
+                    Venue Gate Access & Entry Procedures
+                  </span>
+                  <p className="text-xs text-text-dark font-medium mt-0.5 leading-relaxed">
+                    {event.venueGateInfo}
+                  </p>
+                </div>
+              </div>
+            )}
           </section>
         )}
 
@@ -1034,6 +1112,19 @@ export default function EventDetails() {
           </p>
         </div>
       </GlassModal>
+
+      {/* Schedule Sync modal */}
+      {host && (
+        <SyncScheduleModal
+          event={event}
+          isOpen={syncScheduleOpen}
+          onClose={() => setSyncScheduleOpen(false)}
+          onSave={(patch, notify, summary) => {
+            updateEvent(event.id, patch, notify, summary);
+            toast.show('Event schedule verified & attendees synced!', 'info');
+          }}
+        />
+      )}
 
       <ConfirmDialog {...confirm.dialogProps} />
     </div>

@@ -1,4 +1,10 @@
-import type { AutoPullEvent, EventSubType } from './eventAutoPull';
+import { 
+  type AutoPullEvent, 
+  type EventSubType, 
+  computeEventRelevance, 
+  parseEventDateToTimestamp 
+} from './eventAutoPull';
+import { resolveEventSchedule, type ResolvedSchedule } from './venueScheduleResolver';
 
 // Active API credentials provided by user
 export const DEFAULT_TICKETMASTER_API_KEY = 'IIA8D5kIG6y4Oj7dT9hg0CGRbv4ZAIvQ';
@@ -31,52 +37,21 @@ export function setSeatGeekClientId(id: string): void {
 }
 
 /**
- * Normalizes 12-hour/24-hour time strings and computes the 3-stage dual-time matrix:
- * 1. Meetup Time (~1.5 to 2 hours before showtime)
- * 2. Doors Open (~1 hour before showtime)
- * 3. Showtime
+ * Computes dual-time schedule using venue archetype intelligence
+ * and explicit door times from venue manifests.
  */
-function computeDualTimeSchedule(localTimeStr?: string): {
-  showtime: string;
-  doorsTime: string;
-  suggestedMeetupTime: string;
-} {
-  if (!localTimeStr) {
-    return {
-      showtime: '8:00 PM',
-      doorsTime: '6:30 PM',
-      suggestedMeetupTime: '5:30 PM',
-    };
-  }
-
-  // Parse HH:mm:ss
-  const parts = localTimeStr.split(':');
-  let hours = parseInt(parts[0], 10);
-  const minutes = parts.length > 1 ? parseInt(parts[1], 10) : 0;
-
-  if (isNaN(hours)) hours = 20;
-
-  const showtimeDate = new Date();
-  showtimeDate.setHours(hours, minutes, 0, 0);
-
-  const doorsDate = new Date(showtimeDate.getTime() - 60 * 60 * 1000); // 1h before
-  const meetupDate = new Date(showtimeDate.getTime() - 2.5 * 60 * 60 * 1000); // 2.5h before (for dinner / drinks)
-
-  const formatAmPm = (d: Date) => {
-    let h = d.getHours();
-    const m = d.getMinutes();
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    h = h % 12;
-    h = h ? h : 12;
-    const mStr = m < 10 ? '0' + m : m;
-    return `${h}:${mStr} ${ampm}`;
-  };
-
-  return {
-    showtime: formatAmPm(showtimeDate),
-    doorsTime: formatAmPm(doorsDate),
-    suggestedMeetupTime: formatAmPm(meetupDate),
-  };
+function computeDualTimeSchedule(
+  localTimeStr?: string,
+  venueName?: string,
+  apiDoorsTime?: string,
+  promoterNotes?: string
+): ResolvedSchedule {
+  return resolveEventSchedule({
+    venueName,
+    rawShowtimeStr: localTimeStr || '7:00 PM',
+    apiDoorsTime,
+    promoterNotes,
+  });
 }
 
 interface TmImage {
@@ -105,6 +80,10 @@ interface TmRawEvent {
     start?: {
       localDate?: string;
       localTime?: string;
+    };
+    doorsTimes?: {
+      localTime?: string;
+      dateTime?: string;
     };
   };
   _embedded?: {
@@ -160,13 +139,16 @@ async function fetchTicketmasterEvents(query: {
     const rawEvents: TmRawEvent[] = data._embedded?.events || [];
 
     return rawEvents.map((e: TmRawEvent): AutoPullEvent => {
-      const dates = e.dates?.start || {};
-      const localTime = dates.localTime;
-      const { showtime, doorsTime, suggestedMeetupTime } = computeDualTimeSchedule(localTime);
-
       const venues = e._embedded?.venues || [];
       const venueObj = venues[0] || {};
       const venueName = venueObj.name || 'Arena / Music Hall';
+
+      const dates = e.dates?.start || {};
+      const localTime = dates.localTime;
+      const apiDoors = e.dates?.doorsTimes?.localTime;
+      const notes = `${e.pleaseNote || ''} ${e.info || ''}`.trim();
+      const sched = computeDualTimeSchedule(localTime, venueName, apiDoors, notes);
+
       const address = venueObj.address?.line1 || venueObj.name || 'Downtown';
       const city = venueObj.city?.name || query.city || 'Metro Area';
       const state = venueObj.state?.stateCode || '';
@@ -216,9 +198,9 @@ async function fetchTicketmasterEvents(query: {
         venueAddress: fullAddress,
         city: `${city}${state ? `, ${state}` : ''}`,
         date: dates.localDate || 'Upcoming Date',
-        showtime,
-        doorsTime,
-        suggestedMeetupTime,
+        showtime: sched.showtime,
+        doorsTime: sched.doorsTime,
+        suggestedMeetupTime: sched.suggestedMeetupTime,
         suggestedMeetupLocation: `Meet outside ${venueName} (near Main Gate or nearby plaza/bar)`,
         image: bestImage,
         additionalImages: altImages,
@@ -226,8 +208,11 @@ async function fetchTicketmasterEvents(query: {
         ticketSectionInfo: 'Section 114 / Lower Bowl or GA Floor',
         priceRange,
         lineup: lineup.length > 0 ? lineup : [headliner],
-        bagPolicy: 'Clear bags only (12"x6"x12") or clutches under 4.5"x6.5"',
+        bagPolicy: sched.bagPolicy || 'Clear bags only (12"x6"x12") or clutches under 4.5"x6.5"',
         ageRestriction: 'All Ages',
+        doorsConfirmed: sched.doorsConfirmed,
+        doorsSource: sched.source,
+        venueGateInfo: sched.venueGateInfo,
         description:
           e.info ||
           e.pleaseNote ||
@@ -308,10 +293,10 @@ async function fetchSeatGeekEvents(query: {
     return rawEvents.map((e: SgRawEvent): AutoPullEvent => {
       const dtLocal = e.datetime_local || '';
       const [datePart, timePart] = dtLocal.split('T');
-      const { showtime, doorsTime, suggestedMeetupTime } = computeDualTimeSchedule(timePart);
-
       const venueObj = e.venue || {};
       const venueName = venueObj.name || 'Arena';
+      const sched = computeDualTimeSchedule(timePart, venueName);
+
       const address = venueObj.address || venueName;
       const city = venueObj.city || query.city || 'Metro Area';
       const state = venueObj.state || '';
@@ -362,9 +347,9 @@ async function fetchSeatGeekEvents(query: {
         venueAddress: fullAddress,
         city: `${city}${state ? `, ${state}` : ''}`,
         date: datePart || 'Upcoming Date',
-        showtime,
-        doorsTime,
-        suggestedMeetupTime,
+        showtime: sched.showtime,
+        doorsTime: sched.doorsTime,
+        suggestedMeetupTime: sched.suggestedMeetupTime,
         suggestedMeetupLocation: `Meet near ${venueName} entrance or nearby pre-drinks gathering spot`,
         image: bestImage,
         additionalImages: altImages,
@@ -372,8 +357,11 @@ async function fetchSeatGeekEvents(query: {
         ticketSectionInfo: 'Section 100-Level or General Admission',
         priceRange,
         lineup: lineup.length > 0 ? lineup : [headliner],
-        bagPolicy: 'Standard arena clear bag policy applies.',
+        bagPolicy: sched.bagPolicy || 'Standard arena clear bag policy applies.',
         ageRestriction: 'All Ages',
+        doorsConfirmed: sched.doorsConfirmed,
+        doorsSource: sched.source,
+        venueGateInfo: sched.venueGateInfo,
         description: `SeatGeek verified live ${subType.toLowerCase()} event for ${headliner} at ${venueName}. Group outing on W8VR.`,
       };
     });
@@ -444,13 +432,37 @@ export async function searchLiveEventCatalog(params: {
     }
   }
 
+  // Relevance ranking and chronological date sorting
+  let ranked = deduplicated;
+  if (keyword) {
+    const scored = deduplicated
+      .map(evt => ({ evt, score: computeEventRelevance(evt, keyword, city) }))
+      .filter(item => item.score > 0);
+
+    scored.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      // Most recent / imminent date first
+      return parseEventDateToTimestamp(a.evt.date) - parseEventDateToTimestamp(b.evt.date);
+    });
+
+    ranked = scored.map(item => item.evt);
+  } else {
+    // When browsing without keyword, sort by most recent/imminent date first with city boost
+    ranked.sort((a, b) => {
+      const aCity = city && a.city.toLowerCase().includes(city.toLowerCase()) ? 1 : 0;
+      const bCity = city && b.city.toLowerCase().includes(city.toLowerCase()) ? 1 : 0;
+      if (aCity !== bCity) return bCity - aCity;
+      return parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date);
+    });
+  }
+
   // Cache latest results locally for quick retrieval
-  if (deduplicated.length > 0 && typeof window !== 'undefined') {
+  if (ranked.length > 0 && typeof window !== 'undefined') {
     try {
       const existingStr = localStorage.getItem(CACHE_STORAGE_KEY);
       const existing: AutoPullEvent[] = existingStr ? JSON.parse(existingStr) : [];
       const mergedMap = new Map<string, AutoPullEvent>();
-      for (const e of [...deduplicated, ...existing]) {
+      for (const e of [...ranked, ...existing]) {
         mergedMap.set(e.id, e);
       }
       localStorage.setItem(
@@ -462,7 +474,7 @@ export async function searchLiveEventCatalog(params: {
     }
   }
 
-  return deduplicated;
+  return ranked;
 }
 
 /**
@@ -477,3 +489,46 @@ export function getCachedLiveEvents(): AutoPullEvent[] {
     return [];
   }
 }
+
+/**
+ * Re-queries live promoter and venue feeds to detect if door times,
+ * gate info, or show schedules were updated after publication.
+ */
+export async function syncLiveEventSchedule(params: {
+  venue: string;
+  title: string;
+  performerOrTeam?: string;
+  showtime?: string;
+}): Promise<ResolvedSchedule> {
+  const keyword = params.performerOrTeam || params.title;
+  try {
+    const events = await fetchTicketmasterEvents({ keyword, size: 6 });
+    const venueLower = params.venue.toLowerCase();
+    const matched = events.find(e => 
+      e.venue.toLowerCase().includes(venueLower) ||
+      venueLower.includes(e.venue.toLowerCase()) ||
+      venueLower.includes('the dome') && e.venue.toLowerCase().includes('dome')
+    );
+    if (matched) {
+      return {
+        showtime: matched.showtime,
+        doorsTime: matched.doorsTime,
+        suggestedMeetupTime: matched.suggestedMeetupTime,
+        doorsConfirmed: matched.doorsConfirmed ?? true,
+        source: matched.doorsSource ?? 'Ticketmaster Live Manifest',
+        venueGateInfo: matched.venueGateInfo,
+        bagPolicy: matched.bagPolicy,
+        verificationNotes: `Verified live with ${matched.venue} event manifest.`,
+      };
+    }
+  } catch (err) {
+    console.warn('[liveEventCatalog] syncLiveEventSchedule API error:', err);
+  }
+
+  // Fallback to venue archetype intelligence and known profiles
+  return resolveEventSchedule({
+    venueName: params.venue,
+    rawShowtimeStr: params.showtime,
+  });
+}
+

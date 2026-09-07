@@ -87,6 +87,14 @@ export interface EventItem {
   venueAddress?: string;
   bagPolicy?: string;
   ageRestriction?: string;
+  doorsTimeConfirmed?: boolean;
+  doorsTimeSource?: string;
+  venueGateInfo?: string;
+  lastScheduleSync?: {
+    updatedAt: number;
+    source: string;
+    notes?: string;
+  };
 }
 
 export interface CircleMember {

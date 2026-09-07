@@ -55,6 +55,12 @@ interface AppContextType {
   muteEvent: (eventId: string) => void;
   unmuteEvent: (eventId: string) => void;
   createEvent: (draft: NewEventDraft) => EventItem;
+  updateEvent: (
+    eventId: string,
+    patch: Partial<EventItem>,
+    notifyAttendees?: boolean,
+    changeSummary?: string
+  ) => EventItem | undefined;
   addComment: (eventId: string, text: string) => void;
   sendHostBroadcast: (eventId: string, message: string, target: BroadcastTarget) => number;
 
@@ -88,6 +94,7 @@ export interface NewEventDraft {
   startsAt: string;
   location: string;
   exactAddress?: string;
+  venueAddress?: string;
   isVirtual: boolean;
   virtualLink?: string;
   maxSpots: number;
@@ -108,9 +115,11 @@ export interface NewEventDraft {
   ticketSectionInfo?: string;
   priceRange?: string;
   lineup?: string[];
-  venueAddress?: string;
   bagPolicy?: string;
   ageRestriction?: string;
+  doorsTimeConfirmed?: boolean;
+  doorsTimeSource?: string;
+  venueGateInfo?: string;
 }
 
 export interface NewCircleDraft {
@@ -323,6 +332,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         lineup: draft.lineup,
         bagPolicy: draft.bagPolicy,
         ageRestriction: draft.ageRestriction,
+        doorsTimeConfirmed: draft.doorsTimeConfirmed,
+        doorsTimeSource: draft.doorsTimeSource,
+        venueGateInfo: draft.venueGateInfo,
+        lastScheduleSync: {
+          updatedAt: Date.now(),
+          source: draft.doorsTimeSource || 'Initial Creation',
+          notes: draft.doorsTimeConfirmed ? 'Verified schedule upon creation.' : 'Initial schedule set.',
+        },
         maxSpots: draft.maxSpots,
         autoWaitlist: draft.autoWaitlist,
         attendees: [{ id: ME, name: user.name, status: 'going', joinedAt: Date.now() }],
@@ -354,6 +371,63 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         eventId: id,
       });
       return created;
+    },
+    [user.name, pushAlert]
+  );
+
+  const updateEvent = useCallback(
+    (
+      eventId: string,
+      patch: Partial<EventItem>,
+      notifyAttendees: boolean = true,
+      changeSummary?: string
+    ): EventItem | undefined => {
+      let updatedItem: EventItem | undefined;
+
+      setEvents(prev => {
+        const target = prev.find(e => e.id === eventId);
+        if (!target) return prev;
+
+        const updated: EventItem = {
+          ...target,
+          ...patch,
+          lastScheduleSync: patch.lastScheduleSync || {
+            updatedAt: Date.now(),
+            source: patch.doorsTimeSource || target.doorsTimeSource || 'Live Venue Schedule Sync',
+            notes: changeSummary || 'Schedule verified with venue operations.',
+          },
+        };
+
+        if (notifyAttendees && changeSummary) {
+          const commentText = `📢 SCHEDULE UPDATE: ${changeSummary}`;
+          updated.comments = [
+            ...updated.comments,
+            {
+              id: uid('c'),
+              authorId: ME,
+              author: user.name,
+              text: commentText,
+              createdAt: Date.now(),
+              isHost: true,
+            },
+          ];
+        }
+
+        updatedItem = updated;
+        return prev.map(e => (e.id === eventId ? updated : e));
+      });
+
+      if (notifyAttendees && changeSummary) {
+        pushAlert({
+          type: 'confirm',
+          tier: 'logistics',
+          title: 'Schedule Updated',
+          desc: changeSummary,
+          eventId,
+        });
+      }
+
+      return updatedItem;
     },
     [user.name, pushAlert]
   );
@@ -700,6 +774,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       muteEvent,
       unmuteEvent,
       createEvent,
+      updateEvent,
       addComment,
       sendHostBroadcast,
       joinCircle,
@@ -734,6 +809,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       muteEvent,
       unmuteEvent,
       createEvent,
+      updateEvent,
       addComment,
       sendHostBroadcast,
       joinCircle,

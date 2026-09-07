@@ -137,11 +137,16 @@ export function generateIcsCalendar(events: EventItem[], calendarTitle = "W8VR S
     if (evt.showtime && evt.meetupTime) {
       descParts.push(`📍 1. GROUP MEETUP: ${evt.meetupTime} at ${evt.meetupLocation || evt.location}`);
       if (evt.doorsTime) {
-        descParts.push(`🚪 2. DOORS OPEN: ${evt.doorsTime}`);
+        const verifiedTag = evt.doorsTimeConfirmed ? ` [Verified: ${evt.doorsTimeSource || 'Official Venue Guide'}]` : '';
+        descParts.push(`🚪 2. DOORS OPEN: ${evt.doorsTime}${verifiedTag}`);
       }
       descParts.push(`⚡ 3. OFFICIAL SHOWTIME / KICKOFF: ${evt.showtime} at ${evt.location}`);
     } else {
       descParts.push(`🕒 START TIME: ${evt.startsAt}`);
+    }
+
+    if (evt.venueGateInfo) {
+      descParts.push(`🏟️ GATES & ACCESS: ${evt.venueGateInfo}`);
     }
 
     if (evt.ticketSectionInfo) {

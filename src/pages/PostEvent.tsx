@@ -18,7 +18,11 @@ import {
   Check,
   Sparkles,
   Ticket,
+  CheckCircle2,
+  ShieldCheck,
+  Upload,
 } from 'lucide-react';
+import { resolveEventSchedule } from '../services/venueScheduleResolver';
 import cx from 'classnames';
 import { useApp } from '../hooks/useApp';
 import { useToast } from '../hooks/useToast';
@@ -31,6 +35,8 @@ import { formatWhen } from '../lib/datetime';
 import { 
   searchAutoPullEvents, 
   parseEventUrlOrText, 
+  computeEventRelevance,
+  parseEventDateToTimestamp,
   type AutoPullEvent,
   type EventSubType,
 } from '../services/eventAutoPull';
@@ -64,7 +70,7 @@ export default function PostEvent() {
   const locationHook = useLocation();
   const prefill = (locationHook.state as { prefillEvent?: AutoPullEvent } | null)?.prefillEvent;
 
-  const { createEvent, circles } = useApp();
+  const { createEvent, circles, user } = useApp();
   const toast = useToast();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -79,6 +85,9 @@ export default function PostEvent() {
   const [doorsTime, setDoorsTime] = useState(prefill?.doorsTime || '6:30 PM');
   const [meetupTime, setMeetupTime] = useState(prefill?.suggestedMeetupTime || '5:30 PM');
   const [meetupLocation, setMeetupLocation] = useState(prefill?.suggestedMeetupLocation || '');
+  const [doorsConfirmed, setDoorsConfirmed] = useState(prefill?.doorsConfirmed || false);
+  const [doorsSource, setDoorsSource] = useState(prefill?.doorsSource || '');
+  const [venueGateInfo, setVenueGateInfo] = useState(prefill?.venueGateInfo || '');
   const [venueAddress, setVenueAddress] = useState(prefill?.venueAddress || '');
   const [ticketUrl, setTicketUrl] = useState(prefill?.ticketUrl || '');
   const [ticketSectionInfo, setTicketSectionInfo] = useState(prefill?.ticketSectionInfo || '');
@@ -87,6 +96,7 @@ export default function PostEvent() {
   const [ageRestriction, setAgeRestriction] = useState(prefill?.ageRestriction || 'All Ages');
   const [lineup, setLineup] = useState<string[]>(prefill?.lineup || []);
   const [customImageUrl, setCustomImageUrl] = useState('');
+  const [localImageName, setLocalImageName] = useState<string | null>(null);
   const [pulledImagePresets, setPulledImagePresets] = useState<string[]>(
     prefill ? [prefill.image, ...(prefill.additionalImages || [])] : []
   );
@@ -158,12 +168,12 @@ export default function PostEvent() {
       setAutoSuggestions([]);
       return;
     }
-    const localResults = searchAutoPullEvents(q);
+    const localResults = searchAutoPullEvents(q, user?.homeCity);
     setAutoSuggestions(localResults);
 
     if (q.trim().length >= 2) {
       try {
-        const liveResults = await searchLiveEventCatalog({ keyword: q, size: 6 });
+        const liveResults = await searchLiveEventCatalog({ keyword: q, city: user?.homeCity, size: 8 });
         if (liveResults.length > 0) {
           const seen = new Set(localResults.map(e => `${e.performerOrTeam.toLowerCase()}-${e.date}`));
           const merged = [...localResults];
@@ -174,12 +184,50 @@ export default function PostEvent() {
               merged.push(live);
             }
           }
-          setAutoSuggestions(merged.slice(0, 8));
+          // Rank merged candidates by relevance first, then most recent/imminent date
+          const ranked = merged
+            .map(evt => ({ evt, score: computeEventRelevance(evt, q, user?.homeCity) }))
+            .filter(item => item.score > 0);
+
+          ranked.sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            return parseEventDateToTimestamp(a.evt.date) - parseEventDateToTimestamp(b.evt.date);
+          });
+
+          setAutoSuggestions(ranked.map(r => r.evt).slice(0, 8));
         }
       } catch {
         // preserve local results
       }
     }
+  };
+
+  const handleLocalImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.show('Please select an image file (JPEG, PNG, WEBP, etc.).', 'warning');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.show('Image file exceeds 10MB limit. Please choose a smaller image.', 'warning');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setCoverImage(dataUrl);
+      setLocalImageName(file.name);
+      setPulledImagePresets(prev => [dataUrl, ...prev.filter(p => p !== dataUrl)]);
+      toast.show(`Uploaded ${file.name} as cover artwork!`, 'info');
+    };
+    reader.onerror = () => {
+      toast.show('Failed to read image file from disk.', 'error');
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSelectAutoEvent = (autoEvt: AutoPullEvent) => {
@@ -194,6 +242,9 @@ export default function PostEvent() {
     setDoorsTime(autoEvt.doorsTime || '');
     setMeetupTime(autoEvt.suggestedMeetupTime || '5:30 PM');
     setMeetupLocation(autoEvt.suggestedMeetupLocation || '');
+    setDoorsConfirmed(autoEvt.doorsConfirmed ?? false);
+    setDoorsSource(autoEvt.doorsSource || '');
+    setVenueGateInfo(autoEvt.venueGateInfo || '');
     setTicketUrl(autoEvt.ticketUrl || '');
     setTicketSectionInfo(autoEvt.ticketSectionInfo || '');
     setPriceRange(autoEvt.priceRange || '');
@@ -205,7 +256,7 @@ export default function PostEvent() {
     setPulledImagePresets([autoEvt.image, ...(autoEvt.additionalImages || [])]);
     setAutoSearchQuery('');
     setAutoSuggestions([]);
-    toast.show(`Auto-pulled details for ${autoEvt.title}!`, 'info');
+    toast.show(`Auto-pulled verified details for ${autoEvt.title}!`, 'info');
   };
 
   const handleParseUrl = (input: string) => {
@@ -256,6 +307,9 @@ export default function PostEvent() {
       doorsTime: isTicketedEvent ? doorsTime : undefined,
       meetupTime: isTicketedEvent ? meetupTime : undefined,
       meetupLocation: isTicketedEvent ? meetupLocation.trim() || undefined : undefined,
+      doorsTimeConfirmed: isTicketedEvent ? doorsConfirmed : undefined,
+      doorsTimeSource: isTicketedEvent ? doorsSource : undefined,
+      venueGateInfo: isTicketedEvent ? venueGateInfo : undefined,
       ticketUrl: ticketUrl.trim() || undefined,
       ticketSectionInfo: ticketSectionInfo.trim() || undefined,
       priceRange: priceRange.trim() || undefined,
@@ -394,7 +448,7 @@ export default function PostEvent() {
                           className="w-12 h-12 rounded-xl object-cover shrink-0"
                         />
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="badge bg-secondary-container text-on-secondary-container text-[9px] font-bold uppercase">
                               {evt.eventSubType}
                             </span>
@@ -402,8 +456,17 @@ export default function PostEvent() {
                               {evt.title}
                             </span>
                           </div>
-                          <div className="text-[11px] text-text-medium mt-0.5 truncate">
-                            📍 {evt.venue} • ⚡ Show: {evt.showtime}
+                          <div className="text-[11px] text-text-medium mt-0.5 flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-primary">📅 {evt.date}</span>
+                            <span>•</span>
+                            <span className="truncate">📍 {evt.venue}{evt.city ? `, ${evt.city}` : ''}</span>
+                            <span>•</span>
+                            <span className="shrink-0">⚡ Show: {evt.showtime}</span>
+                            {evt.doorsConfirmed && (
+                              <span className="badge bg-success/15 text-success text-[9px] font-bold py-0.5 px-1.5 shrink-0">
+                                ✓ Doors {evt.doorsTime}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <span className="text-[11px] font-bold text-primary shrink-0">
@@ -609,26 +672,68 @@ export default function PostEvent() {
                   ))}
                 </div>
 
-                <div className="mt-2.5 flex items-center gap-2">
-                  <input
-                    type="url"
-                    placeholder="Or paste a custom image URL..."
-                    value={customImageUrl}
-                    onChange={e => {
-                      setCustomImageUrl(e.target.value);
-                      if (e.target.value.startsWith('http')) setCoverImage(e.target.value);
-                    }}
-                    className="input-field text-xs py-2"
-                  />
-                  {customImageUrl && (
-                    <button
-                      type="button"
-                      onClick={() => setCoverImage(customImageUrl)}
-                      className="btn btn-outline text-xs py-2 px-3 shrink-0"
-                    >
-                      Apply
-                    </button>
-                  )}
+                <div className="mt-3 pt-3 border-t border-gray-100 flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-text-light">
+                      Custom artwork options:
+                    </span>
+                    {localImageName && (
+                      <span className="text-[10px] font-bold text-success flex items-center gap-1">
+                        <CheckCircle2 size={12} /> Local file: {localImageName}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {/* Local Folder Upload Button */}
+                    <div>
+                      <input
+                        type="file"
+                        id="local-cover-upload"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleLocalImageUpload}
+                      />
+                      <label
+                        htmlFor="local-cover-upload"
+                        className="btn btn-outline w-full text-xs py-2 px-3 flex items-center justify-center gap-2 cursor-pointer hover:bg-surface-high transition-all border-dashed border-gray-300 hover:border-primary group"
+                      >
+                        <Upload size={14} className="text-primary group-hover:scale-110 transition-transform shrink-0" />
+                        <span className="font-bold text-text-dark truncate">
+                          {localImageName ? `Change: ${localImageName}` : 'Upload from folder / device'}
+                        </span>
+                      </label>
+                    </div>
+
+                    {/* URL Paste Input */}
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="url"
+                        placeholder="Or paste image URL..."
+                        value={customImageUrl}
+                        onChange={e => {
+                          setCustomImageUrl(e.target.value);
+                          if (e.target.value.startsWith('http')) {
+                            setCoverImage(e.target.value);
+                            setLocalImageName(null);
+                          }
+                        }}
+                        className="input-field text-xs py-2 flex-1 min-w-0"
+                      />
+                      {customImageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCoverImage(customImageUrl);
+                            setLocalImageName(null);
+                          }}
+                          className="btn btn-outline text-xs py-2 px-2.5 shrink-0"
+                        >
+                          Apply
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </fieldset>
 
@@ -730,11 +835,20 @@ export default function PostEvent() {
                       <input
                         type="text"
                         value={doorsTime}
-                        onChange={e => setDoorsTime(e.target.value)}
+                        onChange={e => {
+                          setDoorsTime(e.target.value);
+                          setDoorsSource('Manual Host Adjustment');
+                        }}
                         placeholder="e.g. 6:30 PM"
                         className="font-headline font-black text-base text-text-dark bg-transparent border-none outline-none w-full"
                       />
                       <div className="text-[10px] text-text-light mt-0.5">Venue gates unlock</div>
+                      {doorsSource && (
+                        <div className="flex items-center gap-1 text-[9px] font-bold text-emerald-600 mt-1 truncate" title={doorsSource}>
+                          <CheckCircle2 size={11} className="shrink-0" />
+                          <span className="truncate">{doorsSource}</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Official Showtime */}
@@ -752,6 +866,21 @@ export default function PostEvent() {
                       <div className="text-[10px] text-text-light mt-0.5">Main act on stage</div>
                     </div>
                   </div>
+
+                  {/* Venue Entry & Gate Access Instructions */}
+                  {venueGateInfo && (
+                    <div className="p-3 bg-surface-lowest rounded-2xl border border-primary/20 flex items-start gap-2.5">
+                      <ShieldCheck size={16} className="text-primary shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-headline font-bold text-primary uppercase tracking-wider block">
+                          Venue Entry & Gate Instructions
+                        </span>
+                        <p className="text-xs text-text-dark font-medium mt-0.5 leading-relaxed">
+                          {venueGateInfo}
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Quick Meetup Offset Buttons */}
                   <div>
