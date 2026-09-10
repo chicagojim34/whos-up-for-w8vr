@@ -225,7 +225,7 @@ export default function PostEvent() {
       toast.show(`Uploaded ${file.name} as cover artwork!`, 'info');
     };
     reader.onerror = () => {
-      toast.show('Failed to read image file from disk.', 'error');
+      toast.show('Failed to read image file from disk.', 'warning');
     };
     reader.readAsDataURL(file);
   };

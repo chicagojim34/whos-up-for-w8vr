@@ -111,6 +111,7 @@ async function fetchTicketmasterEvents(query: {
   city?: string;
   classificationName?: string;
   size?: number;
+}): Promise<AutoPullEvent[]> {
   const apiKey = getTicketmasterKey();
   if (!apiKey) return [];
 
