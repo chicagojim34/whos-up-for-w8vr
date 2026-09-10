@@ -22,7 +22,6 @@ import {
   ShieldCheck,
   Upload,
 } from 'lucide-react';
-import { resolveEventSchedule } from '../services/venueScheduleResolver';
 import cx from 'classnames';
 import { useApp } from '../hooks/useApp';
 import { useToast } from '../hooks/useToast';
@@ -320,6 +319,10 @@ export default function PostEvent() {
       autoWaitlist,
       privacy,
       circleId: privacy === 'circle' ? circleId : undefined,
+      canonicalId: prefill?.canonicalId,
+      ticketOptions: prefill?.ticketOptions,
+      provenanceSources: prefill?.provenanceSources,
+      confidenceScore: prefill?.confidenceScore,
     });
 
     toast.show('Your event is live');

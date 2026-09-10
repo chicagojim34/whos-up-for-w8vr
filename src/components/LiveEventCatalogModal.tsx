@@ -14,6 +14,7 @@ import {
 import cx from 'classnames';
 import { searchLiveEventCatalog, getCachedLiveEvents } from '../services/liveEventCatalog';
 import { type AutoPullEvent, type EventSubType, formatDisplayDate } from '../services/eventAutoPull';
+import { US_TOP_50_MARKETS } from '../lib/usMarkets';
 
 interface LiveEventCatalogModalProps {
   isOpen: boolean;
@@ -154,22 +155,41 @@ export function LiveEventCatalogModal({
               )}
             </div>
 
-            {/* City input / quick switcher */}
-            <div className="flex items-center gap-1.5 shrink-0">
+            {/* City input / US Top 50 Markets selector */}
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="relative">
+                <select
+                  value={city}
+                  onChange={e => {
+                    setCity(e.target.value);
+                    setCustomCity('');
+                  }}
+                  className="input-field py-2.5 px-3 text-xs bg-surface-lowest font-bold text-text-dark cursor-pointer max-w-[180px] truncate"
+                  aria-label="Select Top 50 US Metro Market"
+                >
+                  <option value="All Cities">All 50 US Markets</option>
+                  {US_TOP_50_MARKETS.map(m => (
+                    <option key={m.rank} value={m.city}>
+                      #{m.rank} {m.city}, {m.state}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="relative">
                 <MapPin
-                  size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-primary pointer-events-none"
+                  size={14}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-primary pointer-events-none"
                 />
                 <input
                   type="text"
-                  placeholder="City (e.g. Austin)"
-                  value={customCity || city}
+                  placeholder="Custom city..."
+                  value={customCity}
                   onChange={e => {
                     setCustomCity(e.target.value);
-                    setCity(e.target.value || 'Austin');
+                    if (e.target.value) setCity(e.target.value);
                   }}
-                  className="input-field pl-8 py-2.5 text-xs w-36 bg-surface-lowest font-bold"
+                  className="input-field pl-7 py-2.5 text-xs w-28 bg-surface-lowest font-medium"
                 />
               </div>
             </div>
@@ -178,7 +198,7 @@ export function LiveEventCatalogModal({
           {/* Quick city pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
             <span className="text-[10px] font-headline font-bold text-text-light uppercase tracking-wider mr-1 shrink-0">
-              Metro:
+              Top Hubs:
             </span>
             {POPULAR_CITIES.map(c => (
               <button
@@ -257,10 +277,19 @@ export function LiveEventCatalogModal({
                     {event.eventSubType}
                   </span>
 
-                  {/* Source indicator */}
-                  <span className="badge absolute top-3 right-3 bg-primary/90 text-white text-[9px] font-bold uppercase tracking-widest">
-                    {event.id.startsWith('tm-') ? 'Ticketmaster' : 'SeatGeek'}
-                  </span>
+                  {/* Source / Deduplication indicator */}
+                  <div className="absolute top-3 right-3 flex items-center gap-1">
+                    {event.provenanceSources && event.provenanceSources.length > 1 ? (
+                      <span className="badge bg-emerald-600/90 text-white text-[9px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1">
+                        <Sparkles size={10} />
+                        Merged ({event.provenanceSources.length} Feeds)
+                      </span>
+                    ) : (
+                      <span className="badge bg-primary/90 text-white text-[9px] font-bold uppercase tracking-widest">
+                        {event.ticketOptions?.[0]?.provider || (event.id.startsWith('tm-') ? 'Ticketmaster' : event.id.startsWith('sg-') ? 'SeatGeek' : 'Verified')}
+                      </span>
+                    )}
+                  </div>
 
                   {/* Date overlay */}
                   <div className="absolute bottom-3 left-3 right-3 text-white">
@@ -310,6 +339,31 @@ export function LiveEventCatalogModal({
                         {event.priceRange}
                       </span>
                     </div>
+
+                    {/* Multi-Ticket Portals Available */}
+                    {event.ticketOptions && event.ticketOptions.length > 1 && (
+                      <div className="flex flex-col gap-1 bg-surface-low/60 p-2 rounded-xl border border-gray-100/60 mt-1">
+                        <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">
+                          Ticket Portals ({event.ticketOptions.length}):
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {event.ticketOptions.map(opt => (
+                            <a
+                              key={opt.id}
+                              href={opt.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] px-2 py-0.5 rounded-md font-bold bg-white text-text-dark border border-gray-200 hover:border-primary hover:text-primary transition-colors flex items-center gap-1 shrink-0"
+                              title={opt.sourceLabel}
+                            >
+                              <span>{opt.provider}</span>
+                              {opt.minPrice && <span className="text-emerald-700 font-extrabold">${opt.minPrice}</span>}
+                              <ExternalLink size={9} />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Actions */}

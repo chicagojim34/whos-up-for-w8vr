@@ -480,7 +480,55 @@ export default function EventDetails() {
                 </div>
               )}
 
-              {event.ticketUrl && (
+              {event.ticketOptions && event.ticketOptions.length > 0 ? (
+                <div className="p-4 bg-primary-fixed/20 rounded-2xl flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-headline font-bold text-primary uppercase tracking-wider block">
+                      TICKET PORTALS ({event.ticketOptions.length})
+                    </span>
+                    {event.provenanceSources && event.provenanceSources.length > 1 && (
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                        ✨ Deduplicated
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1.5 mt-1">
+                    {event.ticketOptions.map(opt => (
+                      <a
+                        key={opt.id}
+                        href={opt.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2.5 rounded-xl bg-surface-lowest border border-gray-200/80 hover:border-primary transition-all flex items-center justify-between group shadow-2xs"
+                      >
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-headline font-bold text-xs text-text-dark group-hover:text-primary">
+                              {opt.provider}
+                            </span>
+                            <span className="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase tracking-wider bg-surface-high text-text-medium">
+                              {opt.type === 'primary' ? 'Primary' : opt.type === 'rush_discount' ? 'Rush / Discount' : opt.type === 'experience' ? 'Dining Popup' : 'Partner'}
+                            </span>
+                          </div>
+                          {opt.sectionInfo && (
+                            <span className="text-[10px] text-text-light truncate max-w-[200px]">
+                              {opt.sectionInfo}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {opt.minPrice && (
+                            <span className="font-extrabold text-xs text-emerald-700">
+                              ${opt.minPrice}
+                            </span>
+                          )}
+                          <ExternalLink size={13} className="text-text-medium group-hover:text-primary" />
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : event.ticketUrl ? (
                 <div className="p-4 bg-primary-fixed/20 rounded-2xl flex flex-col justify-between">
                   <div>
                     <span className="text-[10px] font-headline font-bold text-primary uppercase tracking-wider block mb-1">
@@ -500,7 +548,7 @@ export default function EventDetails() {
                     <ExternalLink size={14} />
                   </a>
                 </div>
-              )}
+              ) : null}
             </div>
 
             {(event.bagPolicy || event.ageRestriction) && (

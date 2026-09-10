@@ -95,6 +95,36 @@ export interface EventItem {
     source: string;
     notes?: string;
   };
+
+  // Multi-Provider Ticketing & Deduplication Provenance
+  canonicalId?: string;
+  ticketOptions?: CanonicalTicketOption[];
+  provenanceSources?: string[];
+  confidenceScore?: number;
+  marketRank?: number;
+  metroArea?: string;
+}
+
+export interface CanonicalTicketOption {
+  id: string;
+  provider: string;
+  type: 'primary' | 'rush_discount' | 'official_resale' | 'secondary' | 'community' | 'experience';
+  url: string;
+  minPrice?: number;
+  maxPrice?: number;
+  currency?: string;
+  availability?: 'available' | 'low_inventory' | 'sold_out' | 'waitlist';
+  sectionInfo?: string;
+  sourceLabel?: string;
+}
+
+export interface CanonicalProvenance {
+  sourceName: string;
+  sourceDomain: string;
+  sourceUrl: string;
+  tier: 'Tier 1' | 'Tier 2' | 'Tier 3' | 'Tier 4';
+  ingestedAt: string;
+  rawPayloadHash?: string;
 }
 
 export interface CircleMember {

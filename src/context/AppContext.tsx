@@ -120,6 +120,14 @@ export interface NewEventDraft {
   doorsTimeConfirmed?: boolean;
   doorsTimeSource?: string;
   venueGateInfo?: string;
+
+  // Multi-Provider Ticketing & Deduplication Fields
+  canonicalId?: string;
+  ticketOptions?: EventItem['ticketOptions'];
+  provenanceSources?: string[];
+  confidenceScore?: number;
+  marketRank?: number;
+  metroArea?: string;
 }
 
 export interface NewCircleDraft {
@@ -335,6 +343,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         doorsTimeConfirmed: draft.doorsTimeConfirmed,
         doorsTimeSource: draft.doorsTimeSource,
         venueGateInfo: draft.venueGateInfo,
+        canonicalId: draft.canonicalId,
+        ticketOptions: draft.ticketOptions,
+        provenanceSources: draft.provenanceSources,
+        confidenceScore: draft.confidenceScore,
+        marketRank: draft.marketRank,
+        metroArea: draft.metroArea,
         lastScheduleSync: {
           updatedAt: Date.now(),
           source: draft.doorsTimeSource || 'Initial Creation',

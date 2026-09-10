@@ -1,4 +1,5 @@
 import { resolveEventSchedule } from './venueScheduleResolver';
+import type { CanonicalTicketOption } from '../types';
 
 export type EventSubType = 'Concert' | 'Sports' | 'Comedy' | 'Theater' | 'Festival' | 'Other';
 
@@ -28,6 +29,14 @@ export interface AutoPullEvent {
   doorsConfirmed?: boolean;
   doorsSource?: string;
   venueGateInfo?: string;
+
+  // Multi-Provider Ticketing & Deduplication Fields
+  canonicalId?: string;
+  ticketOptions?: CanonicalTicketOption[];
+  provenanceSources?: string[];
+  confidenceScore?: number;
+  marketRank?: number;
+  metroArea?: string;
 }
 
 export const POPULAR_EVENTS_CATALOG: AutoPullEvent[] = [

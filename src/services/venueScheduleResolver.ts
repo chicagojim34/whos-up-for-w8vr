@@ -146,7 +146,7 @@ export function normalizeTimeString(str: string): string {
   const match = trimmed.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/i);
   if (!match) return str;
 
-  let h = parseInt(match[1], 10);
+  const h = parseInt(match[1], 10);
   const m = match[2] ? parseInt(match[2], 10) : 0;
   let ampm = match[3] ? match[3].toUpperCase() : '';
 
@@ -177,7 +177,7 @@ export function extractScheduleTimesFromText(text: string): {
   // Regex patterns for doors time:
   // e.g. "Doors Open: 5 p.m.", "Doors: 5:00 PM", "Gates open at 5pm", "Doors 5 PM"
   const doorsRegexes = [
-    /(?:doors|gates)\s*(?:open|unlock)?[:\s\-]+(\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm))/i,
+    /(?:doors|gates)\s*(?:open|unlock)?[:\s-]+(\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm))/i,
     /(?:doors|gates)\s*at\s*(\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm))/i,
     /(\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm))\s*(?:doors|gates)/i,
   ];
@@ -193,7 +193,7 @@ export function extractScheduleTimesFromText(text: string): {
   // Regex patterns for showtime / concert start:
   // e.g. "Concert Begins: 7 p.m.", "Show starts: 7:00 PM", "Concert: 7:00 PM", "Showtime: 8:00 PM"
   const showRegexes = [
-    /(?:concert|show|event|music|performance)\s*(?:begins|starts|time)?[:\s\-]+(\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm))/i,
+    /(?:concert|show|event|music|performance)\s*(?:begins|starts|time)?[:\s-]+(\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm))/i,
     /(?:begins|starts)\s*at\s*(\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm))/i,
   ];
 
@@ -207,7 +207,7 @@ export function extractScheduleTimesFromText(text: string): {
 
   // Gate info extraction
   let gateInfo: string | undefined;
-  const gateMatch = clean.match(/(?:guests may enter through|entrances?|gates?|entry points?)[:\s]+([^\n\.]+)/i);
+  const gateMatch = clean.match(/(?:guests may enter through|entrances?|gates?|entry points?)[:\s]+([^\n.]+)/i);
   if (gateMatch && gateMatch[1]) {
     gateInfo = gateMatch[1].trim();
   }

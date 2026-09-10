@@ -1,13 +1,10 @@
 import React, { useState } from 'react';
 import {
-  Clock,
   MapPin,
   RefreshCw,
   CheckCircle2,
   Bell,
-  ShieldCheck,
   X,
-  AlertCircle,
   Building2,
 } from 'lucide-react';
 import type { EventItem } from '../types';

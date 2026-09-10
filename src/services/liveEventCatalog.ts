@@ -6,6 +6,11 @@ import {
   isEventUpcoming
 } from './eventAutoPull';
 import { resolveEventSchedule, type ResolvedSchedule } from './venueScheduleResolver';
+import { deduplicateAndMergeEvents } from './eventDeduplication';
+import { fetchDoStuffEvents } from './drivers/doStuffDriver';
+import { fetchDmoEvents } from './drivers/simpleviewDmoDriver';
+import { fetchPacEvents } from './drivers/tessituraPacDriver';
+import { fetchDiningExperiences } from './drivers/diningExperienceDriver';
 
 // Active API credentials provided by user
 export const DEFAULT_TICKETMASTER_API_KEY = 'IIA8D5kIG6y4Oj7dT9hg0CGRbv4ZAIvQ';
@@ -414,8 +419,8 @@ export async function searchLiveEventCatalog(params: {
     sgType = 'theater';
   }
 
-  // Query both APIs concurrently
-  const [tmResults, sgResults] = await Promise.all([
+  // Query primary APIs and syndicated multi-market drivers concurrently
+  const [tmResults, sgResults, doStuffResults, dmoResults, pacResults, diningResults] = await Promise.all([
     fetchTicketmasterEvents({
       keyword,
       city,
@@ -428,25 +433,24 @@ export async function searchLiveEventCatalog(params: {
       type: sgType,
       size: params.size || 15,
     }),
+    fetchDoStuffEvents(city),
+    fetchDmoEvents(city),
+    fetchPacEvents(city),
+    fetchDiningExperiences(city),
   ]);
 
-  // Combine, filter out past events, and deduplicate by title/performer similarity
-  const combined = [...tmResults, ...sgResults];
-  const seenTitles = new Set<string>();
-  const deduplicated: AutoPullEvent[] = [];
+  // Combine raw streams and filter out past events
+  const combinedRaw = [
+    ...tmResults,
+    ...sgResults,
+    ...doStuffResults,
+    ...dmoResults,
+    ...pacResults,
+    ...diningResults,
+  ].filter(evt => isEventUpcoming(evt.date));
 
-  for (const evt of combined) {
-    // Filter out events that occurred in the past
-    if (!isEventUpcoming(evt.date)) {
-      continue;
-    }
-
-    const key = `${evt.performerOrTeam.toLowerCase()}-${evt.date}`;
-    if (!seenTitles.has(key)) {
-      seenTitles.add(key);
-      deduplicated.push(evt);
-    }
-  }
+  // Run 5-Stage Entity Resolution & Deduplication Engine
+  const deduplicated: AutoPullEvent[] = deduplicateAndMergeEvents(combinedRaw);
 
   // Relevance ranking and chronological date sorting
   let ranked = deduplicated;
