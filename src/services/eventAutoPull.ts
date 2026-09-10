@@ -41,7 +41,7 @@ export const POPULAR_EVENTS_CATALOG: AutoPullEvent[] = [
     venue: "The Dome at America's Center",
     venueAddress: '701 Convention Plaza, St. Louis, MO 63101',
     city: 'St. Louis, MO',
-    date: 'Tue, Sep 08',
+    date: 'Tue, Sep 15',
     showtime: '7:00 PM',
     doorsTime: '5:00 PM',
     suggestedMeetupTime: '4:30 PM',
@@ -603,16 +603,27 @@ export function computeEventRelevance(
  * Searches the catalog of events with relevance ranking and chronological date sorting.
  */
 export function searchAutoPullEvents(query: string, userCity?: string): AutoPullEvent[] {
+  const now = new Date();
+  const startOfTodayMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+  const isUpcoming = (evt: AutoPullEvent) => {
+    return parseEventDateToTimestamp(evt.date) >= startOfTodayMs;
+  };
+
   if (!query || !query.trim()) {
-    return [...POPULAR_EVENTS_CATALOG].sort((a, b) => {
-      const aUserCity = userCity && a.city.toLowerCase().includes(userCity.toLowerCase()) ? 1 : 0;
-      const bUserCity = userCity && b.city.toLowerCase().includes(userCity.toLowerCase()) ? 1 : 0;
-      if (aUserCity !== bUserCity) return bUserCity - aUserCity;
-      return parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date);
-    }).slice(0, 8);
+    return [...POPULAR_EVENTS_CATALOG]
+      .filter(isUpcoming)
+      .sort((a, b) => {
+        const aUserCity = userCity && a.city.toLowerCase().includes(userCity.toLowerCase()) ? 1 : 0;
+        const bUserCity = userCity && b.city.toLowerCase().includes(userCity.toLowerCase()) ? 1 : 0;
+        if (aUserCity !== bUserCity) return bUserCity - aUserCity;
+        return parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date);
+      })
+      .slice(0, 8);
   }
 
   const scored = POPULAR_EVENTS_CATALOG
+    .filter(isUpcoming)
     .map(evt => ({ evt, score: computeEventRelevance(evt, query, userCity) }))
     .filter(item => item.score > 0);
 

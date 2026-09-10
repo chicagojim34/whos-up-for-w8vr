@@ -111,14 +111,19 @@ async function fetchTicketmasterEvents(query: {
   city?: string;
   classificationName?: string;
   size?: number;
-}): Promise<AutoPullEvent[]> {
   const apiKey = getTicketmasterKey();
   if (!apiKey) return [];
+
+  const now = new Date();
+  const startDateTime = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0))
+    .toISOString()
+    .split('.')[0] + 'Z';
 
   const params = new URLSearchParams({
     apikey: apiKey,
     size: String(query.size || 20),
     sort: 'date,asc',
+    startDateTime,
   });
 
   if (query.keyword?.trim()) {
@@ -267,10 +272,14 @@ async function fetchSeatGeekEvents(query: {
   const clientId = getSeatGeekClientId();
   if (!clientId) return [];
 
+  const now = new Date();
+  const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
   const params = new URLSearchParams({
     client_id: clientId,
     per_page: String(query.size || 20),
     sort: 'datetime_local.asc',
+    'datetime_local.gte': todayIso,
   });
 
   if (query.keyword?.trim()) {
@@ -419,12 +428,21 @@ export async function searchLiveEventCatalog(params: {
     }),
   ]);
 
-  // Combine and deduplicate by title/performer similarity
+  // Combine, filter out past events, and deduplicate by title/performer similarity
   const combined = [...tmResults, ...sgResults];
   const seenTitles = new Set<string>();
   const deduplicated: AutoPullEvent[] = [];
 
+  const now = new Date();
+  const startOfTodayMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
   for (const evt of combined) {
+    // Filter out events that occurred before today
+    const evtTimestamp = parseEventDateToTimestamp(evt.date);
+    if (evtTimestamp < startOfTodayMs) {
+      continue;
+    }
+
     const key = `${evt.performerOrTeam.toLowerCase()}-${evt.date}`;
     if (!seenTitles.has(key)) {
       seenTitles.add(key);
@@ -456,14 +474,16 @@ export async function searchLiveEventCatalog(params: {
     });
   }
 
-  // Cache latest results locally for quick retrieval
+  // Cache latest results locally for quick retrieval, ensuring only upcoming events remain cached
   if (ranked.length > 0 && typeof window !== 'undefined') {
     try {
       const existingStr = localStorage.getItem(CACHE_STORAGE_KEY);
       const existing: AutoPullEvent[] = existingStr ? JSON.parse(existingStr) : [];
       const mergedMap = new Map<string, AutoPullEvent>();
       for (const e of [...ranked, ...existing]) {
-        mergedMap.set(e.id, e);
+        if (parseEventDateToTimestamp(e.date) >= startOfTodayMs) {
+          mergedMap.set(e.id, e);
+        }
       }
       localStorage.setItem(
         CACHE_STORAGE_KEY,
@@ -478,13 +498,18 @@ export async function searchLiveEventCatalog(params: {
 }
 
 /**
- * Returns cached live events for instant offline/initial rendering.
+ * Returns cached live events for instant offline/initial rendering,
+ * strictly filtering out any events that occurred in the past.
  */
 export function getCachedLiveEvents(): AutoPullEvent[] {
   if (typeof window === 'undefined') return [];
   try {
     const str = localStorage.getItem(CACHE_STORAGE_KEY);
-    return str ? JSON.parse(str) : [];
+    if (!str) return [];
+    const events: AutoPullEvent[] = JSON.parse(str);
+    const now = new Date();
+    const startOfTodayMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    return events.filter(e => parseEventDateToTimestamp(e.date) >= startOfTodayMs);
   } catch {
     return [];
   }
