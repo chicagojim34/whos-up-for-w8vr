@@ -231,8 +231,21 @@ export default function PostEvent() {
 
   const handleSelectAutoEvent = (autoEvt: AutoPullEvent) => {
     setTitle(autoEvt.title);
-    setCategory('Entertainment');
-    setIsTicketedEvent(true);
+    if (autoEvt.category) {
+      setCategory(autoEvt.category);
+    } else if (autoEvt.eventSubType === 'Sports') {
+      setCategory('Active');
+    } else {
+      setCategory('Entertainment');
+    }
+
+    // Only flag as ticketed if it has actual ticket options or a commercial ticket URL
+    const isTicketed = Boolean(
+      (autoEvt.ticketUrl && !autoEvt.ticketUrl.includes('google') && !autoEvt.ticketUrl.includes('maps')) ||
+      (autoEvt.ticketOptions && autoEvt.ticketOptions.some(t => t.type === 'primary' || t.type === 'official_resale'))
+    );
+    setIsTicketedEvent(isTicketed);
+
     setEventSubType(autoEvt.eventSubType);
     setPerformerOrTeam(autoEvt.performerOrTeam);
     setLocation(autoEvt.venue);
@@ -385,18 +398,18 @@ export default function PostEvent() {
                     onClick={() => setIsCatalogModalOpen(true)}
                     className="badge bg-primary hover:bg-primary-dark text-white font-bold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer py-1 px-2.5 shadow-2xs"
                   >
-                    <Sparkles size={11} /> Browse Full Catalog (134k+ Live)
+                    <Sparkles size={11} /> Browse Live Catalog (Top 50 US Markets)
                   </button>
                 </div>
                 <p className="text-xs text-text-medium mb-3">
-                  Search live concerts, sports, comedy, or paste a Ticketmaster / SeatGeek / AXS URL.
+                  Search any restaurant, art walk, festival, tour, sports game, concert, or paste a link.
                 </p>
 
                 <div className="relative">
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-primary pointer-events-none" size={16} />
                   <input
                     type="text"
-                    placeholder="Search artist, team, tour, or paste ticket link..."
+                    placeholder="Search any restaurant, art walk, festival, tour, game, or concert (e.g. Au Cheval, Ravenswood, Architecture)..."
                     value={autoSearchQuery}
                     onChange={e => handleAutoSearchChange(e.target.value)}
                     onKeyDown={e => {
@@ -424,7 +437,7 @@ export default function PostEvent() {
 
                 <div className="mt-2 flex items-center justify-between">
                   <span className="text-[10px] text-text-medium font-medium">
-                    ⚡ Live sync with Ticketmaster &amp; SeatGeek
+                    ⚡ Live sync: Restaurants, Art Walks, Tours, Festivals &amp; Arena APIs
                   </span>
                   <button
                     type="button"

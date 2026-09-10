@@ -3,7 +3,8 @@ import {
   type EventSubType, 
   computeEventRelevance, 
   parseEventDateToTimestamp,
-  isEventUpcoming
+  isEventUpcoming,
+  searchAutoPullEvents
 } from './eventAutoPull';
 import { resolveEventSchedule, type ResolvedSchedule } from './venueScheduleResolver';
 import { deduplicateAndMergeEvents } from './eventDeduplication';
@@ -394,7 +395,7 @@ async function fetchSeatGeekEvents(query: {
 export async function searchLiveEventCatalog(params: {
   keyword?: string;
   city?: string;
-  subType?: EventSubType | 'All';
+  subType?: EventSubType | 'Dining' | 'All';
   size?: number;
 }): Promise<AutoPullEvent[]> {
   const keyword = params.keyword?.trim() || '';
@@ -417,7 +418,13 @@ export async function searchLiveEventCatalog(params: {
   } else if (subType === 'Theater') {
     tmClass = 'Arts & Theatre';
     sgType = 'theater';
+  } else if (subType === 'Festival') {
+    tmClass = 'Festival';
+    sgType = 'festival';
   }
+
+  // Get local verified community events, tours, dining outings, and art walks
+  const localCatalogEvents = searchAutoPullEvents(keyword, city);
 
   // Query primary APIs and syndicated multi-market drivers concurrently
   const [tmResults, sgResults, doStuffResults, dmoResults, pacResults, diningResults] = await Promise.all([
@@ -440,7 +447,8 @@ export async function searchLiveEventCatalog(params: {
   ]);
 
   // Combine raw streams and filter out past events
-  const combinedRaw = [
+  let combinedRaw = [
+    ...localCatalogEvents,
     ...tmResults,
     ...sgResults,
     ...doStuffResults,
@@ -448,6 +456,17 @@ export async function searchLiveEventCatalog(params: {
     ...pacResults,
     ...diningResults,
   ].filter(evt => isEventUpcoming(evt.date));
+
+  // Apply subtype / category filter if requested
+  if (subType) {
+    if (subType === 'Dining') {
+      combinedRaw = combinedRaw.filter(e => e.category === 'Dining');
+    } else if (subType === 'Festival') {
+      combinedRaw = combinedRaw.filter(e => e.eventSubType === 'Festival' || e.category === 'Community');
+    } else {
+      combinedRaw = combinedRaw.filter(e => e.eventSubType === subType);
+    }
+  }
 
   // Run 5-Stage Entity Resolution & Deduplication Engine
   const deduplicated: AutoPullEvent[] = deduplicateAndMergeEvents(combinedRaw);

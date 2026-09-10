@@ -35,30 +35,32 @@ const POPULAR_CITIES = [
   'London',
 ];
 
-const CATEGORIES: { label: string; value: EventSubType | 'All' }[] = [
-  { label: 'All Live', value: 'All' },
-  { label: 'Concerts', value: 'Concert' },
-  { label: 'Sports', value: 'Sports' },
-  { label: 'Comedy', value: 'Comedy' },
-  { label: 'Theater & Arts', value: 'Theater' },
+const CATEGORIES: { label: string; value: EventSubType | 'Dining' | 'All' }[] = [
+  { label: 'All Outings', value: 'All' },
+  { label: 'Dining & Food', value: 'Dining' },
+  { label: 'Festivals & Art Walks', value: 'Festival' },
+  { label: 'Tours & Attractions', value: 'Other' },
+  { label: 'Sports & Games', value: 'Sports' },
+  { label: 'Concerts & Shows', value: 'Concert' },
+  { label: 'Comedy & Theater', value: 'Comedy' },
 ];
 
 export function LiveEventCatalogModal({
   isOpen,
   onClose,
   onSelectEvent,
-  initialCity = 'Austin',
+  initialCity = 'Chicago',
 }: LiveEventCatalogModalProps) {
   const [keyword, setKeyword] = useState('');
   const [city, setCity] = useState(initialCity);
   const [customCity, setCustomCity] = useState('');
-  const [category, setCategory] = useState<EventSubType | 'All'>('All');
+  const [category, setCategory] = useState<EventSubType | 'Dining' | 'All'>('All');
   const [events, setEvents] = useState<AutoPullEvent[]>(() => getCachedLiveEvents());
   const [isLoading, setIsLoading] = useState(false);
   const [, startTransition] = useTransition();
 
   const loadEvents = useCallback(
-    async (kw: string, currentCity: string, cat: EventSubType | 'All') => {
+    async (kw: string, currentCity: string, cat: EventSubType | 'Dining' | 'All') => {
       setIsLoading(true);
       try {
         const results = await searchLiveEventCatalog({
@@ -105,18 +107,18 @@ export function LiveEventCatalogModal({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="badge bg-primary text-white text-[10px] font-headline font-black uppercase tracking-wider">
-                Live Global Catalog
+                Live Outings &amp; Events
               </span>
               <span className="inline-flex items-center gap-1 text-[11px] font-bold text-success">
                 <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                Ticketmaster &amp; SeatGeek Connected
+                Live APIs, Dining &amp; Metro Guides Connected
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-headline font-black text-text-dark mt-1">
-              Find &amp; Add Live Events
+              Find &amp; Add Outings
             </h2>
             <p className="text-xs text-text-medium mt-0.5">
-              Pull official tour dates, showtimes, venues, and ticket links with 1 click.
+              Pull restaurants, art walks, tours, sports games, and concerts with 1 click.
             </p>
           </div>
 
@@ -143,7 +145,7 @@ export function LiveEventCatalogModal({
                 type="text"
                 value={keyword}
                 onChange={e => setKeyword(e.target.value)}
-                placeholder="Search artist, sports team, tour, or venue (e.g. Coldplay, Longhorns, Bargatze)..."
+                placeholder="Search restaurants, art walks, tours, sports, or concerts (e.g. Au Cheval, Ravenswood, Architecture)..."
                 className="input-field pl-10 pr-10 py-2.5 text-sm bg-surface-lowest shadow-2xs font-medium"
                 autoFocus
               />
@@ -256,6 +258,17 @@ export function LiveEventCatalogModal({
             </div>
           )}
 
+          {events.length > 0 && (
+            <div className="flex items-center justify-between mb-3 text-xs text-text-medium font-medium px-1">
+              <span>
+                Showing <strong className="text-text-dark font-bold">{events.length}</strong> live outings in {city === 'All Cities' ? 'Top 50 US Markets' : city}
+              </span>
+              <span className="text-[11px] text-primary font-bold flex items-center gap-1">
+                <Sparkles size={11} /> Auto-Deduplicated &amp; Synced
+              </span>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {events.map(event => (
               <div
@@ -325,7 +338,7 @@ export function LiveEventCatalogModal({
                       </span>
                       <span className="text-text-light">•</span>
                       <span className="text-secondary font-black">
-                        Show: {event.showtime}
+                        {event.category === 'Dining' ? 'Table:' : 'Start:'} {event.showtime}
                       </span>
                     </div>
 

@@ -24,26 +24,31 @@ export const TOP_PAC_CENTERS: Record<string, PacVenueConfig> = {
  * (Tessitura Network, Spektrix, Hot Tix, TKTS, TodayTix).
  */
 export async function fetchPacEvents(city?: string): Promise<AutoPullEvent[]> {
-  if (!city) return [];
+  const isAll = !city || city === 'All Cities';
 
-  const matched = Object.entries(TOP_PAC_CENTERS).find(([k]) =>
-    city.toLowerCase().includes(k.toLowerCase())
-  );
+  const targetMarkets = isAll
+    ? ['New York', 'Chicago', 'Los Angeles', 'Washington', 'San Francisco', 'Boston']
+    : [city];
 
-  if (!matched) return [];
-  const [, pac] = matched;
+  const results: AutoPullEvent[] = [];
 
-  return [
-    {
+  for (const targetCity of targetMarkets) {
+    const matched = Object.entries(TOP_PAC_CENTERS).find(([k]) =>
+      targetCity.toLowerCase().includes(k.toLowerCase())
+    );
+    if (!matched) continue;
+    const [cityName, pac] = matched;
+
+    results.push({
       id: `pac-${pac.marketRank}-broadway-tour`,
       title: `Touring Broadway Gala at ${pac.venueName}`,
       performerOrTeam: 'National Touring Broadway Cast',
       eventSubType: 'Theater',
       category: 'Entertainment',
       venue: pac.venueName,
-      venueAddress: `Arts District, ${city}`,
-      city: `${city}, US`,
-      date: 'Next Week',
+      venueAddress: `Arts District, ${cityName}`,
+      city: `${cityName}, US`,
+      date: 'Fri, Nov 28',
       showtime: '7:30 PM',
       doorsTime: '6:30 PM',
       suggestedMeetupTime: '6:15 PM',
@@ -86,6 +91,8 @@ export async function fetchPacEvents(city?: string): Promise<AutoPullEvent[]> {
           sourceLabel: 'Half-Price / Rush Partner',
         },
       ],
-    },
-  ];
+    });
+  }
+
+  return results;
 }

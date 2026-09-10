@@ -29,26 +29,31 @@ export const TOP_DMO_PORTALS: Record<string, DmoPortalConfig> = {
  * Ingests civic festivals, open-air cultural celebrations, and heritage events.
  */
 export async function fetchDmoEvents(city?: string): Promise<AutoPullEvent[]> {
-  if (!city) return [];
+  const isAll = !city || city === 'All Cities';
 
-  const matched = Object.entries(TOP_DMO_PORTALS).find(([k]) =>
-    city.toLowerCase().includes(k.toLowerCase())
-  );
+  const targetMarkets = isAll
+    ? ['New York', 'Chicago', 'Austin', 'Miami', 'Nashville', 'Los Angeles']
+    : [city];
 
-  if (!matched) return [];
-  const [, portal] = matched;
+  const results: AutoPullEvent[] = [];
 
-  return [
-    {
+  for (const targetCity of targetMarkets) {
+    const matched = Object.entries(TOP_DMO_PORTALS).find(([k]) =>
+      targetCity.toLowerCase().includes(k.toLowerCase())
+    );
+    if (!matched) continue;
+    const [cityName, portal] = matched;
+
+    results.push({
       id: `dmo-${portal.marketRank}-civic-arts`,
       title: `${portal.dmoName}: Seasonal Cultural Walk & Arts Fair`,
       performerOrTeam: 'City Cultural Affairs',
       eventSubType: 'Festival',
       category: 'Entertainment',
-      venue: `${city} Civic Center & Cultural Plaza`,
-      venueAddress: `Downtown Cultural Corridor, ${city}`,
-      city: `${city}, US`,
-      date: 'This Weekend',
+      venue: `${cityName} Civic Center & Cultural Plaza`,
+      venueAddress: `Downtown Cultural Corridor, ${cityName}`,
+      city: `${cityName}, US`,
+      date: 'Sun, Nov 23',
       showtime: '12:00 PM',
       doorsTime: '11:00 AM',
       suggestedMeetupTime: '11:30 AM',
@@ -65,6 +70,22 @@ export async function fetchDmoEvents(city?: string): Promise<AutoPullEvent[]> {
       marketRank: portal.marketRank,
       metroArea: portal.metroArea,
       doorsConfirmed: true,
-    },
-  ];
+      ticketOptions: [
+        {
+          id: `tkt-dmo-${portal.marketRank}`,
+          provider: portal.dmoName,
+          type: 'community',
+          url: `https://${portal.domain}`,
+          minPrice: 0,
+          maxPrice: 25,
+          currency: 'USD',
+          availability: 'available',
+          sectionInfo: 'General Admission / RSVP',
+          sourceLabel: 'Official Tourism Board RSVP',
+        },
+      ],
+    });
+  }
+
+  return results;
 }

@@ -1,5 +1,6 @@
 import { resolveEventSchedule } from './venueScheduleResolver';
 import type { CanonicalTicketOption } from '../types';
+import type { EventCategory } from '../lib/categories';
 
 export type EventSubType = 'Concert' | 'Sports' | 'Comedy' | 'Theater' | 'Festival' | 'Other';
 
@@ -8,7 +9,7 @@ export interface AutoPullEvent {
   title: string;
   performerOrTeam: string;
   eventSubType: EventSubType;
-  category: 'Entertainment' | 'Active';
+  category: EventCategory;
   venue: string;
   venueAddress: string;
   city: string;
@@ -415,7 +416,62 @@ export const POPULAR_EVENTS_CATALOG: AutoPullEvent[] = [
     description: 'Fast-paced storytelling, sharp crowd work, and neurotic reflections from the SNL alumnus in his hometown.'
   },
 
-  // --- FESTIVALS ---
+  // --- FESTIVALS & COMMUNITY ART WALKS ---
+  {
+    id: 'evt-ravenswood-artwalk',
+    title: 'Ravenswood ArtWalk: Tour of Arts & Industry (RAW)',
+    performerOrTeam: 'Ravenswood Artists & Craftsmen',
+    eventSubType: 'Festival',
+    category: 'Community',
+    venue: 'Ravenswood Industrial Corridor',
+    venueAddress: '4300 N Ravenswood Ave, Chicago, IL 60613',
+    city: 'Chicago, IL',
+    date: 'Sat-Sun, Sep 19-20',
+    showtime: '11:00 AM',
+    doorsTime: '11:00 AM',
+    suggestedMeetupTime: '11:30 AM',
+    suggestedMeetupLocation: 'Begyle Brewing / Artifact Events Beer Garden on Ravenswood Ave',
+    image: 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&q=80&w=1200',
+    additionalImages: [
+      'https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&q=80&w=1200',
+      'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&q=80&w=1200'
+    ],
+    ticketUrl: 'https://ravenswoodchicago.org/signature-events/artwalk/',
+    ticketSectionInfo: 'Open Neighborhood Art Studios / Free Admission',
+    priceRange: 'Free ($5 Suggested Donation)',
+    lineup: ['50+ Open Art Studios', 'Begyle & Dovetail Craft Beer Garden', '20+ Local Food Trucks', 'Live Music Stages'],
+    bagPolicy: 'Open street festival, all bags allowed, dog friendly.',
+    ageRestriction: 'All Ages',
+    doorsConfirmed: true,
+    doorsSource: 'Greater Ravenswood Chamber of Commerce',
+    description: 'Weekend-long celebration of arts and industry along historic Ravenswood Avenue. Explore open artist studios, craft markets, outdoor beer gardens, and live music.'
+  },
+  {
+    id: 'evt-saborea-latino-gourmet',
+    title: "Saborea Chicago's Latino Gourmet Festival",
+    performerOrTeam: 'Latino Culinary Masters & Mixologists',
+    eventSubType: 'Festival',
+    category: 'Dining',
+    venue: 'Navy Pier Aon Grand Ballroom & Festival Hall',
+    venueAddress: '600 E Grand Ave, Chicago, IL 60611',
+    city: 'Chicago, IL',
+    date: 'Sat, Sep 19',
+    showtime: '1:00 PM',
+    doorsTime: '12:30 PM',
+    suggestedMeetupTime: '12:30 PM',
+    suggestedMeetupLocation: 'Navy Pier Grand Staircase / Riva Crab House Terrace',
+    image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=1200',
+    additionalImages: [
+      'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=1200'
+    ],
+    ticketUrl: 'https://www.eventbrite.com',
+    ticketSectionInfo: 'General Tasting Ticket / VIP Early Admission',
+    priceRange: '$45 - $95',
+    lineup: ['Celebrity Latino Chefs', 'Artisanal Mezcal & Tequila Tastings', 'Live Salsa & Latin Jazz Bands'],
+    bagPolicy: 'Navy Pier standard security. Clutches and medium tote bags welcome.',
+    ageRestriction: '21+ for alcohol tastings; all ages festival hall.',
+    description: 'Vibrant celebration of Latin food culture, artisanal cocktails, and live music at Navy Pier. Sample bites from 30+ celebrated restaurants.'
+  },
   {
     id: 'evt-acl-fest',
     title: 'Austin City Limits Music Festival 2026',
@@ -441,6 +497,320 @@ export const POPULAR_EVENTS_CATALOG: AutoPullEvent[] = [
     bagPolicy: 'Hydration packs with max 2 pockets permitted (empty upon entry). Small clutches allowed.',
     ageRestriction: 'All Ages (Kids under 10 free with ticketed adult)',
     description: 'Eight stages, 130+ bands, iconic Austin skyline backdrop, and mouthwatering local Texas food court treats.'
+  },
+
+  // --- TOURS & ATTRACTIONS ---
+  {
+    id: 'evt-chicago-river-architecture-tour',
+    title: 'Chicago River Architecture Tour',
+    performerOrTeam: 'Chicago Architecture Center Docents',
+    eventSubType: 'Other',
+    category: 'Entertainment',
+    venue: 'Chicago First Lady Cruises (Riverwalk)',
+    venueAddress: '112 E Wacker Dr, Chicago, IL 60601',
+    city: 'Chicago, IL',
+    date: 'Sun, Sep 20',
+    showtime: '2:00 PM',
+    doorsTime: '1:30 PM',
+    suggestedMeetupTime: '1:15 PM',
+    suggestedMeetupLocation: 'Chicago Riverwalk Promenade Dock (Southeast corner of Michigan Ave Bridge)',
+    image: 'https://images.unsplash.com/photo-1477959858617-67f30bc75b82?auto=format&fit=crop&q=80&w=1200',
+    additionalImages: [
+      'https://images.unsplash.com/photo-1494522855154-9297ac14b55f?auto=format&fit=crop&q=80&w=1200',
+      'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&q=80&w=1200'
+    ],
+    ticketUrl: 'https://www.architecture.org',
+    ticketSectionInfo: 'Open-Air Top Deck Seating',
+    priceRange: '$48 - $55',
+    lineup: ['Certified CAC Docents', 'Chicago First Lady Fleet'],
+    bagPolicy: 'Standard purses and backpacks permitted. Full bar and snacks on lower deck.',
+    ageRestriction: 'All Ages',
+    doorsConfirmed: true,
+    doorsSource: 'Chicago Architecture Center & First Lady Cruises',
+    description: 'The acclaimed 90-minute architecture cruise along all three branches of the Chicago River. Discover how Chicago grew from a small settlement into the birthplace of the skyscraper.'
+  },
+  {
+    id: 'evt-museum-of-illusions-chicago',
+    title: 'Museum of Illusions Chicago: Interactive Experience',
+    performerOrTeam: 'Museum of Illusions',
+    eventSubType: 'Other',
+    category: 'Entertainment',
+    venue: 'Museum of Illusions',
+    venueAddress: '25 E Washington St, Chicago, IL 60602',
+    city: 'Chicago, IL',
+    date: 'Sat, Sep 19',
+    showtime: '4:00 PM',
+    doorsTime: '3:45 PM',
+    suggestedMeetupTime: '3:30 PM',
+    suggestedMeetupLocation: 'Washington St Lobby / Ticket Counter',
+    image: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?auto=format&fit=crop&q=80&w=1200',
+    ticketUrl: 'https://moichicago.com',
+    ticketSectionInfo: 'Timed Entry Admission',
+    priceRange: '$28 - $34',
+    lineup: ['Vortex Tunnel', 'Ames Room', 'Optical Holograms'],
+    bagPolicy: 'Casual bag policy; photo taking highly encouraged.',
+    ageRestriction: 'All Ages',
+    description: 'Fascinating visual, sensory and educational experience in the Loop with illusions, holograms, and perspective-bending exhibits.'
+  },
+  {
+    id: 'evt-360-chicago-tilt',
+    title: '360 Chicago Observation Deck & TILT',
+    performerOrTeam: '360 Chicago & CloudBar',
+    eventSubType: 'Other',
+    category: 'Entertainment',
+    venue: '360 Chicago (875 N Michigan Ave)',
+    venueAddress: '875 N Michigan Ave 94th Floor, Chicago, IL 60611',
+    city: 'Chicago, IL',
+    date: 'Sun, Sep 20',
+    showtime: '6:00 PM',
+    doorsTime: '5:30 PM',
+    suggestedMeetupTime: '5:15 PM',
+    suggestedMeetupLocation: 'CloudBar on 94th Floor (meet for sunset cocktails)',
+    image: 'https://images.unsplash.com/photo-1494522855154-9297ac14b55f?auto=format&fit=crop&q=80&w=1200',
+    ticketUrl: 'https://360chicago.com',
+    ticketSectionInfo: 'General Observation + TILT Ride Pass',
+    priceRange: '$35 - $50',
+    lineup: ['TILT Glass Ride', 'CloudBar Cocktails', 'Panoramic Skyline Views'],
+    bagPolicy: 'Standard security checkpoint at concourse.',
+    ageRestriction: 'All Ages / 21+ at CloudBar',
+    description: 'Experience panoramic 360-degree views of Chicago and Lake Michigan from 1,000 feet up, featuring the downward-tilting glass platform.'
+  },
+
+  // --- SPORTS CLASSICS & STADIUM MATCHES ---
+  {
+    id: 'evt-chicago-football-classic',
+    title: 'Chicago Football Classic: Delta Devils vs. Lincoln Lions',
+    performerOrTeam: 'Mississippi Valley State vs. Lincoln University',
+    eventSubType: 'Sports',
+    category: 'Active',
+    venue: 'Soldier Field',
+    venueAddress: '1410 Special Olympics Dr, Chicago, IL 60605',
+    city: 'Chicago, IL',
+    date: 'Sat, Sep 19',
+    showtime: '3:30 PM',
+    doorsTime: '1:30 PM',
+    suggestedMeetupTime: '11:30 AM',
+    suggestedMeetupLocation: 'Soldier Field South Lot 2 Tailgate (look for the W8VR Circle flag)',
+    image: 'https://images.unsplash.com/photo-1566577739112-5180d4bf9390?auto=format&fit=crop&q=80&w=1200',
+    additionalImages: [
+      'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=1200',
+      'https://images.unsplash.com/photo-1587280501635-68a0e82cd5ff?auto=format&fit=crop&q=80&w=1200'
+    ],
+    ticketUrl: 'https://www.ticketmaster.com',
+    ticketSectionInfo: 'Lower Bowl Sections 108-112 or Student Sections',
+    priceRange: '$25 - $75',
+    lineup: ['Mississippi Valley State Delta Devils', 'Lincoln University Lions', 'Battle of the Halftime Marching Bands', 'HBCU College Fair'],
+    bagPolicy: 'Soldier Field NFL Clear Bag Policy (12"x6"x12") strictly enforced. Cashless venue.',
+    ageRestriction: 'All Ages',
+    doorsConfirmed: true,
+    doorsSource: 'Soldier Field Box Office & Chicago Football Classic',
+    description: 'The premier HBCU football classic in the Midwest at historic Soldier Field. Thrilling gridiron action, high-stepping marching band showdown, and vibrant community tailgate.'
+  },
+
+  // --- NIGHTLIFE & CLUBS ---
+  {
+    id: 'evt-malaa-prysm',
+    title: 'Malaa: Live at PRYSM Nightclub',
+    performerOrTeam: 'Malaa',
+    eventSubType: 'Concert',
+    category: 'Entertainment',
+    venue: 'PRYSM Nightclub',
+    venueAddress: '1543 N Kingsbury St, Chicago, IL 60642',
+    city: 'Chicago, IL',
+    date: 'Sat, Sep 19',
+    showtime: '10:00 PM',
+    doorsTime: '10:00 PM',
+    suggestedMeetupTime: '10:30 PM',
+    suggestedMeetupLocation: 'Kingsbury St Entry Lounge or Mezzanine VIP Bar',
+    image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&q=80&w=1200',
+    additionalImages: [
+      'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=1200'
+    ],
+    ticketUrl: 'https://www.prysmchicago.com',
+    ticketSectionInfo: 'General Admission Tier 1 or VIP Table Service',
+    priceRange: '$25 - $60',
+    lineup: ['Malaa', 'Local Support DJ Collective'],
+    bagPolicy: 'No backpacks or large bags. Coat check available.',
+    ageRestriction: '21+',
+    doorsConfirmed: true,
+    doorsSource: 'PRYSM Chicago Box Office',
+    description: 'Late-night electronic dance music session headlined by masked bass-house powerhouse Malaa at PRYSM Nightclub.'
+  },
+
+  // --- ICONIC RESTAURANTS & DINING OUTINGS ---
+  {
+    id: 'evt-au-cheval-chicago',
+    title: 'Dinner & Burgers at Au Cheval',
+    performerOrTeam: 'Au Cheval Chicago',
+    eventSubType: 'Other',
+    category: 'Dining',
+    venue: 'Au Cheval',
+    venueAddress: '800 W Randolph St, Chicago, IL 60607',
+    city: 'Chicago, IL',
+    date: 'Fri, Sep 18',
+    showtime: '6:30 PM',
+    doorsTime: '6:00 PM',
+    suggestedMeetupTime: '6:00 PM',
+    suggestedMeetupLocation: 'Lone Wolf Tavern next door (grabbing craft beers while table gets paged)',
+    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=1200',
+    additionalImages: [
+      'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&q=80&w=1200'
+    ],
+    ticketUrl: 'https://auchevaldiner.com',
+    ticketSectionInfo: 'Dining Room Table / Walk-in Waitlist',
+    priceRange: '$25 - $60',
+    lineup: ['World-Famous Double Cheeseburger', 'Thick-Cut Bacon & Fried Egg', 'Bespoke Draft Ales'],
+    bagPolicy: 'Casual upscale diner setting.',
+    ageRestriction: 'All Ages / 21+ at bar',
+    doorsConfirmed: true,
+    description: 'Legendary West Loop diner famed for the country’s top-ranked double cheeseburger, rich chopped chicken liver, draft beers, and energetic atmosphere.'
+  },
+  {
+    id: 'evt-pequods-pizza-chicago',
+    title: "Deep Dish Pizza Outing at Pequod's",
+    performerOrTeam: "Pequod's Pizza",
+    eventSubType: 'Other',
+    category: 'Dining',
+    venue: "Pequod's Pizza",
+    venueAddress: '2207 N Clybourn Ave, Chicago, IL 60614',
+    city: 'Chicago, IL',
+    date: 'Sat, Sep 19',
+    showtime: '7:00 PM',
+    doorsTime: '6:30 PM',
+    suggestedMeetupTime: '6:30 PM',
+    suggestedMeetupLocation: 'Clybourn Ave front bar / booth section',
+    image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=1200',
+    additionalImages: [
+      'https://images.unsplash.com/photo-1590947132387-155cc02f3212?auto=format&fit=crop&q=80&w=1200'
+    ],
+    ticketUrl: 'https://pequodspizza.com',
+    ticketSectionInfo: 'Large Booth Table for Circle',
+    priceRange: '$20 - $40',
+    lineup: ['Caramelized Halo Crust Deep Dish', 'Italian Sausage & Giardiniera Pizza', 'Local Pitchers'],
+    bagPolicy: 'Casual neighborhood pizzeria.',
+    ageRestriction: 'All Ages',
+    doorsConfirmed: true,
+    description: "Chicago's cult-favorite deep dish pan pizza featuring the famous caramelized cheese crust ring baked in cast iron pans. A true Chicago institution."
+  },
+  {
+    id: 'evt-girl-and-the-goat',
+    title: 'Dinner at Girl & the Goat',
+    performerOrTeam: 'Chef Stephanie Izard',
+    eventSubType: 'Other',
+    category: 'Dining',
+    venue: 'Girl & the Goat',
+    venueAddress: '809 W Randolph St, Chicago, IL 60607',
+    city: 'Chicago, IL',
+    date: 'Sun, Sep 20',
+    showtime: '7:00 PM',
+    doorsTime: '6:45 PM',
+    suggestedMeetupTime: '6:45 PM',
+    suggestedMeetupLocation: 'West Loop Randolph Restaurant Row street entrance',
+    image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=1200',
+    ticketUrl: 'https://girlandthegoat.com',
+    ticketSectionInfo: 'Shared Table Reservation',
+    priceRange: '$55 - $110',
+    lineup: ['Wood Oven Roasted Pig Face', 'Green Beans in Fish Sauce Vinaigrette', 'Goat Empanadas'],
+    bagPolicy: 'Upscale casual dining.',
+    ageRestriction: 'All Ages',
+    doorsConfirmed: true,
+    description: 'Top Chef winner Stephanie Izard’s flagship West Loop destination serving inventive, globally inspired, bold family-style small plates.'
+  },
+  {
+    id: 'evt-alinea-chicago',
+    title: 'Modernist Gastronomic Tasting at Alinea',
+    performerOrTeam: 'Chef Grant Achatz',
+    eventSubType: 'Other',
+    category: 'Dining',
+    venue: 'Alinea',
+    venueAddress: '1723 N Halsted St, Chicago, IL 60614',
+    city: 'Chicago, IL',
+    date: 'Fri, Sep 25',
+    showtime: '7:30 PM',
+    doorsTime: '7:15 PM',
+    suggestedMeetupTime: '7:15 PM',
+    suggestedMeetupLocation: 'Halsted St Gallery Entrance',
+    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=1200',
+    ticketUrl: 'https://www.exploretock.com/alinea',
+    ticketSectionInfo: 'The Gallery or Salon Multi-Course Experience',
+    priceRange: '$295 - $450',
+    lineup: ['Edible Helium Balloons', 'Centerpiece Tabletop Dessert', '16-Course Modernist Tasting'],
+    bagPolicy: 'Fine dining dress code (jackets recommended).',
+    ageRestriction: 'Recommended 12+',
+    doorsConfirmed: true,
+    description: 'Three Michelin Star landmark by Grant Achatz delivering an avant-garde culinary performance that challenges all five senses.'
+  },
+  {
+    id: 'evt-violet-hour-chicago',
+    title: 'Craft Cocktails & Conversation at The Violet Hour',
+    performerOrTeam: 'The Violet Hour Mixology Team',
+    eventSubType: 'Other',
+    category: 'Dining',
+    venue: 'The Violet Hour',
+    venueAddress: '1520 N Damen Ave, Chicago, IL 60622',
+    city: 'Chicago, IL',
+    date: 'Sat, Sep 19',
+    showtime: '9:00 PM',
+    doorsTime: '8:45 PM',
+    suggestedMeetupTime: '8:45 PM',
+    suggestedMeetupLocation: 'Damen Ave exterior mural door (look for the camouflaged handle)',
+    image: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&q=80&w=1200',
+    ticketUrl: 'https://theviolethour.com',
+    ticketSectionInfo: 'Velvet Lounge Seating',
+    priceRange: '$18 - $45',
+    lineup: ['Hand-Cut Clear Ice Libations', 'House-Infused Bitters', 'Artisanal Absinthe Service'],
+    bagPolicy: 'No standing room, phone conversations discouraged.',
+    ageRestriction: '21+',
+    doorsConfirmed: true,
+    description: 'James Beard Award-winning speakeasy behind a disguised mural in Wicker Park, celebrated for bespoke pre-prohibition cocktails.'
+  },
+  {
+    id: 'evt-franklin-bbq-austin',
+    title: 'Brisket & BBQ Gathering at Franklin Barbecue',
+    performerOrTeam: 'Aaron Franklin & Pitmasters',
+    eventSubType: 'Other',
+    category: 'Dining',
+    venue: 'Franklin Barbecue',
+    venueAddress: '900 E 11th St, Austin, TX 78702',
+    city: 'Austin, TX',
+    date: 'Sat, Sep 26',
+    showtime: '11:00 AM',
+    doorsTime: '8:00 AM',
+    suggestedMeetupTime: '8:00 AM',
+    suggestedMeetupLocation: 'E 11th St line with camp chairs and coolers',
+    image: 'https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?auto=format&fit=crop&q=80&w=1200',
+    ticketUrl: 'https://franklinbbq.com',
+    ticketSectionInfo: 'Legendary Line Queue Outing',
+    priceRange: '$35 - $75',
+    lineup: ['Post Oak Smoked Prime Brisket', 'Pork Ribs', 'Jalapeño Cheddar Sausage'],
+    bagPolicy: 'Bring lawn chairs, sun hats, and cold beverages for the social line wait.',
+    ageRestriction: 'All Ages',
+    doorsConfirmed: true,
+    description: 'The world-famous Austin barbecue ritual. Join friends in the legendary morning line for the most tender post oak-smoked brisket on earth.'
+  },
+  {
+    id: 'evt-katz-deli-nyc',
+    title: "Pastrami on Rye Gathering at Katz's Delicatessen",
+    performerOrTeam: "Katz's Master Carvers",
+    eventSubType: 'Other',
+    category: 'Dining',
+    venue: "Katz's Delicatessen",
+    venueAddress: '205 E Houston St, New York, NY 10002',
+    city: 'New York, NY',
+    date: 'Sun, Sep 27',
+    showtime: '1:00 PM',
+    doorsTime: '12:30 PM',
+    suggestedMeetupTime: '12:30 PM',
+    suggestedMeetupLocation: 'Houston St entrance by the ticket dispenser',
+    image: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&q=80&w=1200',
+    ticketUrl: 'https://katzsdelicatessen.com',
+    ticketSectionInfo: 'Shared Communal Table',
+    priceRange: '$28 - $50',
+    lineup: ['Hand-Carved Warm Pastrami on Rye', 'Full Sour Pickles', 'Matzoh Ball Soup'],
+    bagPolicy: 'Keep your entry ticket safe until checkout!',
+    ageRestriction: 'All Ages',
+    doorsConfirmed: true,
+    description: 'Iconic Lower East Side Jewish deli serving hand-carved pastrami sandwiches since 1888. A quintessential NYC culinary pilgrimage.'
   }
 ];
 
@@ -532,7 +902,7 @@ export function computeEventRelevance(
   }
 
   const normalize = (s: string) =>
-    s.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    s.toLowerCase().replace(/['’]s\b/g, 's').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
 
   const qRaw = query.trim().toLowerCase();
   const qNorm = normalize(query);
@@ -566,11 +936,13 @@ export function computeEventRelevance(
 
   let score = 0;
 
-  // 1. Exact or near-exact match on performer or title (highest priority)
+  // 1. Exact or near-exact match on performer, title, or venue (highest priority)
   if (performerNorm === qNorm || event.performerOrTeam.toLowerCase() === qRaw) {
     score += 1500;
   } else if (titleNorm === qNorm || event.title.toLowerCase() === qRaw) {
     score += 1200;
+  } else if (venueNorm === qNorm || venueNorm.startsWith(qNorm) || venueNorm.includes(qNorm)) {
+    score += 1000;
   } else if (performerNorm.startsWith(qNorm) || qNorm.startsWith(performerNorm)) {
     score += 800;
   } else if (performerNorm.includes(qNorm)) {
@@ -625,6 +997,97 @@ export function computeEventRelevance(
 }
 
 /**
+ * Resolves any arbitrary restaurant, bar, venue, or activity into a structured W8VR event draft.
+ * Ensures that users setting up a hangout (dining, drinks, art walks, tours, recreation)
+ * can search ANY local spot and have it auto-populated in 1 click.
+ */
+export function resolveDynamicOuting(query: string, userCity?: string): AutoPullEvent | null {
+  if (!query || query.trim().length < 2) return null;
+  const q = query.trim();
+  const lower = q.toLowerCase();
+
+  // If it's a URL or contains domain name, skip
+  if (q.startsWith('http://') || q.startsWith('https://') || q.includes('.com') || q.includes('.org')) {
+    return null;
+  }
+
+  const cityStr = userCity || 'Chicago, IL';
+  const cleanTitle = q
+    .replace(/^(visit|go to|dinner at|drinks at|hangout at|check out|outing to)\s+/i, '')
+    .trim();
+
+  // Determine category & subtype
+  const isDining = /pizza|burger|taco|bbq|barbecue|steak|sushi|pasta|cafe|coffee|diner|bistro|brunch|kitchen|bakery|grill|restaurant|cantina|ramen|brewery|bar|pub|tavern|cocktail|wine|tasting|eats|deli|cheval|goat|pequod|alinea/i.test(lower);
+  const isActive = /golf|padel|pickleball|climb|bouldering|run|marathon|fitness|gym|yoga|skate|tennis|hoops|soccer|cycling|football|classic|volleyball|court/i.test(lower);
+  const isTourOrAttraction = /tour|museum|gallery|riverwalk|exhibit|aquarium|zoo|cruise|sightseeing|artwalk|architecture|observatory|fair/i.test(lower);
+  const isNightlife = /club|nightclub|dj|dance|rave|lounge|prysm|smartbar|radius|tao|disco/i.test(lower);
+
+  let category: EventCategory = 'Dining';
+  let eventSubType: EventSubType = 'Other';
+  let defaultMeetup = '6:30 PM';
+  let defaultShow = '7:00 PM';
+  let image = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=1200';
+  let desc = `Group dining outing and table reservation at ${cleanTitle}. Coordinated on W8VR.`;
+  let title = `Dinner & Hangout at ${cleanTitle}`;
+
+  if (isActive) {
+    category = 'Active';
+    eventSubType = 'Sports';
+    defaultMeetup = '9:30 AM';
+    defaultShow = '10:00 AM';
+    image = 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&q=80&w=1200';
+    desc = `Group sports activity and meetup at ${cleanTitle}. Coordinated on W8VR.`;
+    title = `Group Outing: ${cleanTitle}`;
+  } else if (isNightlife) {
+    category = 'Entertainment';
+    eventSubType = 'Concert';
+    defaultMeetup = '10:00 PM';
+    defaultShow = '10:30 PM';
+    image = 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&q=80&w=1200';
+    desc = `Late night drinks, music, and group outing at ${cleanTitle}. Coordinated on W8VR.`;
+    title = `Night Out at ${cleanTitle}`;
+  } else if (isTourOrAttraction) {
+    category = 'Entertainment';
+    eventSubType = 'Other';
+    defaultMeetup = '1:30 PM';
+    defaultShow = '2:00 PM';
+    image = 'https://images.unsplash.com/photo-1477959858617-67f30bc75b82?auto=format&fit=crop&q=80&w=1200';
+    desc = `Sightseeing, exploration, and group outing to ${cleanTitle}. Coordinated on W8VR.`;
+    title = `Group Tour & Outing: ${cleanTitle}`;
+  } else if (!isDining) {
+    // General gathering or restaurant
+    category = 'Dining';
+    title = `Hangout & Drinks at ${cleanTitle}`;
+    image = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=1200';
+  }
+
+  return {
+    id: `dyn-venue-${cleanTitle.toLowerCase().replace(/[^\w]/g, '-')}`,
+    title,
+    performerOrTeam: cleanTitle,
+    eventSubType,
+    category,
+    venue: cleanTitle,
+    venueAddress: `${cleanTitle}, ${cityStr}`,
+    city: cityStr,
+    date: 'Upcoming Weekend',
+    showtime: defaultShow,
+    doorsTime: defaultMeetup,
+    suggestedMeetupTime: defaultMeetup,
+    suggestedMeetupLocation: `Meet inside front entrance / host stand at ${cleanTitle}`,
+    image,
+    ticketUrl: '',
+    ticketSectionInfo: '',
+    priceRange: isDining ? '$20 - $55' : 'Free / Varies',
+    description: desc,
+    doorsConfirmed: false,
+    lineup: [cleanTitle],
+    bagPolicy: 'Casual venue attire; standard bags permitted.',
+    ageRestriction: isDining || isNightlife ? 'All Ages / 21+ at bar' : 'All Ages',
+  };
+}
+
+/**
  * Searches the catalog of events with relevance ranking and chronological date sorting.
  */
 export function searchAutoPullEvents(query: string, userCity?: string): AutoPullEvent[] {
@@ -644,7 +1107,7 @@ export function searchAutoPullEvents(query: string, userCity?: string): AutoPull
         if (aUserCity !== bUserCity) return bUserCity - aUserCity;
         return parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date);
       })
-      .slice(0, 8);
+      .slice(0, 10);
   }
 
   const scored = POPULAR_EVENTS_CATALOG
@@ -658,7 +1121,28 @@ export function searchAutoPullEvents(query: string, userCity?: string): AutoPull
     return parseEventDateToTimestamp(a.evt.date) - parseEventDateToTimestamp(b.evt.date);
   });
 
-  return scored.map(item => item.evt);
+  const results = scored.map(item => item.evt);
+
+  // If query is at least 2 chars, provide a dynamic venue/dining outing option if not already an exact match
+  if (query.trim().length >= 2) {
+    const dynamicCandidate = resolveDynamicOuting(query, userCity);
+    if (dynamicCandidate) {
+      const alreadyHasExact = results.some(
+        r => r.title.toLowerCase() === dynamicCandidate.title.toLowerCase() ||
+             r.venue.toLowerCase() === dynamicCandidate.venue.toLowerCase()
+      );
+      if (!alreadyHasExact) {
+        // If no strong results found, place dynamic at top; otherwise append
+        if (results.length === 0 || (scored[0] && scored[0].score < 400)) {
+          results.unshift(dynamicCandidate);
+        } else {
+          results.push(dynamicCandidate);
+        }
+      }
+    }
+  }
+
+  return results.slice(0, 12);
 }
 
 /**
