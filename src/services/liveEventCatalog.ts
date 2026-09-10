@@ -2,7 +2,8 @@ import {
   type AutoPullEvent, 
   type EventSubType, 
   computeEventRelevance, 
-  parseEventDateToTimestamp 
+  parseEventDateToTimestamp,
+  isEventUpcoming
 } from './eventAutoPull';
 import { resolveEventSchedule, type ResolvedSchedule } from './venueScheduleResolver';
 
@@ -434,13 +435,9 @@ export async function searchLiveEventCatalog(params: {
   const seenTitles = new Set<string>();
   const deduplicated: AutoPullEvent[] = [];
 
-  const now = new Date();
-  const startOfTodayMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-
   for (const evt of combined) {
-    // Filter out events that occurred before today
-    const evtTimestamp = parseEventDateToTimestamp(evt.date);
-    if (evtTimestamp < startOfTodayMs) {
+    // Filter out events that occurred in the past
+    if (!isEventUpcoming(evt.date)) {
       continue;
     }
 
@@ -482,7 +479,7 @@ export async function searchLiveEventCatalog(params: {
       const existing: AutoPullEvent[] = existingStr ? JSON.parse(existingStr) : [];
       const mergedMap = new Map<string, AutoPullEvent>();
       for (const e of [...ranked, ...existing]) {
-        if (parseEventDateToTimestamp(e.date) >= startOfTodayMs) {
+        if (isEventUpcoming(e.date)) {
           mergedMap.set(e.id, e);
         }
       }
@@ -508,9 +505,7 @@ export function getCachedLiveEvents(): AutoPullEvent[] {
     const str = localStorage.getItem(CACHE_STORAGE_KEY);
     if (!str) return [];
     const events: AutoPullEvent[] = JSON.parse(str);
-    const now = new Date();
-    const startOfTodayMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    return events.filter(e => parseEventDateToTimestamp(e.date) >= startOfTodayMs);
+    return events.filter(e => isEventUpcoming(e.date));
   } catch {
     return [];
   }

@@ -442,18 +442,22 @@ const MONTH_INDEX: Record<string, number> = {
 
 /**
  * Parses event dates into UNIX timestamps for chronological sorting (imminent/most recent first).
+ * Standardizes both ISO strings and formatted strings to local noon to prevent timezone-drift false-positives.
  */
 export function parseEventDateToTimestamp(dateStr?: string): number {
   if (!dateStr || !dateStr.trim()) return Infinity;
   const clean = dateStr.trim();
 
   // 1. ISO YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}/.test(clean)) {
-    const ts = Date.parse(clean);
-    if (!isNaN(ts)) return ts;
+  const isoMatch = clean.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const year = parseInt(isoMatch[1], 10);
+    const month = parseInt(isoMatch[2], 10) - 1;
+    const day = parseInt(isoMatch[3], 10);
+    return new Date(year, month, day, 12, 0, 0).getTime();
   }
 
-  // 2. Formats like "Tue, Sep 08", "Sep 08", "Sep 8, 2026"
+  // 2. Formats like "Tue, Sep 08", "Sep 08", "Sep 8, 2026", "Fri-Sun, Oct 10-12"
   const match = clean.match(/(?:[A-Za-z]{3},?\s+)?([A-Za-z]{3})\s+(\d{1,2})(?:,?\s+(\d{4}))?/i);
   if (match) {
     const monthKey = match[1].toLowerCase();
@@ -468,6 +472,18 @@ export function parseEventDateToTimestamp(dateStr?: string): number {
 
   const fallback = Date.parse(clean);
   return isNaN(fallback) ? Infinity : fallback;
+}
+
+/**
+ * Checks whether an event occurs today or in the future.
+ */
+export function isEventUpcoming(dateStr?: string): boolean {
+  if (!dateStr || !dateStr.trim()) return true;
+  const ts = parseEventDateToTimestamp(dateStr);
+  if (!isFinite(ts)) return true;
+  const now = new Date();
+  const startOfTodayMs = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0).getTime();
+  return ts >= startOfTodayMs;
 }
 
 /**
