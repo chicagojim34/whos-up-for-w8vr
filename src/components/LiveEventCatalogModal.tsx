@@ -14,7 +14,7 @@ import {
 import cx from 'classnames';
 import { searchLiveEventCatalog, getCachedLiveEvents } from '../services/liveEventCatalog';
 import { type AutoPullEvent, type EventSubType, formatDisplayDate } from '../services/eventAutoPull';
-import { ALPHABETICAL_387_MSAS } from '../lib/usMsaDirectory';
+import { ALPHABETICAL_387_MSAS, POPULAR_METRO_HUBS } from '../lib/usMsaDirectory';
 
 
 interface LiveEventCatalogModalProps {
@@ -24,19 +24,6 @@ interface LiveEventCatalogModalProps {
   initialCity?: string;
   initialKeyword?: string;
 }
-
-const POPULAR_CITIES = [
-  'Austin',
-  'Chicago',
-  'New York',
-  'Los Angeles',
-  'St. Louis',
-  'Dallas',
-  'Nashville',
-  'Miami',
-  'San Francisco',
-  'London',
-];
 
 const CATEGORIES: { label: string; value: EventSubType | 'Dining' | 'All' }[] = [
   { label: 'All Outings', value: 'All' },
@@ -52,11 +39,20 @@ export function LiveEventCatalogModal({
   isOpen,
   onClose,
   onSelectEvent,
-  initialCity = 'Chicago',
+  initialCity = 'All Cities',
   initialKeyword = '',
 }: LiveEventCatalogModalProps) {
   const [keyword, setKeyword] = useState(initialKeyword);
-  const [city, setCity] = useState(initialCity);
+  const [city, setCity] = useState(() => {
+    if (initialCity && initialCity !== 'Chicago' && initialCity !== 'All Cities') return initialCity;
+    try {
+      const saved = localStorage.getItem('w8vr.search_location');
+      if (saved) return saved === 'All US Markets' ? 'All Cities' : saved;
+    } catch (e) {
+      console.debug('Failed to read search_location', e);
+    }
+    return initialCity || 'All Cities';
+  });
   const [customCity, setCustomCity] = useState('');
   const [category, setCategory] = useState<EventSubType | 'Dining' | 'All'>('All');
   const [events, setEvents] = useState<AutoPullEvent[]>(() => getCachedLiveEvents());
@@ -173,8 +169,14 @@ export function LiveEventCatalogModal({
                 <select
                   value={city}
                   onChange={e => {
-                    setCity(e.target.value);
+                    const newCity = e.target.value;
+                    setCity(newCity);
                     setCustomCity('');
+                    try {
+                      localStorage.setItem('w8vr.search_location', newCity === 'All Cities' ? 'All US Markets' : newCity);
+                    } catch (e) {
+                      console.debug('Failed to cache search_location', e);
+                    }
                   }}
                   className="input-field py-2.5 px-3 text-xs bg-surface-lowest font-bold text-text-dark cursor-pointer max-w-[200px] truncate"
                   aria-label="Select US Metropolitan Market (387 MSAs)"
@@ -199,7 +201,14 @@ export function LiveEventCatalogModal({
                   value={customCity}
                   onChange={e => {
                     setCustomCity(e.target.value);
-                    if (e.target.value) setCity(e.target.value);
+                    if (e.target.value) {
+                      setCity(e.target.value);
+                      try {
+                        localStorage.setItem('w8vr.search_location', e.target.value);
+                      } catch (err) {
+                        console.debug('Failed to cache search_location', err);
+                      }
+                    }
                   }}
                   className="input-field pl-7 py-2.5 text-xs w-28 bg-surface-lowest font-medium"
                 />
@@ -212,13 +221,18 @@ export function LiveEventCatalogModal({
             <span className="text-[10px] font-headline font-bold text-text-light uppercase tracking-wider mr-1 shrink-0">
               Top Hubs:
             </span>
-            {POPULAR_CITIES.map(c => (
+            {POPULAR_METRO_HUBS.map(c => (
               <button
                 key={c}
                 type="button"
                 onClick={() => {
                   setCity(c);
                   setCustomCity('');
+                  try {
+                    localStorage.setItem('w8vr.search_location', c);
+                  } catch (e) {
+                    console.debug('Failed to cache search_location', e);
+                  }
                 }}
                 className={cx(
                   'px-2.5 py-1 rounded-lg text-xs font-bold transition-all shrink-0',

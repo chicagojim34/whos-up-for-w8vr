@@ -65,8 +65,8 @@ export const INITIAL_USER: UserProfile = {
   email: 'felix.vance@w8vr.app',
   role: 'admin',
   authProvider: 'demo',
-  tagline: 'HOST • AUSTIN, TX',
-  homeCity: 'Austin, TX',
+  tagline: 'HOST • CHICAGO, IL',
+  homeCity: 'Chicago, IL',
   notifications: {
     logistics: true,
     closeFriends: true,

@@ -1492,7 +1492,20 @@ export function resolveDynamicOuting(query: string, userCity?: string): AutoPull
     return null;
   }
 
-  const cityStr = userCity && userCity !== 'All Cities' ? userCity : 'Chicago, IL';
+  let resolvedCity = userCity;
+  if ((!resolvedCity || resolvedCity === 'All Cities' || resolvedCity === 'All US Markets') && typeof localStorage !== 'undefined') {
+    try {
+      const saved = localStorage.getItem('w8vr.search_location');
+      if (saved && saved !== 'All US Markets' && saved !== 'All Cities') {
+        resolvedCity = saved;
+      }
+    } catch (e) {
+      console.debug('Failed to read search_location', e);
+    }
+  }
+
+  const isNationalScope = !resolvedCity || resolvedCity === 'All Cities' || resolvedCity === 'All US Markets';
+  const cityStr: string = (isNationalScope ? 'Local Outing' : resolvedCity) || 'Local Outing';
   const cleanTitle = q
     .replace(/^(visit|go to|dinner at|drinks at|hangout at|check out|outing to)\s+/i, '')
     .trim();
@@ -1549,7 +1562,7 @@ export function resolveDynamicOuting(query: string, userCity?: string): AutoPull
     eventSubType,
     category,
     venue: cleanTitle,
-    venueAddress: `${cleanTitle}, ${cityStr}`,
+    venueAddress: isNationalScope ? cleanTitle : `${cleanTitle}, ${cityStr}`,
     city: cityStr,
     date: 'Upcoming Weekend',
     showtime: defaultShow,

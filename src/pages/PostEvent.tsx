@@ -15,6 +15,7 @@ import {
   Rocket,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
   Check,
   Sparkles,
   Ticket,
@@ -45,6 +46,7 @@ import {
 import { searchLiveEventCatalog } from '../services/liveEventCatalog';
 import { LiveEventCatalogModal } from '../components/LiveEventCatalogModal';
 import { GooglePlacesVenuePicker } from '../components/GooglePlacesVenuePicker';
+import { SearchLocationModal } from '../components/SearchLocationModal';
 
 
 const COVER_OPTIONS = [
@@ -74,10 +76,28 @@ export default function PostEvent() {
   const locationHook = useLocation();
   const prefill = (locationHook.state as { prefillEvent?: AutoPullEvent } | null)?.prefillEvent;
 
-  const { createEvent, circles, user } = useApp();
+  const { createEvent, circles, user, updateProfile } = useApp();
   const toast = useToast();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
+
+  // Search Location & GPS State (synced across app via localStorage)
+  const [searchLocation, setSearchLocation] = useState<string>(() => {
+    try {
+      return localStorage.getItem('w8vr.search_location') || user?.homeCity || 'All US Markets';
+    } catch {
+      return user?.homeCity || 'All US Markets';
+    }
+  });
+  const [userCoordinates, setUserCoordinates] = useState<{ lat: number; lng: number } | undefined>(() => {
+    try {
+      const raw = localStorage.getItem('w8vr.user_coords');
+      return raw ? JSON.parse(raw) : undefined;
+    } catch {
+      return undefined;
+    }
+  });
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
   // Auto-Pull & Ticketed Event State
   const [autoSearchQuery, setAutoSearchQuery] = useState('');
@@ -169,9 +189,52 @@ export default function PostEvent() {
   const [isResultsSurfaced, setIsResultsSurfaced] = useState(false);
   const [isSearchingLive, setIsSearchingLive] = useState(false);
 
-  const handleSurfaceAllResults = async (queryOverride?: string) => {
+  const handleSelectLocation = (loc: string, coords?: { lat: number; lng: number }) => {
+    setSearchLocation(loc);
+    if (coords) {
+      setUserCoordinates(coords);
+      try {
+        localStorage.setItem('w8vr.user_coords', JSON.stringify(coords));
+      } catch (e) {
+        console.debug('Failed to cache user coordinates', e);
+      }
+    } else if (loc === 'All US Markets') {
+      setUserCoordinates(undefined);
+      try {
+        localStorage.removeItem('w8vr.user_coords');
+      } catch (e) {
+        console.debug('Failed to clear cached user coordinates', e);
+      }
+    }
+    try {
+      localStorage.setItem('w8vr.search_location', loc);
+    } catch (e) {
+      console.debug('Failed to cache search location', e);
+    }
+
+    if (loc !== 'All US Markets') {
+      updateProfile({ homeCity: loc });
+    }
+
+    // Immediately re-run search if query is typed
+    if (autoSearchQuery.trim()) {
+      handleAutoSearchChange(autoSearchQuery, loc, coords);
+      if (isResultsSurfaced) {
+        handleSurfaceAllResults(autoSearchQuery, loc, coords);
+      }
+    }
+  };
+
+  const handleSurfaceAllResults = async (
+    queryOverride?: string,
+    locationOverride?: string,
+    coordsOverride?: { lat: number; lng: number }
+  ) => {
     const q = (queryOverride !== undefined ? queryOverride : autoSearchQuery).trim();
     if (!q) return;
+
+    const activeLoc = locationOverride || searchLocation;
+    const activeCoords = coordsOverride || userCoordinates;
 
     if (q.startsWith('http://') || q.startsWith('https://')) {
       handleParseUrl(q);
@@ -182,13 +245,23 @@ export default function PostEvent() {
     setIsResultsSurfaced(true);
 
     try {
-      // 1. Search local curated & known outings across all markets (with homeCity bonus)
-      const localResults = searchAutoPullEvents(q, user?.homeCity, false);
+      // 1. Search local curated & known outings across target market
+      const localResults = searchAutoPullEvents(
+        q,
+        activeLoc === 'All US Markets' ? undefined : activeLoc,
+        false,
+        undefined,
+        activeCoords
+      );
 
-      // 2. Query live events (Ticketmaster, SeatGeek, guides) across all markets
+      // 2. Query live events (Ticketmaster, SeatGeek, guides) across target market
       let liveResults: AutoPullEvent[] = [];
       try {
-        liveResults = await searchLiveEventCatalog({ keyword: q, size: 40 });
+        liveResults = await searchLiveEventCatalog({
+          keyword: q,
+          city: activeLoc === 'All US Markets' ? undefined : activeLoc,
+          size: 40,
+        });
       } catch {
         // preserve local results
       }
@@ -210,7 +283,10 @@ export default function PostEvent() {
 
       // 4. Rank by relevance
       const ranked = combined
-        .map(evt => ({ evt, score: computeEventRelevance(evt, q, user?.homeCity) }))
+        .map(evt => ({
+          evt,
+          score: computeEventRelevance(evt, q, activeLoc === 'All US Markets' ? undefined : activeLoc),
+        }))
         .filter(item => item.score > 0);
 
       ranked.sort((a, b) => {
@@ -225,7 +301,11 @@ export default function PostEvent() {
     }
   };
 
-  const handleAutoSearchChange = async (q: string) => {
+  const handleAutoSearchChange = async (
+    q: string,
+    locationOverride?: string,
+    coordsOverride?: { lat: number; lng: number }
+  ) => {
     setAutoSearchQuery(q);
     if (!q.trim()) {
       setAutoSuggestions([]);
@@ -234,12 +314,25 @@ export default function PostEvent() {
       return;
     }
 
-    const localResults = searchAutoPullEvents(q, user?.homeCity, false);
+    const activeLoc = locationOverride || searchLocation;
+    const activeCoords = coordsOverride || userCoordinates;
+
+    const localResults = searchAutoPullEvents(
+      q,
+      activeLoc === 'All US Markets' ? undefined : activeLoc,
+      false,
+      undefined,
+      activeCoords
+    );
     setAutoSuggestions(localResults.slice(0, 8));
 
     if (q.trim().length >= 2) {
       try {
-        const liveResults = await searchLiveEventCatalog({ keyword: q, size: 12 });
+        const liveResults = await searchLiveEventCatalog({
+          keyword: q,
+          city: activeLoc === 'All US Markets' ? undefined : activeLoc,
+          size: 12,
+        });
         if (liveResults.length > 0) {
           const seen = new Set(localResults.map(e => `${e.performerOrTeam.toLowerCase()}-${e.date}`));
           const merged = [...localResults];
@@ -252,7 +345,10 @@ export default function PostEvent() {
           }
           // Rank merged candidates by relevance first, then most recent/imminent date
           const ranked = merged
-            .map(evt => ({ evt, score: computeEventRelevance(evt, q, user?.homeCity) }))
+            .map(evt => ({
+              evt,
+              score: computeEventRelevance(evt, q, activeLoc === 'All US Markets' ? undefined : activeLoc),
+            }))
             .filter(item => item.score > 0);
 
           ranked.sort((a, b) => {
@@ -460,64 +556,138 @@ export default function PostEvent() {
 
               {/* Auto-Pull Box */}
               <div className="p-4 bg-gradient-to-br from-primary-fixed/40 via-surface-low to-secondary-container/30 border border-primary/25 rounded-3xl relative">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2 text-xs font-headline font-black text-primary uppercase tracking-wider">
                     <Sparkles size={15} />
                     <span>Auto-Pull Live Event Details</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsCatalogModalOpen(true)}
-                    className="badge bg-primary hover:bg-primary-dark text-white font-bold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer py-1 px-2.5 shadow-2xs"
-                  >
-                    <Sparkles size={11} /> Browse Live Catalog (Top 50 US Markets)
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {/* Location Switcher Pill */}
+                    <button
+                      type="button"
+                      onClick={() => setIsLocationModalOpen(true)}
+                      className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-lowest hover:bg-surface-high border border-primary/25 text-xs font-headline font-bold text-text-dark cursor-pointer shadow-2xs transition-all hover:border-primary/50 active:scale-98"
+                      aria-label={`Search location: ${searchLocation}. Click to change.`}
+                    >
+                      {searchLocation === 'All US Markets' ? (
+                        <Globe size={13} className="text-primary shrink-0" />
+                      ) : (
+                        <MapPin size={13} className="text-primary shrink-0" />
+                      )}
+                      <span className="truncate max-w-[130px] sm:max-w-[170px]">
+                        {searchLocation === 'All US Markets' ? 'All US Markets' : searchLocation}
+                      </span>
+                      <ChevronDown size={12} className="text-text-light shrink-0" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsCatalogModalOpen(true)}
+                      className="badge bg-primary hover:bg-primary-dark text-white font-bold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer py-1.5 px-2.5 shadow-2xs"
+                    >
+                      <Sparkles size={11} /> Browse Live Catalog
+                    </button>
+                  </div>
                 </div>
                 <p className="text-xs text-text-medium mb-3">
                   Search any restaurant, art walk, festival, tour, sports game, concert, or paste a link.
                 </p>
 
-                <div className="relative">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-primary pointer-events-none" size={16} />
-                  <input
-                    type="text"
-                    placeholder="Search any restaurant, art walk, festival, tour, game, or concert (e.g. Au Cheval, Ravenswood, Architecture)..."
-                    value={autoSearchQuery}
-                    onChange={e => handleAutoSearchChange(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        if (autoSearchQuery.startsWith('http')) {
-                          handleParseUrl(autoSearchQuery);
-                        } else {
-                          handleSurfaceAllResults();
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1 min-w-0">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-primary pointer-events-none" size={16} />
+                    <input
+                      type="text"
+                      placeholder="Search any restaurant, art walk, festival, tour, game, or concert (e.g. Au Cheval, Ravenswood, Architecture)..."
+                      value={autoSearchQuery}
+                      onChange={e => handleAutoSearchChange(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (autoSearchQuery.startsWith('http')) {
+                            handleParseUrl(autoSearchQuery);
+                          } else {
+                            handleSurfaceAllResults();
+                          }
                         }
-                      }
-                    }}
-                    className="input-field pl-10 pr-28 py-2.5 text-xs bg-surface-lowest shadow-sm rounded-xl font-medium"
-                  />
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-                    {autoSearchQuery.startsWith('http') ? (
-                      <button
-                        type="button"
-                        onClick={() => handleParseUrl(autoSearchQuery)}
-                        className="px-2.5 py-1 rounded-lg bg-primary text-white text-[11px] font-bold cursor-pointer"
-                      >
-                        Parse URL
-                      </button>
-                    ) : (
-                      autoSearchQuery.trim().length > 0 && (
+                      }}
+                      className="input-field pl-10 pr-28 py-2.5 text-xs bg-surface-lowest shadow-sm rounded-xl font-medium w-full"
+                    />
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                      {autoSearchQuery.startsWith('http') ? (
                         <button
                           type="button"
-                          onClick={() => handleSurfaceAllResults()}
-                          className="px-2.5 py-1 rounded-lg bg-primary hover:bg-primary-dark text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all shadow-2xs"
-                          title="Surface all matching results"
+                          onClick={() => handleParseUrl(autoSearchQuery)}
+                          className="px-2.5 py-1 rounded-lg bg-primary text-white text-[11px] font-bold cursor-pointer"
                         >
-                          <Search size={12} /> Surface All
+                          Parse URL
                         </button>
-                      )
-                    )}
+                      ) : (
+                        autoSearchQuery.trim().length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => handleSurfaceAllResults()}
+                            className="px-2.5 py-1 rounded-lg bg-primary hover:bg-primary-dark text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all shadow-2xs"
+                            title="Surface all matching results"
+                          >
+                            <Search size={12} /> Surface All
+                          </button>
+                        )
+                      )}
+                    </div>
                   </div>
+
+                  {/* Dedicated Location Selector Button on Search Input Row */}
+                  <button
+                    type="button"
+                    onClick={() => setIsLocationModalOpen(true)}
+                    className="flex items-center justify-between gap-1.5 px-3.5 py-2 rounded-xl bg-surface-lowest hover:bg-surface-high border border-primary/30 text-xs font-headline font-bold text-text-dark shrink-0 cursor-pointer shadow-2xs transition-all hover:border-primary/60 active:scale-98"
+                    title={`Search Location: ${searchLocation}. Click to switch city or metro.`}
+                  >
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      {searchLocation === 'All US Markets' ? (
+                        <Globe size={14} className="text-primary shrink-0" />
+                      ) : (
+                        <MapPin size={14} className="text-primary shrink-0" />
+                      )}
+                      <span className="truncate max-w-[110px] sm:max-w-[150px]">
+                        {searchLocation === 'All US Markets' ? 'All US Markets' : searchLocation}
+                      </span>
+                    </span>
+                    <ChevronDown size={13} className="text-text-light shrink-0" />
+                  </button>
+                </div>
+
+                {/* Quick Metro Switcher Strip */}
+                <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
+                  <span className="text-text-light font-headline font-bold uppercase tracking-wider text-[10px] shrink-0 mr-0.5">
+                    Location:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsLocationModalOpen(true)}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 hover:bg-primary/20 text-primary font-bold transition-colors cursor-pointer shrink-0"
+                  >
+                    <MapPin size={11} />
+                    <span>{searchLocation}</span>
+                    <span className="text-[10px] underline">change</span>
+                  </button>
+                  <span className="text-text-light text-[10px] shrink-0">• Quick Switch:</span>
+                  {['All US Markets', 'Chicago, IL', 'St. Louis, MO', 'Austin, TX', 'New York, NY'].map(loc => (
+                    <button
+                      key={loc}
+                      type="button"
+                      onClick={() => handleSelectLocation(loc)}
+                      className={cx(
+                        'px-2 py-0.5 rounded-md transition-all font-medium shrink-0 cursor-pointer text-[10px]',
+                        searchLocation === loc
+                          ? 'bg-primary text-white font-bold shadow-2xs'
+                          : 'bg-surface-lowest text-text-medium hover:text-text-dark hover:bg-surface-high border border-gray-200'
+                      )}
+                    >
+                      {loc === 'All US Markets' ? 'All US' : loc.split(',')[0]}
+                    </button>
+                  ))}
                 </div>
 
                 <div className="mt-2 flex items-center justify-between">
@@ -1237,7 +1407,7 @@ export default function PostEvent() {
                 <GooglePlacesVenuePicker
                   venue={location}
                   address={exactAddress}
-                  cityContext={user?.homeCity}
+                  cityContext={searchLocation !== 'All US Markets' ? searchLocation : user?.homeCity}
                   onSelectPlace={place => {
                     setLocation(place.name);
                     setExactAddress(place.address);
@@ -1664,11 +1834,20 @@ export default function PostEvent() {
       </FloatingBar>
 
       <LiveEventCatalogModal
-        key={`${isCatalogModalOpen ? 'open' : 'closed'}-${autoSearchQuery}`}
+        key={`${isCatalogModalOpen ? 'open' : 'closed'}-${searchLocation}-${autoSearchQuery}`}
         isOpen={isCatalogModalOpen}
         onClose={() => setIsCatalogModalOpen(false)}
         onSelectEvent={handleSelectAutoEvent}
+        initialCity={searchLocation === 'All US Markets' ? 'All Cities' : searchLocation}
         initialKeyword={autoSearchQuery}
+      />
+
+      <SearchLocationModal
+        isOpen={isLocationModalOpen}
+        onClose={() => setIsLocationModalOpen(false)}
+        currentLocation={searchLocation}
+        onSelectLocation={handleSelectLocation}
+        userHomeCity={user?.homeCity || 'Chicago, IL'}
       />
     </div>
   );
