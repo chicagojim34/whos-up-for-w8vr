@@ -1370,6 +1370,18 @@ export function computeEventRelevance(
 
   if (!matchesAnyToken && !rawMatch) return -1; // Not relevant
 
+  // If query contains specific non-city tokens, require at least one non-city token to match
+  // (prevents returning all random events in a city when searching for a specific team/venue in that city)
+  const nonCityTokens = qTokens.filter(
+    t => !['chicago', 'austin', 'york', 'angeles', 'louis', 'dallas', 'seattle', 'denver', 'atlanta', 'boston', 'miami', 'nashville', 'san', 'st', 'new', 'los', 'city'].includes(t)
+  );
+  if (nonCityTokens.length > 0) {
+    const matchesNonCity = nonCityTokens.some(tok => isMatch(haystackWords, fullHaystack, tok));
+    if (!matchesNonCity && !rawMatch) {
+      return -1;
+    }
+  }
+
   let score = 0;
 
   // 1. Exact or near-exact match on performer, title, or venue (highest priority)
@@ -1379,16 +1391,18 @@ export function computeEventRelevance(
     /\b(vs\.?|v|at)\b/i.test(event.title);
 
   // Check if query is an exact match for one of the competing teams or lineup performers
+  const qNormAlt = qNorm.endsWith('s') ? qNorm.slice(0, -1) : `${qNorm}s`;
   const isExactTeamInMatchup =
     isSportsMatchup &&
     (
       performerNorm === qNorm ||
+      performerNorm === qNormAlt ||
       (event.lineup && event.lineup.some(l => {
         const lNorm = normalize(l);
-        return lNorm === qNorm || lNorm.includes(qNorm) || qNorm.includes(lNorm);
+        return lNorm === qNorm || lNorm === qNormAlt || lNorm.includes(qNorm) || qNorm.includes(lNorm);
       })) ||
-      new RegExp(`(^|\\b)${qNorm}(\\b|$)`, 'i').test(titleNorm) ||
-      new RegExp(`(^|\\b)${qNorm}(\\b|$)`, 'i').test(performerNorm)
+      new RegExp(`(^|\\b)(${qNorm}|${qNormAlt})(\\b|$)`, 'i').test(titleNorm) ||
+      new RegExp(`(^|\\b)(${qNorm}|${qNormAlt})(\\b|$)`, 'i').test(performerNorm)
     );
 
   if (isExactTeamInMatchup) {
@@ -1472,7 +1486,7 @@ export function resolveDynamicOuting(query: string, userCity?: string): AutoPull
 
   // If query matches a sports team or matchup, skip dynamic dining outing
   if (
-    /\b(bears|cubs|sox|bulls|blackhawks|packers|vikings|falcons|patriots|jets|cowboys|eagles|giants|lakers|warriors|celtics|nfl|nba|mlb|nhl|mls)\b/i.test(lower) ||
+    /\b(bears?|cubs?|sox|bulls?|blackhawks?|packers?|vikings?|falcons?|patriots?|jets?|cowboys?|eagles?|giants?|lakers?|warriors?|celtics?|nfl|nba|mlb|nhl|mls)\b/i.test(lower) ||
     /\b(vs\.?|v\.|at)\b/i.test(lower)
   ) {
     return null;

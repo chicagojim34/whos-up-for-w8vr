@@ -22,6 +22,7 @@ interface LiveEventCatalogModalProps {
   onClose: () => void;
   onSelectEvent: (event: AutoPullEvent) => void;
   initialCity?: string;
+  initialKeyword?: string;
 }
 
 const POPULAR_CITIES = [
@@ -52,8 +53,9 @@ export function LiveEventCatalogModal({
   onClose,
   onSelectEvent,
   initialCity = 'Chicago',
+  initialKeyword = '',
 }: LiveEventCatalogModalProps) {
-  const [keyword, setKeyword] = useState('');
+  const [keyword, setKeyword] = useState(initialKeyword);
   const [city, setCity] = useState(initialCity);
   const [customCity, setCustomCity] = useState('');
   const [category, setCategory] = useState<EventSubType | 'Dining' | 'All'>('All');
@@ -147,6 +149,12 @@ export function LiveEventCatalogModal({
                 type="text"
                 value={keyword}
                 onChange={e => setKeyword(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    loadEvents(keyword, city, category);
+                  }
+                }}
                 placeholder="Search restaurants, art walks, tours, sports, or concerts (e.g. Au Cheval, Ravenswood, Architecture)..."
                 className="input-field pl-10 pr-10 py-2.5 text-sm bg-surface-lowest shadow-2xs font-medium"
                 autoFocus

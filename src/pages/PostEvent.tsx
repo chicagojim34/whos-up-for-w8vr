@@ -21,6 +21,9 @@ import {
   CheckCircle2,
   ShieldCheck,
   Upload,
+  X,
+  ExternalLink,
+  Loader2,
 } from 'lucide-react';
 import cx from 'classnames';
 import { useApp } from '../hooks/useApp';
@@ -162,19 +165,81 @@ export default function PostEvent() {
   };
 
   const [isCatalogModalOpen, setIsCatalogModalOpen] = useState(false);
+  const [surfacedResults, setSurfacedResults] = useState<AutoPullEvent[]>([]);
+  const [isResultsSurfaced, setIsResultsSurfaced] = useState(false);
+  const [isSearchingLive, setIsSearchingLive] = useState(false);
+
+  const handleSurfaceAllResults = async (queryOverride?: string) => {
+    const q = (queryOverride !== undefined ? queryOverride : autoSearchQuery).trim();
+    if (!q) return;
+
+    if (q.startsWith('http://') || q.startsWith('https://')) {
+      handleParseUrl(q);
+      return;
+    }
+
+    setIsSearchingLive(true);
+    setIsResultsSurfaced(true);
+
+    try {
+      // 1. Search local curated & known outings across all markets (with homeCity bonus)
+      const localResults = searchAutoPullEvents(q, user?.homeCity, false);
+
+      // 2. Query live events (Ticketmaster, SeatGeek, guides) across all markets
+      let liveResults: AutoPullEvent[] = [];
+      try {
+        liveResults = await searchLiveEventCatalog({ keyword: q, size: 40 });
+      } catch {
+        // preserve local results
+      }
+
+      // 3. Deduplicate and merge
+      const seen = new Set<string>();
+      const combined: AutoPullEvent[] = [];
+
+      const addEvent = (evt: AutoPullEvent) => {
+        const key = `${evt.performerOrTeam.toLowerCase()}-${evt.title.toLowerCase()}-${evt.date}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          combined.push(evt);
+        }
+      };
+
+      localResults.forEach(addEvent);
+      liveResults.forEach(addEvent);
+
+      // 4. Rank by relevance
+      const ranked = combined
+        .map(evt => ({ evt, score: computeEventRelevance(evt, q, user?.homeCity) }))
+        .filter(item => item.score > 0);
+
+      ranked.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return parseEventDateToTimestamp(a.evt.date) - parseEventDateToTimestamp(b.evt.date);
+      });
+
+      const finalResults = ranked.map(r => r.evt);
+      setSurfacedResults(finalResults.length > 0 ? finalResults : localResults);
+    } finally {
+      setIsSearchingLive(false);
+    }
+  };
 
   const handleAutoSearchChange = async (q: string) => {
     setAutoSearchQuery(q);
     if (!q.trim()) {
       setAutoSuggestions([]);
+      setSurfacedResults([]);
+      setIsResultsSurfaced(false);
       return;
     }
-    const localResults = searchAutoPullEvents(q, user?.homeCity);
-    setAutoSuggestions(localResults);
+
+    const localResults = searchAutoPullEvents(q, user?.homeCity, false);
+    setAutoSuggestions(localResults.slice(0, 8));
 
     if (q.trim().length >= 2) {
       try {
-        const liveResults = await searchLiveEventCatalog({ keyword: q, city: user?.homeCity, size: 8 });
+        const liveResults = await searchLiveEventCatalog({ keyword: q, size: 12 });
         if (liveResults.length > 0) {
           const seen = new Set(localResults.map(e => `${e.performerOrTeam.toLowerCase()}-${e.date}`));
           const merged = [...localResults];
@@ -196,6 +261,9 @@ export default function PostEvent() {
           });
 
           setAutoSuggestions(ranked.map(r => r.evt).slice(0, 8));
+          if (isResultsSurfaced) {
+            setSurfacedResults(ranked.map(r => r.evt));
+          }
         }
       } catch {
         // preserve local results
@@ -270,6 +338,8 @@ export default function PostEvent() {
     setPulledImagePresets([autoEvt.image, ...(autoEvt.additionalImages || [])]);
     setAutoSearchQuery('');
     setAutoSuggestions([]);
+    setSurfacedResults([]);
+    setIsResultsSurfaced(false);
     toast.show(`Auto-pulled verified details for ${autoEvt.title}!`, 'info');
   };
 
@@ -419,22 +489,35 @@ export default function PostEvent() {
                         e.preventDefault();
                         if (autoSearchQuery.startsWith('http')) {
                           handleParseUrl(autoSearchQuery);
-                        } else if (autoSuggestions.length > 0) {
-                          handleSelectAutoEvent(autoSuggestions[0]);
+                        } else {
+                          handleSurfaceAllResults();
                         }
                       }
                     }}
-                    className="input-field pl-10 pr-20 py-2.5 text-xs bg-surface-lowest shadow-sm rounded-xl font-medium"
+                    className="input-field pl-10 pr-28 py-2.5 text-xs bg-surface-lowest shadow-sm rounded-xl font-medium"
                   />
-                  {autoSearchQuery.startsWith('http') && (
-                    <button
-                      type="button"
-                      onClick={() => handleParseUrl(autoSearchQuery)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-primary text-white text-[11px] font-bold"
-                    >
-                      Parse URL
-                    </button>
-                  )}
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                    {autoSearchQuery.startsWith('http') ? (
+                      <button
+                        type="button"
+                        onClick={() => handleParseUrl(autoSearchQuery)}
+                        className="px-2.5 py-1 rounded-lg bg-primary text-white text-[11px] font-bold cursor-pointer"
+                      >
+                        Parse URL
+                      </button>
+                    ) : (
+                      autoSearchQuery.trim().length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleSurfaceAllResults()}
+                          className="px-2.5 py-1 rounded-lg bg-primary hover:bg-primary-dark text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all shadow-2xs"
+                          title="Surface all matching results"
+                        >
+                          <Search size={12} /> Surface All
+                        </button>
+                      )
+                    )}
+                  </div>
                 </div>
 
                 <div className="mt-2 flex items-center justify-between">
@@ -450,48 +533,197 @@ export default function PostEvent() {
                   </button>
                 </div>
 
-                {/* Auto Suggestions Dropdown */}
-                {autoSuggestions.length > 0 && (
+                {/* Auto Suggestions Dropdown (while typing, before hitting Enter) */}
+                {!isResultsSurfaced && autoSuggestions.length > 0 && (
                   <div className="mt-2 bg-surface-lowest rounded-2xl shadow-xl border border-gray-100 overflow-hidden divide-y divide-gray-100 animate-slide-up z-20">
-                    {autoSuggestions.map(evt => (
-                      <button
-                        key={evt.id}
-                        type="button"
-                        onClick={() => handleSelectAutoEvent(evt)}
-                        className="w-full p-3 flex items-center gap-3 text-left hover:bg-surface-low transition-colors cursor-pointer"
-                      >
-                        <img
-                          src={evt.image}
-                          alt=""
-                          className="w-12 h-12 rounded-xl object-cover shrink-0"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="badge bg-secondary-container text-on-secondary-container text-[9px] font-bold uppercase">
-                              {evt.eventSubType}
-                            </span>
-                            <span className="font-headline font-bold text-xs text-text-dark truncate">
-                              {evt.title}
-                            </span>
-                          </div>
-                          <div className="text-[11px] text-text-medium mt-0.5 flex items-center gap-1.5 flex-wrap">
-                            <span className="font-bold text-primary">📅 {evt.date}</span>
-                            <span>•</span>
-                            <span className="truncate">📍 {evt.venue}{evt.city ? `, ${evt.city}` : ''}</span>
-                            <span>•</span>
-                            <span className="shrink-0">⚡ Show: {evt.showtime}</span>
-                            {evt.doorsConfirmed && (
-                              <span className="badge bg-success/15 text-success text-[9px] font-bold py-0.5 px-1.5 shrink-0">
-                                ✓ Doors {evt.doorsTime}
+                    <div className="px-3.5 py-2 bg-surface-low/60 flex items-center justify-between text-[11px] text-text-medium border-b border-gray-100">
+                      <span className="font-bold text-text-dark">
+                        Quick Suggestions ({autoSuggestions.length})
+                      </span>
+                      <span className="text-[10px] text-text-light">
+                        Press <kbd className="px-1.5 py-0.5 bg-surface-lowest border border-gray-200 rounded text-[9px] font-mono">Enter</kbd> to surface all results
+                      </span>
+                    </div>
+
+                    <div className="max-h-64 overflow-y-auto divide-y divide-gray-100">
+                      {autoSuggestions.map(evt => (
+                        <button
+                          key={evt.id}
+                          type="button"
+                          onClick={() => handleSelectAutoEvent(evt)}
+                          className="w-full p-3 flex items-center gap-3 text-left hover:bg-surface-low transition-colors cursor-pointer group"
+                        >
+                          <img
+                            src={evt.image}
+                            alt=""
+                            className="w-12 h-12 rounded-xl object-cover shrink-0"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="badge bg-secondary-container text-on-secondary-container text-[9px] font-bold uppercase">
+                                {evt.eventSubType}
                               </span>
-                            )}
+                              <span className="font-headline font-bold text-xs text-text-dark truncate">
+                                {evt.title}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-text-medium mt-0.5 flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-primary">📅 {evt.date}</span>
+                              <span>•</span>
+                              <span className="truncate">📍 {evt.venue}{evt.city ? `, ${evt.city}` : ''}</span>
+                              <span>•</span>
+                              <span className="shrink-0">⚡ Show: {evt.showtime}</span>
+                              {evt.doorsConfirmed && (
+                                <span className="badge bg-success/15 text-success text-[9px] font-bold py-0.5 px-1.5 shrink-0">
+                                  ✓ Doors {evt.doorsTime}
+                                </span>
+                              )}
+                            </div>
                           </div>
+                          <span className="text-[11px] font-bold text-primary shrink-0 group-hover:underline">
+                            1-Click Fill →
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSurfaceAllResults()}
+                      className="w-full py-2.5 px-4 bg-primary/5 hover:bg-primary/10 text-primary text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                    >
+                      <Search size={13} /> Surface all results for &ldquo;{autoSearchQuery}&rdquo; (Press Enter) →
+                    </button>
+                  </div>
+                )}
+
+                {/* Full Surfaced Results Section (when Enter is pressed or "Surface All" is clicked) */}
+                {isResultsSurfaced && (
+                  <div className="mt-3 bg-surface-lowest rounded-2xl shadow-xl border border-primary/20 overflow-hidden animate-slide-up z-20">
+                    <div className="p-3.5 bg-primary/10 border-b border-primary/15 flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <Sparkles size={16} className="text-primary" />
+                        <div>
+                          <h4 className="font-headline font-black text-xs sm:text-sm text-text-dark">
+                            All Surfaced Results for &ldquo;{autoSearchQuery}&rdquo;
+                          </h4>
+                          <p className="text-[11px] text-text-medium">
+                            {isSearchingLive
+                              ? 'Searching live feeds and all US markets...'
+                              : `Found ${surfacedResults.length} matching events. Click any event to auto-fill details.`}
+                          </p>
                         </div>
-                        <span className="text-[11px] font-bold text-primary shrink-0">
-                          1-Click Fill →
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsCatalogModalOpen(true)}
+                          className="badge bg-primary hover:bg-primary-dark text-white font-bold text-[10px] uppercase tracking-wider py-1 px-2.5 flex items-center gap-1 cursor-pointer transition-all"
+                        >
+                          <ExternalLink size={11} /> Browse in Modal
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsResultsSurfaced(false);
+                            setSurfacedResults([]);
+                          }}
+                          className="w-7 h-7 rounded-full bg-surface-low hover:bg-surface-high text-text-medium flex items-center justify-center transition-colors cursor-pointer"
+                          title="Close results"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {isSearchingLive && (
+                      <div className="p-8 flex flex-col items-center justify-center text-center">
+                        <Loader2 size={24} className="text-primary animate-spin mb-2" />
+                        <span className="text-xs font-bold text-text-dark">
+                          Surfacing all results for &ldquo;{autoSearchQuery}&rdquo;...
                         </span>
-                      </button>
-                    ))}
+                        <span className="text-[11px] text-text-medium mt-0.5">
+                          Querying Ticketmaster, SeatGeek, and all US metro guides
+                        </span>
+                      </div>
+                    )}
+
+                    {!isSearchingLive && surfacedResults.length === 0 && (
+                      <div className="p-8 text-center">
+                        <p className="text-xs font-bold text-text-dark mb-1">
+                          No events found matching &ldquo;{autoSearchQuery}&rdquo;
+                        </p>
+                        <p className="text-[11px] text-text-medium mb-3">
+                          You can type a custom title and details below, or search across other cities.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setIsCatalogModalOpen(true)}
+                          className="btn btn-primary text-xs py-1.5 px-4"
+                        >
+                          Open Full Catalog Browser
+                        </button>
+                      </div>
+                    )}
+
+                    {!isSearchingLive && surfacedResults.length > 0 && (
+                      <div className="max-h-[380px] overflow-y-auto divide-y divide-gray-100 p-1">
+                        {surfacedResults.map(evt => (
+                          <div
+                            key={evt.id}
+                            className="p-3.5 hover:bg-surface-low/80 rounded-xl transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group"
+                          >
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <img
+                                src={evt.image}
+                                alt=""
+                                className="w-14 h-14 rounded-xl object-cover shrink-0 shadow-2xs"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="badge bg-secondary-container text-on-secondary-container text-[9px] font-bold uppercase">
+                                    {evt.eventSubType || evt.category}
+                                  </span>
+                                  <span className="font-headline font-bold text-xs sm:text-sm text-text-dark">
+                                    {evt.title}
+                                  </span>
+                                </div>
+                                <div className="text-[11px] text-text-medium mt-1 flex items-center gap-2 flex-wrap">
+                                  <span className="font-bold text-primary flex items-center gap-1">
+                                    <Calendar size={12} /> {evt.date}
+                                  </span>
+                                  <span>•</span>
+                                  <span className="flex items-center gap-1">
+                                    <MapPin size={12} /> {evt.venue}{evt.city ? `, ${evt.city}` : ''}
+                                  </span>
+                                  <span>•</span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock size={12} /> Show: {evt.showtime}
+                                  </span>
+                                  {evt.doorsConfirmed && (
+                                    <span className="badge bg-success/15 text-success text-[9px] font-bold py-0.5 px-1.5">
+                                      ✓ Doors {evt.doorsTime}
+                                    </span>
+                                  )}
+                                  {evt.ticketOptions && evt.ticketOptions.length > 0 && (
+                                    <span className="badge bg-surface-high text-text-dark text-[9px] font-bold py-0.5 px-1.5 flex items-center gap-1">
+                                      <Ticket size={10} /> {evt.ticketOptions.map(t => t.provider || t.sourceLabel || 'Verified').join(' & ')}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleSelectAutoEvent(evt)}
+                              className="btn btn-primary text-xs py-2 px-3.5 shrink-0 w-full sm:w-auto flex items-center justify-center gap-1.5 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95 transition-all"
+                            >
+                              <Sparkles size={12} /> Auto-Fill This Event →
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1432,9 +1664,11 @@ export default function PostEvent() {
       </FloatingBar>
 
       <LiveEventCatalogModal
+        key={`${isCatalogModalOpen ? 'open' : 'closed'}-${autoSearchQuery}`}
         isOpen={isCatalogModalOpen}
         onClose={() => setIsCatalogModalOpen(false)}
         onSelectEvent={handleSelectAutoEvent}
+        initialKeyword={autoSearchQuery}
       />
     </div>
   );
