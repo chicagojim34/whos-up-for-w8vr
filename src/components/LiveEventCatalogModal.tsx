@@ -14,7 +14,8 @@ import {
 import cx from 'classnames';
 import { searchLiveEventCatalog, getCachedLiveEvents } from '../services/liveEventCatalog';
 import { type AutoPullEvent, type EventSubType, formatDisplayDate } from '../services/eventAutoPull';
-import { ALPHABETICAL_US_MARKETS } from '../lib/usMarkets';
+import { ALPHABETICAL_387_MSAS } from '../lib/usMsaDirectory';
+
 
 interface LiveEventCatalogModalProps {
   isOpen: boolean;
@@ -167,13 +168,13 @@ export function LiveEventCatalogModal({
                     setCity(e.target.value);
                     setCustomCity('');
                   }}
-                  className="input-field py-2.5 px-3 text-xs bg-surface-lowest font-bold text-text-dark cursor-pointer max-w-[180px] truncate"
-                  aria-label="Select US Metro Market (Alphabetical by City)"
+                  className="input-field py-2.5 px-3 text-xs bg-surface-lowest font-bold text-text-dark cursor-pointer max-w-[200px] truncate"
+                  aria-label="Select US Metropolitan Market (387 MSAs)"
                 >
-                  <option value="All Cities">All US Markets</option>
-                  {ALPHABETICAL_US_MARKETS.map(m => (
-                    <option key={m.city} value={m.city}>
-                      {m.city}, {m.state}
+                  <option value="All Cities">All US Markets (387 Metros)</option>
+                  {ALPHABETICAL_387_MSAS.map(m => (
+                    <option key={m.cbsaCode} value={m.primaryCity}>
+                      {m.primaryCity}, {m.primaryState}
                     </option>
                   ))}
                 </select>

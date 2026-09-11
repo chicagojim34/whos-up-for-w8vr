@@ -1,6 +1,11 @@
 import { resolveEventSchedule } from './venueScheduleResolver';
 import type { CanonicalTicketOption } from '../types';
 import type { EventCategory } from '../lib/categories';
+import { 
+  findMsaByCity, 
+  resolveCityCoordinates, 
+  calculateDistanceMiles 
+} from '../lib/usMsaDirectory';
 
 export type EventSubType = 'Concert' | 'Sports' | 'Comedy' | 'Theater' | 'Festival' | 'Other';
 
@@ -38,6 +43,9 @@ export interface AutoPullEvent {
   confidenceScore?: number;
   marketRank?: number;
   metroArea?: string;
+  latitude?: number;
+  longitude?: number;
+  distanceMi?: number;
 }
 
 export const POPULAR_EVENTS_CATALOG: AutoPullEvent[] = [
@@ -445,6 +453,62 @@ export const POPULAR_EVENTS_CATALOG: AutoPullEvent[] = [
     doorsConfirmed: true,
     doorsSource: 'Greater Ravenswood Chamber of Commerce',
     description: 'Weekend-long celebration of arts and industry along historic Ravenswood Avenue. Explore open artist studios, craft markets, outdoor beer gardens, and live music.'
+  },
+  {
+    id: 'evt-naperville-artwalk',
+    title: 'Downtown Naperville Riverwalk Wine & Art Walk',
+    performerOrTeam: 'Downtown Naperville Artists Guild',
+    eventSubType: 'Festival',
+    category: 'Community',
+    venue: 'Naperville Riverwalk Pavilion',
+    venueAddress: '400 S Eagle St, Naperville, IL 60540',
+    city: 'Naperville, IL',
+    metroArea: 'Chicago-Naperville-Elgin, IL-IN',
+    latitude: 41.7508,
+    longitude: -88.1535,
+    date: 'Sat, Sep 26',
+    showtime: '12:00 PM',
+    doorsTime: '12:00 PM',
+    suggestedMeetupTime: '12:30 PM',
+    suggestedMeetupLocation: 'Riverwalk Grand Pavilion fountain near Eagle St',
+    image: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&q=80&w=1200',
+    ticketUrl: 'https://downtownnaperville.com/events/',
+    ticketSectionInfo: 'Riverwalk Promenade / Tasting Glass Included',
+    priceRange: '$35 - $50',
+    lineup: ['Local Artisan Showcase', 'Fox Valley Wineries', 'Acoustic Riverwalk Duo'],
+    bagPolicy: 'Standard outdoor festival bags permitted.',
+    ageRestriction: 'All Ages / 21+ for Wine Tasting',
+    doorsConfirmed: true,
+    doorsSource: 'Downtown Naperville Alliance',
+    description: 'Stroll the scenic Naperville Riverwalk with wine tastings, fine art exhibits, and live acoustic music in the heart of downtown Naperville.'
+  },
+  {
+    id: 'evt-north-central-jazz',
+    title: 'Wentz Concert Hall: Chicagoland Contemporary Jazz Showcase',
+    performerOrTeam: 'North Central College Fine Arts & Chicago Jazz Ensemble',
+    eventSubType: 'Concert',
+    category: 'Entertainment',
+    venue: 'Wentz Concert Hall (North Central College)',
+    venueAddress: '171 E Chicago Ave, Naperville, IL 60540',
+    city: 'Naperville, IL',
+    metroArea: 'Chicago-Naperville-Elgin, IL-IN',
+    latitude: 41.7735,
+    longitude: -88.1442,
+    date: 'Fri, Oct 2',
+    showtime: '8:00 PM',
+    doorsTime: '7:00 PM',
+    suggestedMeetupTime: '7:15 PM',
+    suggestedMeetupLocation: 'Wentz Concert Hall Lobby / Box Office steps',
+    image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=1200',
+    ticketUrl: 'https://northcentralcollege.edu/show',
+    ticketSectionInfo: 'Main Orchestra Floor / Reserved Seating',
+    priceRange: '$25 - $45',
+    lineup: ['Chicago Jazz Ensemble', 'North Central Big Band'],
+    bagPolicy: 'Standard auditorium bag inspection.',
+    ageRestriction: 'All Ages',
+    doorsConfirmed: true,
+    doorsSource: 'North Central College Fine Arts',
+    description: 'Acoustically pristine jazz performance at the acclaimed Wentz Concert Hall in Naperville, featuring top Chicago and Midwest jazz virtuosos.'
   },
   {
     id: 'evt-slam-artwalk-stl',
@@ -1176,10 +1240,27 @@ export function formatDisplayDate(dateStr?: string): string {
 export function matchesCityFilter(
   eventCity?: string,
   eventAddress?: string,
-  targetCity?: string
+  targetCity?: string,
+  radiusMiles?: number | 'metro',
+  userCoords?: { lat: number; lng: number }
 ): boolean {
-  if (!targetCity || targetCity === 'All Cities' || !targetCity.trim()) {
+  if (
+    !targetCity || 
+    targetCity === 'All Cities' || 
+    targetCity === 'All US Markets' || 
+    targetCity.toLowerCase() === 'national' ||
+    !targetCity.trim()
+  ) {
     return true;
+  }
+
+  // 1. If explicit numeric radius is given and coordinates can be resolved, evaluate exact distance
+  const centerCoords = userCoords || resolveCityCoordinates(targetCity);
+  const eventCoords = resolveCityCoordinates(eventCity ? `${eventCity} ${eventAddress || ''}` : eventAddress);
+
+  if (centerCoords && eventCoords && typeof radiusMiles === 'number') {
+    const distMiles = calculateDistanceMiles(centerCoords.lat, centerCoords.lng, eventCoords.lat, eventCoords.lng);
+    return distMiles <= radiusMiles;
   }
 
   const cleanEventCity = (eventCity || '').toLowerCase()
@@ -1201,7 +1282,7 @@ export function matchesCityFilter(
     .trim();
 
   // Strip 2-letter state abbreviation if at the end of cleanTarget (e.g. "st louis mo" -> "st louis")
-  const baseTarget = cleanTarget.replace(/\s+(mo|il|ca|ny|tx|fl|ga|co|wa|tn|oh|mi|pa|az|nc|ma|mn|nv|va|in|wi|or|md|la|ky|ok|ct|ut|al|ri)\b$/, '').trim();
+  const baseTarget = cleanTarget.replace(/\s+(mo|il|ca|ny|tx|fl|ga|co|wa|tn|oh|mi|pa|az|nc|ma|mn|nv|va|in|wi|or|md|la|ky|ok|ct|ut|al|ri|ak|ar|de|hi|id|ia|ks|me|ms|mt|ne|nh|nm|nd|sc|sd|vt|wv|wy)\b$/, '').trim();
 
   if (!baseTarget) return true;
 
@@ -1217,6 +1298,24 @@ export function matchesCityFilter(
     const allInAddr = targetTokens.every(tok => cleanAddress.includes(tok));
     if (allInCity || allInAddr) {
       return true;
+    }
+  }
+
+  // MSA check: If target maps to an MSA, check if component cities match or if event city belongs to the same MSA
+  const targetMsa = findMsaByCity(targetCity) || findMsaByCity(baseTarget);
+  if (targetMsa) {
+    if (targetMsa.componentCities?.some(comp => {
+      const c = comp.toLowerCase();
+      return cleanEventCity.includes(c) || cleanAddress.includes(c);
+    })) {
+      return true;
+    }
+
+    if (eventCity) {
+      const eventMsa = findMsaByCity(eventCity);
+      if (eventMsa && eventMsa.cbsaCode === targetMsa.cbsaCode) {
+        return true;
+      }
     }
   }
 
@@ -1330,7 +1429,7 @@ export function computeEventRelevance(
 
     const cityWords = cityNorm.split(' ');
     // Only grant city score if user explicitly specified a city to search in
-    if (userCity && userCity !== 'All Cities') {
+    if (userCity && userCity !== 'All Cities' && userCity !== 'All US Markets' && userCity.toLowerCase() !== 'national') {
       if (cityWords.includes(token)) score += 100;
       else if (token.length > 2 && cityNorm.includes(token)) score += 40;
     }
@@ -1341,7 +1440,7 @@ export function computeEventRelevance(
   }
 
   // 4. User's City / Query City match bonus
-  if (userCity && userCity !== 'All Cities') {
+  if (userCity && userCity !== 'All Cities' && userCity !== 'All US Markets' && userCity.toLowerCase() !== 'national') {
     const uCityNorm = normalize(userCity);
     if (cityNorm.includes(uCityNorm) || uCityNorm.includes(cityNorm)) {
       score += 150;
@@ -1461,7 +1560,9 @@ export function resolveDynamicOuting(query: string, userCity?: string): AutoPull
 export function searchAutoPullEvents(
   query: string,
   userCity?: string,
-  strictCity: boolean = false
+  strictCity: boolean = false,
+  radiusMiles?: number | 'metro',
+  userCoords?: { lat: number; lng: number }
 ): AutoPullEvent[] {
   const now = new Date();
   const startOfTodayMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -1470,11 +1571,28 @@ export function searchAutoPullEvents(
     return parseEventDateToTimestamp(evt.date) >= startOfTodayMs;
   };
 
+  const centerCoords = userCoords || (userCity && userCity !== 'All US Markets' && userCity !== 'All Cities' ? resolveCityCoordinates(userCity) : undefined);
+
   const isCityMatch = (evt: AutoPullEvent) => {
-    if (!strictCity || !userCity || userCity === 'All Cities' || !userCity.trim()) {
+    if (!strictCity || !userCity || userCity === 'All Cities' || userCity === 'All US Markets' || !userCity.trim()) {
       return true;
     }
-    return matchesCityFilter(evt.city, evt.venueAddress, userCity);
+    return matchesCityFilter(evt.city, evt.venueAddress, userCity, radiusMiles, centerCoords);
+  };
+
+  const populateDistance = (evt: AutoPullEvent): AutoPullEvent => {
+    if (centerCoords) {
+      const evtCoords = (evt.latitude && evt.longitude)
+        ? { lat: evt.latitude, lng: evt.longitude }
+        : resolveCityCoordinates(evt.city ? `${evt.city} ${evt.venueAddress}` : evt.venueAddress);
+      if (evtCoords) {
+        return {
+          ...evt,
+          distanceMi: calculateDistanceMiles(centerCoords.lat, centerCoords.lng, evtCoords.lat, evtCoords.lng),
+        };
+      }
+    }
+    return evt;
   };
 
   if (!query || !query.trim()) {
@@ -1486,7 +1604,8 @@ export function searchAutoPullEvents(
         if (aUserCity !== bUserCity) return bUserCity - aUserCity;
         return parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date);
       })
-      .slice(0, 10);
+      .slice(0, 10)
+      .map(populateDistance);
   }
 
   const scored = POPULAR_EVENTS_CATALOG
@@ -1500,7 +1619,7 @@ export function searchAutoPullEvents(
     return parseEventDateToTimestamp(a.evt.date) - parseEventDateToTimestamp(b.evt.date);
   });
 
-  const results = scored.map(item => item.evt);
+  const results = scored.map(item => populateDistance(item.evt));
 
   // If query is at least 2 chars, provide a dynamic venue/dining outing option if not already an exact match
   if (query.trim().length >= 2) {
@@ -1511,11 +1630,12 @@ export function searchAutoPullEvents(
              r.venue.toLowerCase() === dynamicCandidate.venue.toLowerCase()
       );
       if (!alreadyHasExact) {
+        const populatedDynamic = populateDistance(dynamicCandidate);
         // If no strong results found, place dynamic at top; otherwise append
         if (results.length === 0 || (scored[0] && scored[0].score < 400)) {
-          results.unshift(dynamicCandidate);
+          results.unshift(populatedDynamic);
         } else {
-          results.push(dynamicCandidate);
+          results.push(populatedDynamic);
         }
       }
     }

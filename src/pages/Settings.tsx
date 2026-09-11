@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Bell, 
@@ -7,7 +7,6 @@ import {
   UserCheck, 
   RotateCcw, 
   Gamepad2, 
-  Radio, 
   Crown, 
   LogIn, 
   LogOut, 
@@ -25,12 +24,6 @@ import { Avatar } from '../components/Avatar';
 import { GameAccounts } from '../components/GameAccounts';
 import { AdminRoleManager } from '../components/AdminRoleManager';
 import { formatAgo } from '../lib/datetime';
-import {
-  getTicketmasterKey,
-  setTicketmasterKey,
-  getSeatGeekClientId,
-  setSeatGeekClientId,
-} from '../services/liveEventCatalog';
 
 interface ToggleRowProps {
   id: string;
@@ -87,14 +80,6 @@ export default function Settings() {
   const toast = useToast();
   const confirm = useConfirm();
 
-  const [tmKey, setTmKey] = useState(getTicketmasterKey());
-  const [sgClientId, setSgClientId] = useState(getSeatGeekClientId());
-
-  const handleSaveApiKeys = () => {
-    setTicketmasterKey(tmKey);
-    setSeatGeekClientId(sgClientId);
-    toast.show('Live Event API credentials saved');
-  };
 
   /** Everyone the user could plausibly mark as a close friend. */
   const people = useMemo(() => {
@@ -291,71 +276,6 @@ export default function Settings() {
           <Gamepad2 size={18} className="text-primary" aria-hidden="true" /> Game accounts
         </h2>
         <GameAccounts />
-      </section>
-
-      {/* Live Event Catalog APIs */}
-      <section className="mb-10">
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="font-headline font-bold text-lg text-text-dark flex items-center gap-2">
-            <Radio size={18} className="text-primary animate-pulse" aria-hidden="true" /> Live Event Catalog APIs
-          </h2>
-          <span className="badge bg-secondary-container text-on-secondary-container text-[10px] font-bold">
-            2 Connected
-          </span>
-        </div>
-        <p className="text-xs text-text-medium mb-4">
-          Powers real-time live concert, sports, and comedy auto-pull directly from official ticketing networks.
-        </p>
-
-        <div className="flex flex-col gap-3.5 p-4 bg-surface-low rounded-2xl border border-primary/15">
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label htmlFor="tm-key" className="text-xs font-bold text-text-dark">
-                Ticketmaster Discovery API Key
-              </label>
-              <span className="text-[10px] font-bold text-success flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-success" /> Active
-              </span>
-            </div>
-            <input
-              id="tm-key"
-              type="text"
-              value={tmKey}
-              onChange={e => setTmKey(e.target.value)}
-              className="input-field text-xs font-mono py-2 bg-surface-lowest"
-              placeholder="Paste Ticketmaster Consumer Key"
-            />
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label htmlFor="sg-client-id" className="text-xs font-bold text-text-dark">
-                SeatGeek Platform Client ID
-              </label>
-              <span className="text-[10px] font-bold text-success flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-success" /> Active
-              </span>
-            </div>
-            <input
-              id="sg-client-id"
-              type="text"
-              value={sgClientId}
-              onChange={e => setSgClientId(e.target.value)}
-              className="input-field text-xs font-mono py-2 bg-surface-lowest"
-              placeholder="Paste SeatGeek client_id"
-            />
-          </div>
-
-          <div className="flex justify-end pt-1">
-            <button
-              type="button"
-              onClick={handleSaveApiKeys}
-              className="btn btn-outline text-xs py-1.5 px-3 font-bold"
-            >
-              Save API Credentials
-            </button>
-          </div>
-        </div>
       </section>
 
       {/* Admin Portal & Role Assignment Section */}

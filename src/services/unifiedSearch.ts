@@ -10,9 +10,14 @@ import type { EventCategory } from '../lib/categories';
 import { 
   searchAutoPullEvents, 
   type AutoPullEvent,
-  parseEventDateToTimestamp
+  parseEventDateToTimestamp,
+  matchesCityFilter
 } from './eventAutoPull';
 import { rankEvents } from '../lib/events';
+import { 
+  resolveCityCoordinates, 
+  calculateDistanceMiles 
+} from '../lib/usMsaDirectory';
 
 export interface CircleAttendeeMatch {
   id: string;
@@ -76,6 +81,8 @@ export interface UnifiedSearchOptions {
   circles: CircleItem[];
   postedEvents: EventItem[];
   userCity?: string;
+  radiusMiles?: number | 'metro';
+  userCoordinates?: { lat: number; lng: number };
   limit?: number;
 }
 
@@ -290,12 +297,30 @@ export function performUnifiedSearch(options: UnifiedSearchOptions): UnifiedSear
     user,
     circles,
     postedEvents,
-    userCity = user.homeCity || 'Chicago',
+    userCity = 'All US Markets',
+    radiusMiles = 50,
+    userCoordinates,
     limit = 40,
   } = options;
 
   const rawQuery = (query || '').trim();
   const graph = buildCircleMemberGraph(circles, user);
+
+  const isSpecificCity = Boolean(
+    userCity &&
+    userCity !== 'All Cities' &&
+    userCity !== 'All US Markets' &&
+    userCity.toLowerCase() !== 'national'
+  );
+
+  const centerCoords = userCoordinates || (isSpecificCity ? resolveCityCoordinates(userCity) : undefined);
+
+  const getEventDistance = (loc?: string, addr?: string): number | undefined => {
+    if (!centerCoords) return undefined;
+    const evtCoords = resolveCityCoordinates(loc ? `${loc} ${addr || ''}` : addr);
+    if (!evtCoords) return undefined;
+    return calculateDistanceMiles(centerCoords.lat, centerCoords.lng, evtCoords.lat, evtCoords.lng);
+  };
 
   // Category filter predicate
   const matchesCategory = (cat: EventCategory) => {
@@ -305,11 +330,18 @@ export function performUnifiedSearch(options: UnifiedSearchOptions): UnifiedSear
 
   // Case 1: Empty query -> return standard feed with circle events prioritized
   if (!rawQuery) {
-    const unmuted = postedEvents.filter(e => !e.muted && matchesCategory(e.category));
+    const unmuted = postedEvents.filter(e => {
+      if (e.muted || !matchesCategory(e.category)) return false;
+      if (isSpecificCity) {
+        return matchesCityFilter(e.location, e.exactAddress || e.venueAddress, userCity, radiusMiles, centerCoords);
+      }
+      return true;
+    });
     const ranked = rankEvents(unmuted, user.id || ME);
 
     return ranked.slice(0, limit).map(event => {
       const circleInfo = evaluateCircleAttendance(event, graph, user.id || ME);
+      const computedDistance = getEventDistance(event.location, event.exactAddress || event.venueAddress);
       return {
         id: event.id,
         kind: 'posted',
@@ -326,7 +358,7 @@ export function performUnifiedSearch(options: UnifiedSearchOptions): UnifiedSear
         location: event.location,
         exactAddress: event.exactAddress,
         venueAddress: event.venueAddress,
-        distanceMi: event.distanceMi,
+        distanceMi: computedDistance ?? event.distanceMi,
         ticketUrl: event.ticketUrl,
         ticketSectionInfo: event.ticketSectionInfo,
         priceRange: event.priceRange,
@@ -361,11 +393,17 @@ export function performUnifiedSearch(options: UnifiedSearchOptions): UnifiedSear
     if (event.muted) continue;
     if (!matchesCategory(event.category)) continue;
 
+    if (isSpecificCity) {
+      const matchesCity = matchesCityFilter(event.location, event.exactAddress || event.venueAddress, userCity, radiusMiles, centerCoords);
+      if (!matchesCity) continue;
+    }
+
     const matchScore = computePostedEventMatchScore(event, rawQuery);
     // Strict requirement: MUST be an actual match to the search!
     if (matchScore <= 0) continue;
 
     const circleInfo = evaluateCircleAttendance(event, graph, user.id || ME);
+    const computedDistance = getEventDistance(event.location, event.exactAddress || event.venueAddress);
 
     postedMatches.push({
       id: event.id,
@@ -383,7 +421,7 @@ export function performUnifiedSearch(options: UnifiedSearchOptions): UnifiedSear
       location: event.location,
       exactAddress: event.exactAddress,
       venueAddress: event.venueAddress,
-      distanceMi: event.distanceMi,
+      distanceMi: computedDistance ?? event.distanceMi,
       ticketUrl: event.ticketUrl,
       ticketSectionInfo: event.ticketSectionInfo,
       priceRange: event.priceRange,
@@ -411,7 +449,13 @@ export function performUnifiedSearch(options: UnifiedSearchOptions): UnifiedSear
   }
 
   // Search Live Catalog & Outings (Ticketmaster, SeatGeek, restaurants, art walks, tours, PACs, dynamic)
-  const catalogResults = searchAutoPullEvents(rawQuery, userCity);
+  const catalogResults = searchAutoPullEvents(
+    rawQuery,
+    isSpecificCity ? userCity : undefined,
+    isSpecificCity,
+    radiusMiles,
+    centerCoords
+  );
   const catalogMatches: UnifiedSearchResultItem[] = [];
 
   for (const catEvt of catalogResults) {
@@ -440,7 +484,7 @@ export function performUnifiedSearch(options: UnifiedSearchOptions): UnifiedSear
       meetupLocation: catEvt.suggestedMeetupLocation,
       location: `${catEvt.venue}, ${catEvt.city}`,
       venueAddress: catEvt.venueAddress,
-      distanceMi: 1.5,
+      distanceMi: catEvt.distanceMi ?? getEventDistance(catEvt.venue, catEvt.venueAddress),
       ticketUrl: catEvt.ticketUrl,
       ticketSectionInfo: catEvt.ticketSectionInfo,
       priceRange: catEvt.priceRange,

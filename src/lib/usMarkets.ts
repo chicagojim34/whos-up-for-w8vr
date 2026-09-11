@@ -63,3 +63,14 @@ export const ALPHABETICAL_US_MARKETS: UsMarketItem[] = [...US_TOP_50_MARKETS].so
   a.city.localeCompare(b.city)
 );
 
+export { 
+  US_387_METROPOLITAN_AREAS, 
+  ALPHABETICAL_387_MSAS, 
+  POPULAR_METRO_HUBS, 
+  searchMsas, 
+  findMsaByCity, 
+  findMsaByCode,
+  type MetropolitanStatisticalArea 
+} from './usMsaDirectory';
+
+

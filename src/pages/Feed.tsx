@@ -1,6 +1,21 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, CheckCircle2, X, Zap, Search, VolumeX, RotateCcw, Clock, Sparkles, Users } from 'lucide-react';
+import { 
+  MapPin, 
+  CheckCircle2, 
+  X, 
+  Zap, 
+  Search, 
+  VolumeX, 
+  RotateCcw, 
+  Clock, 
+  Sparkles, 
+  Users, 
+  Globe, 
+  ChevronDown,
+  Compass,
+  Check
+} from 'lucide-react';
 import cx from 'classnames';
 import { useApp } from '../hooks/useApp';
 import { useToast } from '../hooks/useToast';
@@ -8,7 +23,9 @@ import { CategoryChip } from '../components/CategoryChip';
 import { CATEGORY_DEFINITIONS, type EventCategory } from '../lib/categories';
 import { StatusRing } from '../components/StatusRing';
 import { LiveEventCatalogModal } from '../components/LiveEventCatalogModal';
+import { SearchLocationModal } from '../components/SearchLocationModal';
 import { AvatarGroup } from '../components/AvatarGroup';
+
 import {
   capacityPct,
   confirmedCount,
@@ -35,10 +52,61 @@ export default function Feed() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showMuted, setShowMuted] = useState(false);
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
+  const [searchLocation, setSearchLocation] = useState<string>(() => {
+    try {
+      return localStorage.getItem('w8vr.search_location') || 'All US Markets';
+    } catch {
+      return 'All US Markets';
+    }
+  });
+  const [searchRadiusMiles, setSearchRadiusMiles] = useState<number | 'metro'>(() => {
+    try {
+      const saved = localStorage.getItem('w8vr.search_radius');
+      if (saved === 'metro') return 'metro';
+      if (saved) return parseInt(saved, 10);
+      return 50;
+    } catch {
+      return 50;
+    }
+  });
+  const [isRadiusDropdownOpen, setIsRadiusDropdownOpen] = useState(false);
+  const [userCoordinates, setUserCoordinates] = useState<{ lat: number; lng: number } | undefined>(() => {
+    try {
+      const raw = localStorage.getItem('w8vr.user_coords');
+      return raw ? JSON.parse(raw) : undefined;
+    } catch {
+      return undefined;
+    }
+  });
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+
+  const handleSelectLocation = (loc: string, coords?: { lat: number; lng: number }) => {
+    setSearchLocation(loc);
+    if (coords) {
+      setUserCoordinates(coords);
+      try {
+        localStorage.setItem('w8vr.user_coords', JSON.stringify(coords));
+      } catch (e) {
+        console.debug('Failed to cache user coordinates', e);
+      }
+    } else if (loc === 'All US Markets') {
+      setUserCoordinates(undefined);
+      try {
+        localStorage.removeItem('w8vr.user_coords');
+      } catch (e) {
+        console.debug('Failed to clear cached user coordinates', e);
+      }
+    }
+    try {
+      localStorage.setItem('w8vr.search_location', loc);
+    } catch (e) {
+      console.debug('Failed to cache search location', e);
+    }
+  };
 
   const query = searchQuery.trim().toLowerCase();
 
-  // One Unified Search: Searches posted events, circle activity & live catalog across 50 markets
+  // One Unified Search: Searches posted events, circle activity & live catalog across 387 markets
   const unifiedResults = useMemo(() => {
     return performUnifiedSearch({
       query: searchQuery,
@@ -46,9 +114,11 @@ export default function Feed() {
       user,
       circles,
       postedEvents: events,
-      userCity: user.homeCity || 'Chicago',
+      userCity: searchLocation,
+      radiusMiles: searchRadiusMiles,
+      userCoordinates,
     });
-  }, [events, circles, user, activeCategory, searchQuery]);
+  }, [events, circles, user, activeCategory, searchQuery, searchLocation, searchRadiusMiles, userCoordinates]);
 
   const live = useMemo(() => {
     return unifiedResults.filter(r => !r.muted);
@@ -129,35 +199,145 @@ export default function Feed() {
 
   return (
     <div className="flex flex-col pb-24 animate-fade-in">
-      {/* Unified Search & Categories */}
-      <div className="px-6 pt-2 pb-4 flex flex-col gap-3">
-        <div className="relative">
-          <Search
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-text-light pointer-events-none"
-            size={18}
-            aria-hidden="true"
-          />
-          <input
-            type="search"
-            aria-label="Search events"
-            placeholder="Search any restaurant, art walk, festival, tour, game, or circle event..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="input-field pl-11 py-3 text-sm rounded-full bg-surface-high border-none focus:bg-surface-lowest"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              aria-label="Clear search"
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-light hover:text-text-dark p-1"
-            >
-              <X size={16} aria-hidden="true" />
-            </button>
+      {/* Unified Search & Location Toolbar */}
+      <div className="px-6 pt-2 pb-4 flex flex-col gap-2.5">
+        <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+          <div className="relative flex-1">
+            <Search
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-text-light pointer-events-none"
+              size={18}
+              aria-hidden="true"
+            />
+            <input
+              type="search"
+              aria-label="Search events"
+              placeholder="Search any restaurant, art walk, festival, tour, game, or circle event..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="input-field pl-11 pr-9 py-3 text-sm rounded-full bg-surface-high border-none focus:bg-surface-lowest w-full"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                aria-label="Clear search"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-light hover:text-text-dark p-1 cursor-pointer"
+              >
+                <X size={16} aria-hidden="true" />
+              </button>
+            )}
+          </div>
+
+          {/* Location Switcher Pill */}
+          <button
+            type="button"
+            onClick={() => setIsLocationModalOpen(true)}
+            className="flex items-center justify-between gap-2 px-4 py-2.5 rounded-full bg-surface-high hover:bg-surface-low border border-primary/25 text-xs font-headline font-bold text-text-dark shrink-0 cursor-pointer shadow-2xs transition-all hover:border-primary/50 active:scale-98"
+            aria-label={`Search location: ${searchLocation}. Click to change.`}
+          >
+            <span className="flex items-center gap-1.5 min-w-0">
+              {searchLocation === 'All US Markets' ? (
+                <Globe size={15} className="text-primary shrink-0" />
+              ) : (
+                <MapPin size={15} className="text-primary shrink-0" />
+              )}
+              <span className="truncate max-w-[140px] sm:max-w-[180px]">
+                {searchLocation === 'All US Markets' ? 'All US Markets' : searchLocation}
+              </span>
+            </span>
+            <ChevronDown size={14} className="text-text-light shrink-0 ml-0.5" />
+          </button>
+
+          {/* Distance Radius Selector Pill */}
+          {searchLocation !== 'All US Markets' && (
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsRadiusDropdownOpen(!isRadiusDropdownOpen)}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-full bg-surface-high hover:bg-surface-low border border-primary/25 text-xs font-headline font-bold text-text-dark shrink-0 cursor-pointer shadow-2xs transition-all hover:border-primary/50 active:scale-98"
+                aria-label={`Search radius: ${searchRadiusMiles === 'metro' ? 'Full Metro Area' : `${searchRadiusMiles} miles`}`}
+              >
+                <Compass size={14} className="text-primary shrink-0" />
+                <span>{searchRadiusMiles === 'metro' ? 'Full Metro' : `+${searchRadiusMiles} mi`}</span>
+                <ChevronDown size={13} className="text-text-light shrink-0 ml-0.5" />
+              </button>
+
+              {isRadiusDropdownOpen && (
+                <div 
+                  className="absolute right-0 top-full mt-2 z-50 bg-surface-lowest rounded-2xl shadow-xl border border-gray-100 p-2 min-w-[210px] animate-fade-in flex flex-col gap-1"
+                  role="menu"
+                >
+                  <div className="px-2.5 py-1 text-[10px] font-headline font-bold text-text-light uppercase tracking-wider">
+                    Search Distance Radius
+                  </div>
+                  {[
+                    { label: '10 mi (City Core Only)', value: 10 },
+                    { label: '25 mi (Inner Suburbs)', value: 25 },
+                    { label: '50 mi (Full Metro · Default)', value: 50 },
+                    { label: '100 mi (Regional Market)', value: 100 },
+                    { label: 'Entire Metro Area (CBSA)', value: 'metro' },
+                  ].map(opt => (
+                    <button
+                      key={String(opt.value)}
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setSearchRadiusMiles(opt.value as number | 'metro');
+                        try {
+                          localStorage.setItem('w8vr.search_radius', String(opt.value));
+                        } catch (e) {
+                          console.debug('Failed to cache search radius', e);
+                        }
+                        setIsRadiusDropdownOpen(false);
+                      }}
+                      className={cx(
+                        'px-2.5 py-2 rounded-xl text-xs font-bold text-left flex items-center justify-between transition-colors cursor-pointer',
+                        searchRadiusMiles === opt.value
+                          ? 'bg-primary text-white shadow-2xs'
+                          : 'text-text-dark hover:bg-surface-high'
+                      )}
+                    >
+                      <span>{opt.label}</span>
+                      {searchRadiusMiles === opt.value && <Check size={13} className="shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
 
+        {/* Location Scope Indicator */}
+        <div className="flex items-center justify-between px-1 text-[11px] text-text-medium">
+          <div className="flex items-center gap-1.5 truncate">
+            {searchLocation === 'All US Markets' ? (
+              <span className="flex items-center gap-1 text-text-light">
+                <Globe size={12} className="text-primary" />
+                <span>National search across all 387 US metropolitan areas</span>
+              </span>
+            ) : (
+              <span>
+                📍 Filtered to <strong>{searchLocation}</strong> {searchRadiusMiles === 'metro' ? '(Entire Metro Area)' : `(+${searchRadiusMiles} mi radius)`}
+                <button
+                  type="button"
+                  onClick={() => handleSelectLocation('All US Markets')}
+                  className="ml-2 text-primary font-bold hover:underline cursor-pointer"
+                >
+                  Show All US Markets
+                </button>
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsLocationModalOpen(true)}
+            className="text-primary font-bold hover:underline shrink-0 ml-2 cursor-pointer"
+          >
+            Change location →
+          </button>
+        </div>
+
         <div
-          className="flex gap-2 overflow-x-auto pb-1 no-scrollbar"
+          className="flex gap-2 overflow-x-auto pb-1 no-scrollbar pt-1"
           role="region"
           aria-label="Filter by category"
         >
@@ -254,7 +434,7 @@ export default function Feed() {
                   <span className="glass-panel badge flex items-center gap-1 text-xs absolute top-3.5 right-3.5">
                     <MapPin size={13} className="text-primary" aria-hidden="true" />
                     <span className="font-bold">
-                      {event.distanceMi ? formatDistance(event.distanceMi) : 'Nearby'}
+                      {event.distanceMi !== undefined ? formatDistance(event.distanceMi) : 'Nearby'}
                     </span>
                   </span>
 
@@ -563,6 +743,14 @@ export default function Feed() {
           setIsCatalogOpen(false);
           navigate('/post', { state: { prefillEvent: event } });
         }}
+      />
+
+      <SearchLocationModal
+        isOpen={isLocationModalOpen}
+        onClose={() => setIsLocationModalOpen(false)}
+        currentLocation={searchLocation}
+        onSelectLocation={handleSelectLocation}
+        userHomeCity={user?.homeCity}
       />
     </div>
   );

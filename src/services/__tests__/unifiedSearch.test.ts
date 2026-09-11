@@ -77,7 +77,7 @@ const dinnerResults = performUnifiedSearch({
   user: INITIAL_USER,
   circles: INITIAL_CIRCLES,
   postedEvents: INITIAL_EVENTS,
-  userCity: 'Chicago',
+  userCity: 'Austin',
 });
 
 assert(dinnerResults.length > 0, `Search "Dinner" returned results (Got: ${dinnerResults.length})`);

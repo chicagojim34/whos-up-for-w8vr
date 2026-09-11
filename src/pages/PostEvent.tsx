@@ -41,6 +41,8 @@ import {
 } from '../services/eventAutoPull';
 import { searchLiveEventCatalog } from '../services/liveEventCatalog';
 import { LiveEventCatalogModal } from '../components/LiveEventCatalogModal';
+import { GooglePlacesVenuePicker } from '../components/GooglePlacesVenuePicker';
+
 
 const COVER_OPTIONS = [
   { id: 'neon', label: 'Neon midnight', url: '/neon_midnight_1774367472687.png' },
@@ -1000,58 +1002,21 @@ export default function PostEvent() {
               </fieldset>
 
               {locationType === 'physical' ? (
-                <>
-                  <div>
-                    <label htmlFor="ev-venue" className="text-xs font-bold text-text-dark mb-1.5 block">
-                      Venue or neighbourhood
-                    </label>
-                    <div className="relative">
-                      <Search
-                        className="absolute left-4 top-1/2 -translate-y-1/2 text-text-light pointer-events-none"
-                        size={18}
-                        aria-hidden="true"
-                      />
-                      <input
-                        id="ev-venue"
-                        type="text"
-                        placeholder="The Glass House Rooftop, Austin"
-                        value={location}
-                        onChange={e => setLocation(e.target.value)}
-                        className="input-field pl-11 text-sm"
-                      />
-                    </div>
-                    <p className="text-[11px] text-text-light mt-1.5">
-                      Everyone can see this, including people who have not RSVP'd.
-                    </p>
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="ev-address"
-                      className="text-xs font-bold text-text-dark mb-1.5 block"
-                    >
-                      Exact address (optional)
-                    </label>
-                    <div className="relative">
-                      <Lock
-                        className="absolute left-4 top-1/2 -translate-y-1/2 text-text-light pointer-events-none"
-                        size={16}
-                        aria-hidden="true"
-                      />
-                      <input
-                        id="ev-address"
-                        type="text"
-                        placeholder="1401 Rainey St, Rooftop Level"
-                        value={exactAddress}
-                        onChange={e => setExactAddress(e.target.value)}
-                        className="input-field pl-11 text-sm"
-                      />
-                    </div>
-                    <p className="text-[11px] text-text-light mt-1.5">
-                      Only shown to confirmed guests. Use it if you are hosting from home.
-                    </p>
-                  </div>
-                </>
+                <GooglePlacesVenuePicker
+                  venue={location}
+                  address={exactAddress}
+                  cityContext={user?.homeCity}
+                  onSelectPlace={place => {
+                    setLocation(place.name);
+                    setExactAddress(place.address);
+                    setVenueAddress(place.address);
+                  }}
+                  onChangeVenue={val => setLocation(val)}
+                  onChangeAddress={val => {
+                    setExactAddress(val);
+                    setVenueAddress(val);
+                  }}
+                />
               ) : (
                 <div>
                   <label htmlFor="ev-link" className="text-xs font-bold text-text-dark mb-1.5 block">
