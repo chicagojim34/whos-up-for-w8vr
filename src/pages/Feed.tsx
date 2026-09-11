@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, CheckCircle2, X, Zap, Search, VolumeX, RotateCcw, Clock, Sparkles } from 'lucide-react';
+import { MapPin, CheckCircle2, X, Zap, Search, VolumeX, RotateCcw, Clock, Sparkles, Users } from 'lucide-react';
 import cx from 'classnames';
 import { useApp } from '../hooks/useApp';
 import { useToast } from '../hooks/useToast';
@@ -17,13 +17,17 @@ import {
   isFillingFast,
   isFull,
   myRsvp,
-  rankEvents,
   waitlistCount,
 } from '../lib/events';
 import { formatDistance, formatWhen } from '../lib/datetime';
+import { 
+  performUnifiedSearch, 
+  computePostedEventMatchScore, 
+  type UnifiedSearchResultItem 
+} from '../services/unifiedSearch';
 
 export default function Feed() {
-  const { events, rsvpEvent, unmuteEvent } = useApp();
+  const { events, circles, user, rsvpEvent, unmuteEvent, createEvent } = useApp();
   const toast = useToast();
   const navigate = useNavigate();
 
@@ -34,26 +38,30 @@ export default function Feed() {
 
   const query = searchQuery.trim().toLowerCase();
 
-  const { live, muted } = useMemo(() => {
-    const matches = events.filter(event => {
-      const matchesCategory = activeCategory === 'All Events' || event.category === activeCategory;
-      if (!matchesCategory) return false;
-      if (!query) return true;
-      return [
-        event.title,
-        event.location,
-        event.description,
-        event.vibe,
-        event.category,
-        event.performerOrTeam || '',
-        event.eventSubType || '',
-      ].some(field => field.toLowerCase().includes(query));
+  // One Unified Search: Searches posted events, circle activity & live catalog across 50 markets
+  const unifiedResults = useMemo(() => {
+    return performUnifiedSearch({
+      query: searchQuery,
+      category: activeCategory,
+      user,
+      circles,
+      postedEvents: events,
+      userCity: user.homeCity || 'Chicago',
     });
-    return {
-      live: rankEvents(matches.filter(e => !e.muted)),
-      muted: matches.filter(e => e.muted),
-    };
-  }, [events, activeCategory, query]);
+  }, [events, circles, user, activeCategory, searchQuery]);
+
+  const live = useMemo(() => {
+    return unifiedResults.filter(r => !r.muted);
+  }, [unifiedResults]);
+
+  const muted = useMemo(() => {
+    if (!query) return events.filter(e => e.muted);
+    return events.filter(e => e.muted && computePostedEventMatchScore(e, query) > 0);
+  }, [events, query]);
+
+  const hasCircleMatches = useMemo(() => {
+    return live.some(item => item.hasCircleAttendeesGoing);
+  }, [live]);
 
   const handleRsvp = (eventId: string, title: string) => {
     const outcome = rsvpEvent(eventId, 'going');
@@ -71,9 +79,57 @@ export default function Feed() {
     toast.show(`"${title}" muted — no more updates for it`, 'info');
   };
 
+  const handleQuickHostCatalogEvent = (item: UnifiedSearchResultItem) => {
+    if (item.originalCatalogEvent) {
+      navigate('/post', { state: { prefillEvent: item.originalCatalogEvent } });
+    }
+  };
+
+  const handleQuickRsvpCatalogEvent = (item: UnifiedSearchResultItem) => {
+    const cat = item.originalCatalogEvent;
+    if (!cat) return;
+
+    const startsAtIso = new Date(Date.now() + 86400000 * 2).toISOString();
+    const created = createEvent({
+      title: cat.title,
+      category: cat.category,
+      image: cat.image,
+      vibe: cat.description,
+      startsAt: startsAtIso,
+      isVirtual: false,
+      location: `${cat.venue}, ${cat.city}`,
+      venueAddress: cat.venueAddress,
+      exactAddress: cat.venueAddress,
+      isTicketedEvent: Boolean(cat.ticketUrl),
+      eventSubType: cat.eventSubType,
+      performerOrTeam: cat.performerOrTeam,
+      showtime: cat.showtime,
+      doorsTime: cat.doorsTime,
+      meetupTime: cat.suggestedMeetupTime,
+      meetupLocation: cat.suggestedMeetupLocation,
+      ticketUrl: cat.ticketUrl,
+      ticketSectionInfo: cat.ticketSectionInfo,
+      priceRange: cat.priceRange,
+      lineup: cat.lineup,
+      bagPolicy: cat.bagPolicy,
+      ageRestriction: cat.ageRestriction,
+      doorsTimeConfirmed: cat.doorsConfirmed,
+      doorsTimeSource: cat.doorsSource,
+      venueGateInfo: cat.venueGateInfo,
+      canonicalId: cat.id,
+      ticketOptions: cat.ticketOptions,
+      provenanceSources: cat.provenanceSources,
+      maxSpots: 20,
+      autoWaitlist: true,
+      privacy: 'public',
+    });
+
+    toast.show(`Outing created! You are going to "${created.title}"`);
+  };
+
   return (
     <div className="flex flex-col pb-24 animate-fade-in">
-      {/* Search & categories */}
+      {/* Unified Search & Categories */}
       <div className="px-6 pt-2 pb-4 flex flex-col gap-3">
         <div className="relative">
           <Search
@@ -84,7 +140,7 @@ export default function Feed() {
           <input
             type="search"
             aria-label="Search events"
-            placeholder="Search events, artists, teams, vibes, or venues..."
+            placeholder="Search any restaurant, art walk, festival, tour, game, or circle event..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="input-field pl-11 py-3 text-sm rounded-full bg-surface-high border-none focus:bg-surface-lowest"
@@ -117,201 +173,306 @@ export default function Feed() {
         </div>
       </div>
 
-      {/* Live Tour Discovery Banner */}
+      {/* Discovery & Search Status Banner */}
       <div className="px-6 mb-4">
-        <button
-          type="button"
-          onClick={() => setIsCatalogOpen(true)}
-          className="w-full p-3.5 bg-gradient-to-r from-primary-fixed/50 via-surface-low to-secondary-container/40 rounded-2xl border border-primary/20 flex items-center justify-between gap-3 text-left hover:shadow-xs transition-all cursor-pointer group"
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-              <Sparkles size={18} />
-            </span>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-headline font-bold text-xs text-text-dark truncate">
-                  Looking for concerts, sports, or comedy to host?
-                </span>
-                <span className="badge bg-primary text-white text-[9px] uppercase font-bold tracking-wider shrink-0">
-                  Live Catalog
-                </span>
-              </div>
-              <p className="text-[11px] text-text-medium mt-0.5 truncate">
-                Browse 134,000+ live events from Ticketmaster &amp; SeatGeek with 1-click group RSVP setup
-              </p>
+        {searchQuery ? (
+          <div className="p-3 bg-surface-low rounded-2xl border border-primary/20 flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <Sparkles size={16} className="text-primary shrink-0 animate-pulse" />
+              <span className="text-text-medium truncate">
+                Searching <strong>all sources</strong>: circles, community, dining &amp; live guides
+                {hasCircleMatches && (
+                  <strong className="text-primary font-bold ml-1.5">• Circle events prioritized</strong>
+                )}
+              </span>
             </div>
+            <button
+              type="button"
+              onClick={() => setIsCatalogOpen(true)}
+              className="font-headline font-bold text-primary text-xs hover:underline shrink-0"
+            >
+              Full 50 Markets →
+            </button>
           </div>
-          <span className="text-xs font-headline font-bold text-primary shrink-0 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-            Browse →
-          </span>
-        </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsCatalogOpen(true)}
+            className="w-full p-3.5 bg-gradient-to-r from-primary-fixed/50 via-surface-low to-secondary-container/40 rounded-2xl border border-primary/20 flex items-center justify-between gap-3 text-left hover:shadow-xs transition-all cursor-pointer group"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                <Sparkles size={18} />
+              </span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-headline font-bold text-xs text-text-dark truncate">
+                    Looking for outings, restaurants, or live shows?
+                  </span>
+                  <span className="badge bg-primary text-white text-[9px] uppercase font-bold tracking-wider shrink-0">
+                    50 US Markets
+                  </span>
+                </div>
+                <p className="text-[11px] text-text-medium mt-0.5 truncate">
+                  Explore restaurants, art walks, tours, festivals &amp; arena events across 50 markets
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-headline font-bold text-primary shrink-0 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+              Browse All →
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Grid */}
       <ul className="grid gap-6 px-6 list-none grid-cols-1 md:grid-cols-2">
         {live.map(event => {
-          const capacity = capacityPct(event);
-          const going = confirmedCount(event);
-          const full = isFull(event);
-          const mine = myRsvp(event);
-          const names = goingNames(event);
+          const isPosted = event.kind === 'posted' && event.originalPostedEvent;
+          const postedEvt = event.originalPostedEvent;
+
+          const capacity = postedEvt ? capacityPct(postedEvt) : 0;
+          const going = postedEvt ? confirmedCount(postedEvt) : 0;
+          const full = postedEvt ? isFull(postedEvt) : false;
+          const mine = postedEvt ? myRsvp(postedEvt) : null;
+          const names = postedEvt ? goingNames(postedEvt) : [];
 
           return (
             <li key={event.id}>
               <article
                 className="card p-0 overflow-hidden relative rounded-3xl flex flex-col group h-full"
               >
-              {/* Image banner */}
-              <div className="relative h-56 w-full">
-                <img
-                  src={event.image}
-                  alt=""
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
+                {/* Image banner */}
+                <div className="relative h-56 w-full">
+                  <img
+                    src={event.image}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
 
-                <span className="glass-panel badge flex items-center gap-1 text-xs absolute top-3.5 right-3.5">
-                  <MapPin size={13} className="text-primary" aria-hidden="true" />
-                  <span className="font-bold">{formatDistance(event.distanceMi)}</span>
-                </span>
-
-                <div className="absolute top-3.5 left-3.5 flex flex-col gap-1">
-                  {isFillingFast(event) && (
-                    <span className="badge bg-error text-white flex items-center gap-1 font-black tracking-widest text-[9px]">
-                      <Zap size={11} fill="currentColor" aria-hidden="true" /> FILLING FAST
+                  <span className="glass-panel badge flex items-center gap-1 text-xs absolute top-3.5 right-3.5">
+                    <MapPin size={13} className="text-primary" aria-hidden="true" />
+                    <span className="font-bold">
+                      {event.distanceMi ? formatDistance(event.distanceMi) : 'Nearby'}
                     </span>
-                  )}
-                  {full && (
-                    <span className="badge bg-text-dark text-white font-black tracking-widest text-[9px]">
-                      FULL
-                    </span>
-                  )}
-                  {event.eventSubType && (
-                    <span className="badge bg-black/70 backdrop-blur-md text-white font-bold tracking-widest text-[9px] uppercase">
-                      {event.eventSubType}
-                    </span>
-                  )}
-                </div>
-
-                <StatusRing
-                  capacity={capacity}
-                  size={46}
-                  strokeWidth={4}
-                  variant="glass"
-                  srLabel={`${going} of ${event.maxSpots} spots taken`}
-                  className="absolute bottom-3 right-3.5 z-10"
-                />
-              </div>
-
-              {/* Body */}
-              <div className="px-8 pb-8 pt-6 flex flex-col gap-4">
-                <div className="flex justify-between items-center gap-3 text-xs font-bold">
-                  <span
-                    className={cx(
-                      'px-2.5 py-1 rounded-md text-[10px] uppercase font-headline tracking-widest',
-                      event.privacy === 'circle'
-                        ? 'bg-secondary-container text-on-secondary-container'
-                        : 'bg-surface-high text-text-medium'
-                    )}
-                  >
-                    {eventKindLabel(event)}
                   </span>
-                  <time
-                    dateTime={event.startsAt}
-                    className="text-text-dark font-headline font-extrabold opacity-85 text-right"
-                  >
-                    {formatWhen(event.startsAt)}
-                  </time>
-                </div>
 
-                <div>
-                  <h3 className="font-headline font-black text-2xl leading-[1.2] tracking-tight text-text-dark">
-                    <button
-                      onClick={() => navigate(`/event/${event.id}`)}
-                      className="text-left group-hover:text-primary transition-colors after:absolute after:inset-0 after:content-['']"
-                    >
-                      {event.title}
-                    </button>
-                  </h3>
-
-                  {event.performerOrTeam && (
-                    <div className="text-xs font-headline font-bold text-primary mt-1">
-                      ⭐ {event.performerOrTeam}
-                    </div>
-                  )}
-
-                  {event.showtime && event.meetupTime ? (
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-primary mt-1">
-                      <Clock size={12} />
-                      <span>Meet {event.meetupTime} • Show {event.showtime}</span>
-                    </div>
-                  ) : null}
-
-                  <div className="flex items-center gap-1.5 text-xs text-text-medium mt-1">
-                    <MapPin size={12} className="text-primary shrink-0" aria-hidden="true" />
-                    <span className="line-clamp-1">{event.location}</span>
+                  <div className="absolute top-3.5 left-3.5 flex flex-col gap-1">
+                    {event.hasCircleAttendeesGoing && (
+                      <span className="badge bg-primary text-white flex items-center gap-1 font-headline font-black tracking-wider text-[9px] shadow-sm">
+                        <Users size={10} /> CIRCLE GOING ({event.circleAttendeesGoing.length})
+                      </span>
+                    )}
+                    {postedEvt && isFillingFast(postedEvt) && (
+                      <span className="badge bg-error text-white flex items-center gap-1 font-black tracking-widest text-[9px]">
+                        <Zap size={11} fill="currentColor" aria-hidden="true" /> FILLING FAST
+                      </span>
+                    )}
+                    {full && (
+                      <span className="badge bg-text-dark text-white font-black tracking-widest text-[9px]">
+                        FULL
+                      </span>
+                    )}
+                    {event.kind === 'live_catalog' && (
+                      <span className="badge bg-primary-fixed text-primary-container font-headline font-black tracking-widest text-[9px] uppercase">
+                        ⚡ LIVE GUIDE
+                      </span>
+                    )}
+                    {event.eventSubType && (
+                      <span className="badge bg-black/70 backdrop-blur-md text-white font-bold tracking-widest text-[9px] uppercase">
+                        {event.eventSubType}
+                      </span>
+                    )}
                   </div>
 
-                  <p className="text-sm text-text-medium leading-relaxed mt-2 line-clamp-2">
-                    {event.description}
-                  </p>
-
-                  {event.ticketSectionInfo && (
-                    <div className="mt-2.5">
-                      <span className="badge bg-secondary-container text-on-secondary-container text-[10px] font-bold">
-                        🎟️ {event.ticketSectionInfo}
-                      </span>
-                    </div>
+                  {postedEvt && (
+                    <StatusRing
+                      capacity={capacity}
+                      size={46}
+                      strokeWidth={4}
+                      variant="glass"
+                      srLabel={`${going} of ${postedEvt.maxSpots} spots taken`}
+                      className="absolute bottom-3 right-3.5 z-10"
+                    />
                   )}
                 </div>
 
-                  <div className="flex justify-between items-center gap-3 mt-auto pt-5">
-                    {names.length > 0 ? (
-                      <span className="flex items-center gap-2">
-                        <AvatarGroup names={names} size={30} max={3} label={`${going} going`} />
-                        <span className="text-xs font-semibold text-text-medium">{going} going</span>
+                {/* Body */}
+                <div className="px-8 pb-8 pt-6 flex flex-col gap-4 flex-1">
+                  {/* Highlight when circle attendees are going */}
+                  {event.hasCircleAttendeesGoing && (
+                    <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-primary/10 border border-primary/20 text-xs font-bold text-primary">
+                      <Users size={14} className="text-primary shrink-0" />
+                      <span className="truncate">
+                        In your circle: <strong>{event.circleAttendeesGoing.map(c => c.name).slice(0, 2).join(', ')}{event.circleAttendeesGoing.length > 2 ? ` +${event.circleAttendeesGoing.length - 2} more` : ''}</strong> going
+                        {event.circleNamesSummary ? ` (${event.circleNamesSummary})` : ''}
                       </span>
-                    ) : (
-                      <span className="text-xs font-bold text-text-light uppercase tracking-wider">
-                        {going} going • {event.interested} interested
-                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center gap-3 text-xs font-bold">
+                    <span
+                      className={cx(
+                        'px-2.5 py-1 rounded-md text-[10px] uppercase font-headline tracking-widest',
+                        event.hasCircleAttendeesGoing || event.privacy === 'circle'
+                          ? 'bg-secondary-container text-on-secondary-container'
+                          : event.kind === 'live_catalog'
+                          ? 'bg-primary-fixed text-primary-container'
+                          : 'bg-surface-high text-text-medium'
+                      )}
+                    >
+                      {event.kind === 'live_catalog'
+                        ? `LIVE • ${event.category}`
+                        : postedEvt
+                        ? eventKindLabel(postedEvt)
+                        : 'COMMUNITY'}
+                    </span>
+                    <time
+                      dateTime={event.startsAt}
+                      className="text-text-dark font-headline font-extrabold opacity-85 text-right"
+                    >
+                      {event.startsAt ? formatWhen(event.startsAt) : (event.date || 'Upcoming')}
+                    </time>
+                  </div>
+
+                  <div>
+                    <h3 className="font-headline font-black text-2xl leading-[1.2] tracking-tight text-text-dark">
+                      {isPosted ? (
+                        <button
+                          onClick={() => navigate(`/event/${event.id}`)}
+                          className="text-left group-hover:text-primary transition-colors after:absolute after:inset-0 after:content-['']"
+                        >
+                          {event.title}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            if (event.originalCatalogEvent) {
+                              navigate('/post', { state: { prefillEvent: event.originalCatalogEvent } });
+                            }
+                          }}
+                          className="text-left group-hover:text-primary transition-colors"
+                        >
+                          {event.title}
+                        </button>
+                      )}
+                    </h3>
+
+                    {event.performerOrTeam && (
+                      <div className="text-xs font-headline font-bold text-primary mt-1">
+                        ⭐ {event.performerOrTeam}
+                      </div>
                     )}
 
-                    {/* Sits above the card-wide title link. */}
-                    <span className="flex items-center gap-2 relative z-10">
-                      {mine === 'going' && (
-                        <span className="flex items-center gap-1.5 text-secondary font-headline font-bold text-sm bg-secondary-container px-3 py-1.5 rounded-full">
-                          <CheckCircle2 size={16} aria-hidden="true" /> Going
+                    {event.showtime ? (
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-primary mt-1">
+                        <Clock size={12} />
+                        <span>
+                          {event.meetupTime ? `Meet ${event.meetupTime} • ` : ''}
+                          {event.category === 'Dining' ? 'Table:' : 'Show/Start:'} {event.showtime}
                         </span>
-                      )}
-                      {mine === 'waitlist' && (
-                        <span className="badge bg-primary-fixed text-primary-container font-bold text-xs flex items-center gap-1.5">
-                          <Clock size={13} aria-hidden="true" /> Waitlisted #{waitlistCount(event)}
+                      </div>
+                    ) : null}
+
+                    <div className="flex items-center gap-1.5 text-xs text-text-medium mt-1">
+                      <MapPin size={12} className="text-primary shrink-0" aria-hidden="true" />
+                      <span className="line-clamp-1">{event.location}</span>
+                    </div>
+
+                    <p className="text-sm text-text-medium leading-relaxed mt-2 line-clamp-2">
+                      {event.description}
+                    </p>
+
+                    {(event.ticketSectionInfo || event.priceRange) && (
+                      <div className="mt-2.5 flex items-center gap-2 flex-wrap">
+                        {event.ticketSectionInfo && (
+                          <span className="badge bg-secondary-container text-on-secondary-container text-[10px] font-bold">
+                            🎟️ {event.ticketSectionInfo}
+                          </span>
+                        )}
+                        {event.priceRange && (
+                          <span className="badge bg-surface-high text-text-dark text-[10px] font-bold">
+                            💰 {event.priceRange}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card Footer Actions */}
+                  <div className="flex justify-between items-center gap-3 mt-auto pt-5">
+                    {isPosted ? (
+                      <>
+                        {names.length > 0 ? (
+                          <span className="flex items-center gap-2">
+                            <AvatarGroup names={names} size={30} max={3} label={`${going} going`} />
+                            <span className="text-xs font-semibold text-text-medium">{going} going</span>
+                          </span>
+                        ) : (
+                          <span className="text-xs font-bold text-text-light uppercase tracking-wider">
+                            {going} going • {event.interested || 0} interested
+                          </span>
+                        )}
+
+                        <span className="flex items-center gap-2 relative z-10">
+                          {mine === 'going' && (
+                            <span className="flex items-center gap-1.5 text-secondary font-headline font-bold text-sm bg-secondary-container px-3 py-1.5 rounded-full">
+                              <CheckCircle2 size={16} aria-hidden="true" /> Going
+                            </span>
+                          )}
+                          {mine === 'waitlist' && postedEvt && (
+                            <span className="badge bg-primary-fixed text-primary-container font-bold text-xs flex items-center gap-1.5">
+                              <Clock size={13} aria-hidden="true" /> Waitlisted #{waitlistCount(postedEvt)}
+                            </span>
+                          )}
+                          {(mine === 'maybe' || mine === null) && (
+                            <>
+                              <button
+                                onClick={() => handleQuiet(event.id, event.title)}
+                                className="w-8 h-8 rounded-full flex items-center justify-center text-quiet hover:text-error hover:bg-error-container transition-colors"
+                                aria-label={`Not going to ${event.title} — mute it`}
+                              >
+                                <X size={18} aria-hidden="true" />
+                              </button>
+                              <button
+                                onClick={() => handleRsvp(event.id, event.title)}
+                                className={cx(
+                                  mine === 'maybe'
+                                    ? 'btn btn-outline py-[0.45rem] px-4 text-sm rounded-full'
+                                    : 'btn btn-primary py-2 px-5 text-sm'
+                                )}
+                              >
+                                {mine === 'maybe' ? "I'm in" : full ? 'Join waitlist' : 'RSVP now'}
+                              </button>
+                            </>
+                          )}
                         </span>
-                      )}
-                      {(mine === 'maybe' || mine === null) && (
-                        <>
+                      </>
+                    ) : (
+                      /* Live Catalog Card Actions */
+                      <div className="w-full flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-text-medium flex items-center gap-1">
+                          <Sparkles size={13} className="text-primary" /> Live Guide Outing
+                        </span>
+                        <div className="flex items-center gap-2">
                           <button
-                            onClick={() => handleQuiet(event.id, event.title)}
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-quiet hover:text-error hover:bg-error-container transition-colors"
-                            aria-label={`Not going to ${event.title} — mute it`}
+                            type="button"
+                            onClick={() => handleQuickRsvpCatalogEvent(event)}
+                            className="btn btn-outline py-1.5 px-3 text-xs font-bold"
                           >
-                            <X size={18} aria-hidden="true" />
+                            Quick RSVP
                           </button>
                           <button
-                            onClick={() => handleRsvp(event.id, event.title)}
-                            className={cx(
-                              mine === 'maybe'
-                                ? 'btn btn-outline py-[0.45rem] px-4 text-sm rounded-full'
-                                : 'btn btn-primary py-2 px-5 text-sm'
-                            )}
+                            type="button"
+                            onClick={() => handleQuickHostCatalogEvent(event)}
+                            className="btn btn-primary py-1.5 px-3.5 text-xs font-headline font-bold flex items-center gap-1 shadow-xs"
                           >
-                            {mine === 'maybe' ? "I'm in" : full ? 'Join waitlist' : 'RSVP now'}
+                            <Sparkles size={12} /> Who's Up for This?
                           </button>
-                        </>
-                      )}
-                    </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </article>
@@ -375,15 +536,23 @@ export default function Feed() {
           <p className="text-sm text-text-medium mt-1">
             Try a different category, or search for something else.
           </p>
-          <button
-            onClick={() => {
-              setActiveCategory('All Events');
-              setSearchQuery('');
-            }}
-            className="btn btn-outline mt-4"
-          >
-            Clear filters
-          </button>
+          <div className="flex items-center gap-3 mt-4">
+            <button
+              onClick={() => {
+                setActiveCategory('All Events');
+                setSearchQuery('');
+              }}
+              className="btn btn-outline"
+            >
+              Clear filters
+            </button>
+            <button
+              onClick={() => setIsCatalogOpen(true)}
+              className="btn btn-primary flex items-center gap-1.5"
+            >
+              <Sparkles size={14} /> Browse 50-Market Catalog
+            </button>
+          </div>
         </div>
       )}
 
