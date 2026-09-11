@@ -1,4 +1,4 @@
-import { type AutoPullEvent } from './eventAutoPull';
+import { type AutoPullEvent, parseEventDateToTimestamp } from './eventAutoPull';
 import type { CanonicalTicketOption } from '../types';
 
 // ============================================================================
@@ -24,41 +24,43 @@ export function normalizeTitle(rawTitle: string): string {
   // Strip "live in [city]" or "in [city]"
   title = title.replace(/\s+(live\s+in|in)\s+[\w\s&'-]+$/gi, '');
 
-  // Strip tour suffixes like " - World Tour 2026", " (North American Tour)", "Power Up Tour 2026"
-  title = title.replace(/\s*[-–—:]\s*[\w\s]+tour(\s+\d{4})?/gi, '');
-  title = title.replace(/\s*\([\w\s]+tour(\s+\d{4})?\)/gi, '');
+  // Strip tour suffixes like "- World Tour 2026", "(Tour 2026)", ": Tour"
+  title = title.replace(/[-–—:]\s*(\w+\s+)?(world\s+tour|tour|residency|live|show|concert|experience)(\s+\d{4})?/gi, '');
+  title = title.replace(/\((\w+\s+)?(world\s+tour|tour|residency|live|show|concert)(\s+\d{4})?\)/gi, '');
 
-  // Strip special featuring markers (handled separately in performer parsing)
-  title = title.replace(/\s+(w\/|with special guests?|featuring|feat\.|ft\.)\s+.*$/gi, '');
+  // Strip "featuring ..." or "feat. ..." or "w/ ..."
+  title = title.replace(/\s+(w\/|with special guests?|featuring|feat\.?|ft\.?)\s+.*$/gi, '');
 
-  // Normalize punctuation and extra spaces
+  // Strip punctuation and excess whitespace
   title = title.replace(/[^\w\s]/g, ' ');
-  title = title.replace(/\s+/g, ' ').trim();
-
-  return title;
+  return title.replace(/\s+/g, ' ').trim();
 }
 
 /**
- * Normalizes performer or headliner string.
+ * Normalizes artist or performer names for comparison.
  */
-export function normalizePerformer(rawPerformer: string): string {
+export function normalizePerformer(rawPerformer?: string): string {
   if (!rawPerformer) return '';
-  let performer = rawPerformer.toLowerCase();
-  performer = performer.replace(/^(the\s+)/gi, '');
-  performer = performer.replace(/[^\w\s]/g, ' ');
-  return performer.replace(/\s+/g, ' ').trim();
+  let perf = rawPerformer.toLowerCase();
+  perf = perf.replace(/^(the|dj)\s+/i, '');
+  perf = perf.replace(/\b(live|tour|band|orchestra|trio|quartet)\b/gi, '');
+  perf = perf.replace(/[^\w\s]/g, ' ');
+  return perf.replace(/\s+/g, ' ').trim();
 }
 
 /**
- * Normalizes venue names by stripping institutional words ("Arena", "Theatre", etc.)
- * and resolving known metropolitan aliases.
+ * Normalizes venue names by mapping common arena and theater aliases.
  */
-export function normalizeVenueName(rawVenue: string): string {
+export function normalizeVenueName(rawVenue?: string): string {
   if (!rawVenue) return '';
-
   let venue = rawVenue.toLowerCase();
 
-  // Common metropolitan alias mappings
+  // Map known venue renames and sponsor changes
+  venue = venue.replace(/crypto\.com arena/gi, 'staples center');
+  venue = venue.replace(/smoothie king center/gi, 'new orleans arena');
+  venue = venue.replace(/chase center/gi, 'chase center');
+  venue = venue.replace(/barclays center/gi, 'barclays center');
+  venue = venue.replace(/madison square garden/gi, 'msg');
   if (venue.includes('crypto.com') || venue.includes('staples center')) return 'crypto arena los angeles';
   if (venue.includes('chastain park') || venue.includes('cadence bank')) return 'cadence bank amphitheatre atlanta';
   if (venue.includes('united center')) return 'united center chicago';
@@ -228,13 +230,11 @@ export interface MatchEvaluationResult {
 export function evaluateEventMatch(e1: AutoPullEvent, e2: AutoPullEvent): MatchEvaluationResult {
   // --- Stage 2: Temporal Blocking ---
   // If dates are non-empty and clearly different calendar days, instant mismatch
-  const date1 = normalizeDate(e1.date);
-  const date2 = normalizeDate(e2.date);
-  if (date1 && date2 && date1 !== date2) {
-    // If the strings don't match, check if one contains the other (e.g. "Sep 15" vs "2026-09-15")
-    const d1Simple = date1.replace(/[^\w]/g, '');
-    const d2Simple = date2.replace(/[^\w]/g, '');
-    if (!d1Simple.includes(d2Simple) && !d2Simple.includes(d1Simple)) {
+  const ts1 = parseEventDateToTimestamp(e1.date);
+  const ts2 = parseEventDateToTimestamp(e2.date);
+  if (isFinite(ts1) && isFinite(ts2)) {
+    const diffHours = Math.abs(ts1 - ts2) / (1000 * 60 * 60);
+    if (diffHours >= 20) {
       return {
         isMatch: false,
         isAmbiguous: false,
@@ -242,6 +242,23 @@ export function evaluateEventMatch(e1: AutoPullEvent, e2: AutoPullEvent): MatchE
         breakdown: { titleScore: 0, performerScore: 0, venueScore: 0, timeScore: 0, categoryScore: 0 },
         reason: `Temporal block mismatch: ${e1.date} vs ${e2.date}`,
       };
+    }
+  } else {
+    const date1 = normalizeDate(e1.date);
+    const date2 = normalizeDate(e2.date);
+    if (date1 && date2 && date1 !== date2) {
+      // If the strings don't match, check if one contains the other (e.g. "Sep 15" vs "2026-09-15")
+      const d1Simple = date1.replace(/[^\w]/g, '');
+      const d2Simple = date2.replace(/[^\w]/g, '');
+      if (!d1Simple.includes(d2Simple) && !d2Simple.includes(d1Simple)) {
+        return {
+          isMatch: false,
+          isAmbiguous: false,
+          compositeScore: 0.0,
+          breakdown: { titleScore: 0, performerScore: 0, venueScore: 0, timeScore: 0, categoryScore: 0 },
+          reason: `Temporal block mismatch: ${e1.date} vs ${e2.date}`,
+        };
+      }
     }
   }
 

@@ -709,6 +709,156 @@ export const POPULAR_EVENTS_CATALOG: AutoPullEvent[] = [
     doorsSource: 'St. Louis Cardinals Box Office & Ballpark Guide',
     description: 'Historic I-55 rivalry baseball at Busch Stadium in downtown St. Louis. Pre-game meetup at Ballpark Village.'
   },
+  {
+    id: 'evt-bears-vikings-chi',
+    title: 'Chicago Bears vs. Minnesota Vikings',
+    performerOrTeam: 'Chicago Bears vs. Minnesota Vikings',
+    eventSubType: 'Sports',
+    category: 'Active',
+    venue: 'Soldier Field',
+    venueAddress: '1410 Special Olympics Dr, Chicago, IL 60605',
+    city: 'Chicago, IL',
+    date: 'Sun, Sep 20',
+    showtime: '12:00 PM',
+    doorsTime: '10:00 AM',
+    suggestedMeetupTime: '9:30 AM',
+    suggestedMeetupLocation: 'Soldier Field South Lot 2 Tailgate (look for W8VR Circle flag)',
+    image: 'https://images.unsplash.com/photo-1566577739112-5180d4bf9390?auto=format&fit=crop&q=80&w=1200',
+    ticketUrl: 'https://www.ticketmaster.com/nfl',
+    ticketSectionInfo: 'Lower Bowl Section 110 or Section 212',
+    priceRange: '$85 - $380',
+    lineup: ['Chicago Bears', 'Minnesota Vikings', 'Caleb Williams', 'Soldier Field Tailgate'],
+    bagPolicy: 'Soldier Field NFL Clear Bag Policy (12"x6"x12") strictly enforced. Cashless venue.',
+    ageRestriction: 'All Ages',
+    doorsConfirmed: true,
+    doorsSource: 'NFL Ticket Exchange & Soldier Field Box Office',
+    description: 'NFC North division battle at iconic Soldier Field along the Chicago lakefront. Pre-game tailgating in South Lot.'
+  },
+  {
+    id: 'evt-bears-jets-chi',
+    title: 'Chicago Bears vs. New York Jets',
+    performerOrTeam: 'Chicago Bears vs. New York Jets',
+    eventSubType: 'Sports',
+    category: 'Active',
+    venue: 'Soldier Field',
+    venueAddress: '1410 Special Olympics Dr, Chicago, IL 60605',
+    city: 'Chicago, IL',
+    date: 'Sun, Oct 04',
+    showtime: '12:00 PM',
+    doorsTime: '10:00 AM',
+    suggestedMeetupTime: '9:30 AM',
+    suggestedMeetupLocation: 'Stadium Green at Soldier Field / Lakefront Trail',
+    image: 'https://images.unsplash.com/photo-1566577739112-5180d4bf9390?auto=format&fit=crop&q=80&w=1200',
+    ticketUrl: 'https://www.ticketmaster.com/nfl',
+    ticketSectionInfo: 'Lower Bowl Section 114 / Midfield',
+    priceRange: '$85 - $420',
+    lineup: ['Chicago Bears', 'New York Jets'],
+    bagPolicy: 'Soldier Field NFL Clear Bag Policy strictly enforced.',
+    ageRestriction: 'All Ages',
+    doorsConfirmed: true,
+    doorsSource: 'NFL / Ticketmaster Verified',
+    description: 'Interconference clash at Soldier Field featuring the Chicago Bears host defense against the New York Jets.'
+  },
+  {
+    id: 'evt-bears-packers-gb',
+    title: 'Green Bay Packers vs. Chicago Bears',
+    performerOrTeam: 'Green Bay Packers vs. Chicago Bears',
+    eventSubType: 'Sports',
+    category: 'Active',
+    venue: 'Lambeau Field',
+    venueAddress: '1265 Lombardi Ave, Green Bay, WI 54304',
+    city: 'Green Bay, WI',
+    date: 'Sun, Oct 11',
+    showtime: '3:25 PM',
+    doorsTime: '1:00 PM',
+    suggestedMeetupTime: '11:00 AM',
+    suggestedMeetupLocation: 'Lambeau Field Tundra Tailgate Zone',
+    image: 'https://images.unsplash.com/photo-1566577739112-5180d4bf9390?auto=format&fit=crop&q=80&w=1200',
+    ticketUrl: 'https://www.ticketmaster.com/nfl',
+    ticketSectionInfo: 'Bowl Section 118 or Section 320',
+    priceRange: '$110 - $490',
+    lineup: ['Green Bay Packers', 'Chicago Bears', 'Historic NFL Rivalry'],
+    bagPolicy: 'NFL Clear Bag Policy strictly enforced.',
+    ageRestriction: 'All Ages',
+    doorsConfirmed: true,
+    doorsSource: 'NFL / Ticketmaster Verified',
+    description: 'Road Game: Historic NFL division rivalry at legendary Lambeau Field. Chicago Bears take on the Packers on the road in Green Bay.'
+  },
+  {
+    id: 'evt-bears-falcons-atl',
+    title: 'Atlanta Falcons vs. Chicago Bears',
+    performerOrTeam: 'Atlanta Falcons vs. Chicago Bears',
+    eventSubType: 'Sports',
+    category: 'Active',
+    venue: 'Mercedes-Benz Stadium',
+    venueAddress: '1 AMB Dr NW, Atlanta, GA 30313',
+    city: 'Atlanta, GA',
+    date: 'Sun, Oct 18',
+    showtime: '1:00 PM',
+    doorsTime: '11:00 AM',
+    suggestedMeetupTime: '10:30 AM',
+    suggestedMeetupLocation: 'The Home Depot Backyard / Tailgate Village at Mercedes-Benz Stadium',
+    image: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=1200',
+    ticketUrl: 'https://www.ticketmaster.com/nfl',
+    ticketSectionInfo: 'Lower Concourse Sections 110-120 or Upper Level View',
+    priceRange: '$65 - $320',
+    lineup: ['Atlanta Falcons', 'Chicago Bears', 'Caleb Williams', 'Bijan Robinson'],
+    bagPolicy: 'NFL Clear Bag Policy strictly enforced. Cashless venue.',
+    ageRestriction: 'All Ages',
+    doorsConfirmed: true,
+    doorsSource: 'Mercedes-Benz Stadium Box Office & Ticketmaster',
+    description: 'Road Game: Chicago Bears travel to Atlanta to take on the Falcons under the retractable roof of Mercedes-Benz Stadium. Pre-game meetup at The Home Depot Backyard.'
+  },
+  {
+    id: 'evt-bears-patriots-chi',
+    title: 'Chicago Bears vs. New England Patriots',
+    performerOrTeam: 'Chicago Bears vs. New England Patriots',
+    eventSubType: 'Sports',
+    category: 'Active',
+    venue: 'Soldier Field',
+    venueAddress: '1410 Special Olympics Dr, Chicago, IL 60605',
+    city: 'Chicago, IL',
+    date: 'Thu, Oct 22',
+    showtime: '7:15 PM',
+    doorsTime: '5:00 PM',
+    suggestedMeetupTime: '4:45 PM',
+    suggestedMeetupLocation: 'Soldier Field Colonnade Concourse / Gate 0 Meetup',
+    image: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=1200',
+    ticketUrl: 'https://www.ticketmaster.com/nfl',
+    ticketSectionInfo: 'Section 114 / Lower Bowl or GA Floor',
+    priceRange: '$90 - $450',
+    lineup: ['Chicago Bears', 'New England Patriots', 'Thursday Night Prime Time'],
+    bagPolicy: 'NFL Clear Bag Policy strictly enforced.',
+    ageRestriction: 'All Ages',
+    doorsConfirmed: true,
+    doorsSource: 'NFL Prime Time Box Office',
+    description: 'Prime time Thursday Night Football at historic Soldier Field under the lights. Bears defend home turf against the Patriots.'
+  },
+  {
+    id: 'evt-bears-vikings-minn',
+    title: 'Chicago Bears at Minnesota Vikings',
+    performerOrTeam: 'Minnesota Vikings vs. Chicago Bears',
+    eventSubType: 'Sports',
+    category: 'Active',
+    venue: 'U.S. Bank Stadium',
+    venueAddress: '401 Chicago Ave, Minneapolis, MN 55415',
+    city: 'Minneapolis, MN',
+    date: 'Sun, Jan 10, 2027',
+    showtime: '12:00 PM',
+    doorsTime: '10:00 AM',
+    suggestedMeetupTime: '9:30 AM',
+    suggestedMeetupLocation: 'The Commons Plaza / Longfellow Park Tailgate at U.S. Bank Stadium',
+    image: 'https://images.unsplash.com/photo-1566577739112-5180d4bf9390?auto=format&fit=crop&q=80&w=1200',
+    ticketUrl: 'https://www.ticketmaster.com/nfl',
+    ticketSectionInfo: 'Section 114 Lower Bowl or Club Purple',
+    priceRange: '$75 - $380',
+    lineup: ['Minnesota Vikings', 'Chicago Bears', 'NFC North Division Rivalry'],
+    bagPolicy: 'U.S. Bank Stadium NFL Clear Bag Policy (12"x6"x12"). Cashless venue.',
+    ageRestriction: 'All Ages',
+    doorsConfirmed: true,
+    doorsSource: 'U.S. Bank Stadium Box Office & Ticketmaster',
+    description: 'Road Game: Crucial late-season NFC North division showdown at state-of-the-art U.S. Bank Stadium in downtown Minneapolis. Chicago Bears road trip gathering.'
+  },
 
   // --- NIGHTLIFE & CLUBS ---
   {
@@ -971,7 +1121,13 @@ export function parseEventDateToTimestamp(dateStr?: string): number {
     if (month !== undefined) {
       const day = parseInt(match[2], 10);
       const currentYear = new Date().getFullYear();
-      const year = match[3] ? parseInt(match[3], 10) : currentYear;
+      let year = match[3] ? parseInt(match[3], 10) : currentYear;
+      if (!match[3]) {
+        const currentMonth = new Date().getMonth();
+        if (month < currentMonth) {
+          year = currentYear + 1;
+        }
+      }
       return new Date(year, month, day, 12, 0, 0).getTime();
     }
   }
@@ -1118,7 +1274,27 @@ export function computeEventRelevance(
   let score = 0;
 
   // 1. Exact or near-exact match on performer, title, or venue (highest priority)
-  if (performerNorm === qNorm || event.performerOrTeam.toLowerCase() === qRaw) {
+  const isSportsMatchup =
+    event.eventSubType === 'Sports' ||
+    event.category === 'Active' ||
+    /\b(vs\.?|v|at)\b/i.test(event.title);
+
+  // Check if query is an exact match for one of the competing teams or lineup performers
+  const isExactTeamInMatchup =
+    isSportsMatchup &&
+    (
+      performerNorm === qNorm ||
+      (event.lineup && event.lineup.some(l => {
+        const lNorm = normalize(l);
+        return lNorm === qNorm || lNorm.includes(qNorm) || qNorm.includes(lNorm);
+      })) ||
+      new RegExp(`(^|\\b)${qNorm}(\\b|$)`, 'i').test(titleNorm) ||
+      new RegExp(`(^|\\b)${qNorm}(\\b|$)`, 'i').test(performerNorm)
+    );
+
+  if (isExactTeamInMatchup) {
+    score += 1500;
+  } else if (performerNorm === qNorm || event.performerOrTeam.toLowerCase() === qRaw) {
     score += 1500;
   } else if (titleNorm === qNorm || event.title.toLowerCase() === qRaw) {
     score += 1200;
@@ -1153,8 +1329,11 @@ export function computeEventRelevance(
     else if (token.length > 2 && venueNorm.includes(token)) score += 30;
 
     const cityWords = cityNorm.split(' ');
-    if (cityWords.includes(token)) score += 100;
-    else if (token.length > 2 && cityNorm.includes(token)) score += 40;
+    // Only grant city score if user explicitly specified a city to search in
+    if (userCity && userCity !== 'All Cities') {
+      if (cityWords.includes(token)) score += 100;
+      else if (token.length > 2 && cityNorm.includes(token)) score += 40;
+    }
 
     const lineupWords = lineupNorm.split(' ');
     if (lineupWords.includes(token)) score += 60;
@@ -1162,7 +1341,7 @@ export function computeEventRelevance(
   }
 
   // 4. User's City / Query City match bonus
-  if (userCity) {
+  if (userCity && userCity !== 'All Cities') {
     const uCityNorm = normalize(userCity);
     if (cityNorm.includes(uCityNorm) || uCityNorm.includes(cityNorm)) {
       score += 150;
@@ -1189,6 +1368,14 @@ export function resolveDynamicOuting(query: string, userCity?: string): AutoPull
 
   // If it's a URL or contains domain name, skip
   if (q.startsWith('http://') || q.startsWith('https://') || q.includes('.com') || q.includes('.org')) {
+    return null;
+  }
+
+  // If query matches a sports team or matchup, skip dynamic dining outing
+  if (
+    /\b(bears|cubs|sox|bulls|blackhawks|packers|vikings|falcons|patriots|jets|cowboys|eagles|giants|lakers|warriors|celtics|nfl|nba|mlb|nhl|mls)\b/i.test(lower) ||
+    /\b(vs\.?|v\.|at)\b/i.test(lower)
+  ) {
     return null;
   }
 
@@ -1334,7 +1521,7 @@ export function searchAutoPullEvents(
     }
   }
 
-  return results.slice(0, 12);
+  return results.slice(0, 25);
 }
 
 /**

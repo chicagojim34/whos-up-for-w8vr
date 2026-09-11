@@ -68,7 +68,7 @@ export function LiveEventCatalogModal({
           keyword: kw,
           city: currentCity === 'All Cities' ? undefined : currentCity,
           subType: cat,
-          size: 24,
+          size: 40,
         });
 
         startTransition(() => {
@@ -291,18 +291,11 @@ export function LiveEventCatalogModal({
                     {event.eventSubType}
                   </span>
 
-                  {/* Source / Deduplication indicator */}
+                  {/* Verified provider indicator */}
                   <div className="absolute top-3 right-3 flex items-center gap-1">
-                    {event.provenanceSources && event.provenanceSources.length > 1 ? (
-                      <span className="badge bg-emerald-600/90 text-white text-[9px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1">
-                        <Sparkles size={10} />
-                        Merged ({event.provenanceSources.length} Feeds)
-                      </span>
-                    ) : (
-                      <span className="badge bg-primary/90 text-white text-[9px] font-bold uppercase tracking-widest">
-                        {event.ticketOptions?.[0]?.provider || (event.id.startsWith('tm-') ? 'Ticketmaster' : event.id.startsWith('sg-') ? 'SeatGeek' : 'Verified')}
-                      </span>
-                    )}
+                    <span className="badge bg-primary/90 text-white text-[9px] font-bold uppercase tracking-widest">
+                      {event.ticketOptions?.[0]?.provider || (event.id.startsWith('tm-') ? 'Ticketmaster' : event.id.startsWith('sg-') ? 'SeatGeek' : 'Verified')}
+                    </span>
                   </div>
 
                   {/* Date overlay */}
