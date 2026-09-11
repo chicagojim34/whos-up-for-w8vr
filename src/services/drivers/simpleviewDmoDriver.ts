@@ -19,6 +19,7 @@ export const TOP_DMO_PORTALS: Record<string, DmoPortalConfig> = {
   'Atlanta': { marketRank: 9, metroArea: 'Atlanta-Sandy Springs-Alpharetta, GA', dmoName: 'Discover Atlanta', domain: 'discoveratlanta.com' },
   'Boston': { marketRank: 10, metroArea: 'Boston-Cambridge-Newton, MA-NH', dmoName: 'Meet Boston', domain: 'meetboston.com' },
   'Austin': { marketRank: 28, metroArea: 'Austin-Round Rock-Georgetown, TX', dmoName: 'Visit Austin', domain: 'visitaustin.org' },
+  'St. Louis': { marketRank: 21, metroArea: 'St. Louis, MO-IL', dmoName: 'Explore St. Louis', domain: 'explorestlouis.com' },
   'Nashville': { marketRank: 36, metroArea: 'Nashville-Davidson-Murfreesboro-Franklin, TN', dmoName: 'Visit Music City', domain: 'visitmusiccity.com' },
   'New Orleans': { marketRank: 46, metroArea: 'New Orleans-Metairie, LA', dmoName: 'New Orleans & Company', domain: 'neworleans.com' },
 };

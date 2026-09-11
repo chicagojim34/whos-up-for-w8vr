@@ -17,6 +17,7 @@ export const TOP_PAC_CENTERS: Record<string, PacVenueConfig> = {
   'Philadelphia': { marketRank: 7, metroArea: 'Philadelphia-Camden-Wilmington, PA-NJ-DE-MD', venueName: 'Kimmel Cultural Campus', boxOfficeBrand: 'Ensemble Arts Philly', domain: 'ensembleartsphilly.org' },
   'Boston': { marketRank: 10, metroArea: 'Boston-Cambridge-Newton, MA-NH', venueName: 'Boch Center (Wang Theatre)', boxOfficeBrand: 'ArtsBoston / BosTix', domain: 'bochcenter.org' },
   'San Francisco': { marketRank: 12, metroArea: 'San Francisco-Oakland-Berkeley, CA', venueName: 'BroadwaySF (Orpheum Theatre)', boxOfficeBrand: 'TodayTix SF / BroadwaySF', domain: 'broadwaysf.com' },
+  'St. Louis': { marketRank: 21, metroArea: 'St. Louis, MO-IL', venueName: 'The Fabulous Fox Theatre & The Muny', boxOfficeBrand: 'MetroTix St. Louis', domain: 'fabulousfox.com' },
 };
 
 /**

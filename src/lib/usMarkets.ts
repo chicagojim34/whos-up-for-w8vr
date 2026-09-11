@@ -58,3 +58,8 @@ export const US_TOP_50_MARKETS: UsMarketItem[] = [
   { rank: 49, city: 'Buffalo', metroArea: 'Buffalo-Cheektowaga, NY', state: 'NY', notes: 'Step Out Buffalo community guide; Sheas 1926 historic Broadway palace.' },
   { rank: 50, city: 'Birmingham', metroArea: 'Birmingham-Hoover, AL', state: 'AL', notes: 'Bham Now digital event guide; BJCC Concert Hall centerpiece complex.' },
 ];
+
+export const ALPHABETICAL_US_MARKETS: UsMarketItem[] = [...US_TOP_50_MARKETS].sort((a, b) =>
+  a.city.localeCompare(b.city)
+);
+

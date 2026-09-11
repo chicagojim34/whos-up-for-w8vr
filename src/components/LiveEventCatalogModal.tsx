@@ -14,7 +14,7 @@ import {
 import cx from 'classnames';
 import { searchLiveEventCatalog, getCachedLiveEvents } from '../services/liveEventCatalog';
 import { type AutoPullEvent, type EventSubType, formatDisplayDate } from '../services/eventAutoPull';
-import { US_TOP_50_MARKETS } from '../lib/usMarkets';
+import { ALPHABETICAL_US_MARKETS } from '../lib/usMarkets';
 
 interface LiveEventCatalogModalProps {
   isOpen: boolean;
@@ -28,6 +28,7 @@ const POPULAR_CITIES = [
   'Chicago',
   'New York',
   'Los Angeles',
+  'St. Louis',
   'Dallas',
   'Nashville',
   'Miami',
@@ -167,12 +168,12 @@ export function LiveEventCatalogModal({
                     setCustomCity('');
                   }}
                   className="input-field py-2.5 px-3 text-xs bg-surface-lowest font-bold text-text-dark cursor-pointer max-w-[180px] truncate"
-                  aria-label="Select Top 50 US Metro Market"
+                  aria-label="Select US Metro Market (Alphabetical by City)"
                 >
-                  <option value="All Cities">All 50 US Markets</option>
-                  {US_TOP_50_MARKETS.map(m => (
-                    <option key={m.rank} value={m.city}>
-                      #{m.rank} {m.city}, {m.state}
+                  <option value="All Cities">All US Markets</option>
+                  {ALPHABETICAL_US_MARKETS.map(m => (
+                    <option key={m.city} value={m.city}>
+                      {m.city}, {m.state}
                     </option>
                   ))}
                 </select>

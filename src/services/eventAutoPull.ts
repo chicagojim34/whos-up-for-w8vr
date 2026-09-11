@@ -447,6 +447,35 @@ export const POPULAR_EVENTS_CATALOG: AutoPullEvent[] = [
     description: 'Weekend-long celebration of arts and industry along historic Ravenswood Avenue. Explore open artist studios, craft markets, outdoor beer gardens, and live music.'
   },
   {
+    id: 'evt-slam-artwalk-stl',
+    title: 'Saint Louis Art Museum (SLAM) & Forest Park Art Walk',
+    performerOrTeam: 'Saint Louis Art Museum & Forest Park',
+    eventSubType: 'Festival',
+    category: 'Community',
+    venue: 'Saint Louis Art Museum',
+    venueAddress: '1 Fine Arts Dr, St. Louis, MO 63110',
+    city: 'St. Louis, MO',
+    date: 'Sat-Sun, Sep 19-20',
+    showtime: '11:00 AM',
+    doorsTime: '10:00 AM',
+    suggestedMeetupTime: '10:30 AM',
+    suggestedMeetupLocation: 'Art Hill Steps & Grand Basin Promenade (Forest Park)',
+    image: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&q=80&w=1200',
+    additionalImages: [
+      'https://images.unsplash.com/photo-1518998053901-5348d3961a04?auto=format&fit=crop&q=80&w=1200',
+      'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&q=80&w=1200'
+    ],
+    ticketUrl: 'https://www.slam.org',
+    ticketSectionInfo: 'Free Museum Admission / Sculpture Park Walk',
+    priceRange: 'Free ($15 Special Exhibitions)',
+    lineup: ['SLAM Permanent Collection', 'Art Hill Stroll', 'Grand Basin Sculpture Park', 'Forest Park Visitors Center'],
+    bagPolicy: 'Museum security checkpoint; standard bags permitted.',
+    ageRestriction: 'All Ages',
+    doorsConfirmed: true,
+    doorsSource: 'Explore St. Louis / SLAM Official Guide',
+    description: 'Explore world-renowned classical and modern art galleries at SLAM, followed by an outdoor sculpture stroll along Art Hill and the Grand Basin in historic Forest Park.'
+  },
+  {
     id: 'evt-saborea-latino-gourmet',
     title: "Saborea Chicago's Latino Gourmet Festival",
     performerOrTeam: 'Latino Culinary Masters & Mixologists',
@@ -575,6 +604,55 @@ export const POPULAR_EVENTS_CATALOG: AutoPullEvent[] = [
     ageRestriction: 'All Ages / 21+ at CloudBar',
     description: 'Experience panoramic 360-degree views of Chicago and Lake Michigan from 1,000 feet up, featuring the downward-tilting glass platform.'
   },
+  {
+    id: 'evt-citygarden-stl',
+    title: 'Citygarden Urban Sculpture & Architecture Walk',
+    performerOrTeam: 'Citygarden St. Louis',
+    eventSubType: 'Other',
+    category: 'Entertainment',
+    venue: 'Citygarden Downtown',
+    venueAddress: '801 Market St, St. Louis, MO 63101',
+    city: 'St. Louis, MO',
+    date: 'Sat, Sep 19',
+    showtime: '2:00 PM',
+    doorsTime: '1:30 PM',
+    suggestedMeetupTime: '1:30 PM',
+    suggestedMeetupLocation: 'Ginkgo Room Cafe & Video Wall at 8th & Market',
+    image: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?auto=format&fit=crop&q=80&w=1200',
+    ticketUrl: 'https://www.citygardenstl.org',
+    ticketSectionInfo: 'Free Public Sculpture Walk',
+    priceRange: 'Free',
+    lineup: ['24 International Sculptures', 'Interactive Fountain Gardens', 'Audio Tour Guide'],
+    bagPolicy: 'Public urban park; casual attire.',
+    ageRestriction: 'All Ages',
+    doorsConfirmed: true,
+    description: 'A vibrant 2.9-acre urban sculpture park in the heart of downtown St. Louis featuring 24 modern sculptures, lush botanical gardens, and reflection pools.'
+  },
+  {
+    id: 'evt-the-muny-stl',
+    title: 'Broadway Under the Stars at The Muny',
+    performerOrTeam: 'The Muny Company',
+    eventSubType: 'Theater',
+    category: 'Entertainment',
+    venue: 'The Muny (Forest Park)',
+    venueAddress: '1 Theatre Dr, St. Louis, MO 63112',
+    city: 'St. Louis, MO',
+    date: 'Sun, Sep 20',
+    showtime: '8:15 PM',
+    doorsTime: '7:00 PM',
+    suggestedMeetupTime: '6:30 PM',
+    suggestedMeetupLocation: 'Lichtenstein Plaza / Free Seat Line entrance',
+    image: 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?auto=format&fit=crop&q=80&w=1200',
+    ticketUrl: 'https://muny.org',
+    ticketSectionInfo: 'Free Back 9 Rows or Reserved Orchestra',
+    priceRange: 'Free (Back 9 Rows) / $25 - $115',
+    lineup: ['The Muny Orchestra', 'Broadway Guest Cast'],
+    bagPolicy: 'Clear bags recommended; outside food/drink permitted in coolers under 16"x16"x8".',
+    ageRestriction: 'All Ages',
+    doorsConfirmed: true,
+    doorsSource: 'The Muny Official Box Office & MetroTix',
+    description: 'America’s oldest and largest outdoor musical theatre in Forest Park. World-class Broadway productions under the stars with 1,500 free seats available every night.'
+  },
 
   // --- SPORTS CLASSICS & STADIUM MATCHES ---
   {
@@ -605,6 +683,31 @@ export const POPULAR_EVENTS_CATALOG: AutoPullEvent[] = [
     doorsConfirmed: true,
     doorsSource: 'Soldier Field Box Office & Chicago Football Classic',
     description: 'The premier HBCU football classic in the Midwest at historic Soldier Field. Thrilling gridiron action, high-stepping marching band showdown, and vibrant community tailgate.'
+  },
+  {
+    id: 'evt-cardinals-cubs-stl',
+    title: 'St. Louis Cardinals vs. Chicago Cubs',
+    performerOrTeam: 'St. Louis Cardinals vs. Chicago Cubs',
+    eventSubType: 'Sports',
+    category: 'Active',
+    venue: 'Busch Stadium',
+    venueAddress: '700 Clark Ave, St. Louis, MO 63102',
+    city: 'St. Louis, MO',
+    date: 'Sat, Sep 19',
+    showtime: '6:15 PM',
+    doorsTime: '4:15 PM',
+    suggestedMeetupTime: '3:30 PM',
+    suggestedMeetupLocation: 'Ballpark Village / Fox Sports Midwest Live Plaza across from Gate 3',
+    image: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=1200',
+    ticketUrl: 'https://www.mlb.com/cardinals',
+    ticketSectionInfo: 'Infield Pavilion Sections 240-250 or Left Field Bleachers',
+    priceRange: '$28 - $145',
+    lineup: ['St. Louis Cardinals', 'Chicago Cubs', 'Fredbird Appearance', 'Post-Game Fireworks'],
+    bagPolicy: 'Bags up to 16"x16"x8" permitted; no backpacks. Cashless venue.',
+    ageRestriction: 'All Ages',
+    doorsConfirmed: true,
+    doorsSource: 'St. Louis Cardinals Box Office & Ballpark Guide',
+    description: 'Historic I-55 rivalry baseball at Busch Stadium in downtown St. Louis. Pre-game meetup at Ballpark Village.'
   },
 
   // --- NIGHTLIFE & CLUBS ---
@@ -691,6 +794,30 @@ export const POPULAR_EVENTS_CATALOG: AutoPullEvent[] = [
     ageRestriction: 'All Ages',
     doorsConfirmed: true,
     description: "Chicago's cult-favorite deep dish pan pizza featuring the famous caramelized cheese crust ring baked in cast iron pans. A true Chicago institution."
+  },
+  {
+    id: 'evt-pappys-bbq-stl',
+    title: "Dinner & BBQ Outing at Pappy's Smokehouse",
+    performerOrTeam: "Pappy's Smokehouse",
+    eventSubType: 'Other',
+    category: 'Dining',
+    venue: "Pappy's Smokehouse",
+    venueAddress: '3106 Olive St, St. Louis, MO 63103',
+    city: 'St. Louis, MO',
+    date: 'Fri, Sep 18',
+    showtime: '6:30 PM',
+    doorsTime: '6:00 PM',
+    suggestedMeetupTime: '6:00 PM',
+    suggestedMeetupLocation: 'Olive St front patio (getting in line for ribs before sellout)',
+    image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&q=80&w=1200',
+    ticketUrl: 'https://pappyssmokehouse.com',
+    ticketSectionInfo: 'Communal BBQ Picnic Table',
+    priceRange: '$18 - $35',
+    lineup: ['Memphis-Style Dry Rub Ribs', 'Smoked Burnt Ends', 'Sweet Baby Jane Sauce'],
+    bagPolicy: 'Casual barbecue joint.',
+    ageRestriction: 'All Ages',
+    doorsConfirmed: true,
+    description: 'Nationally acclaimed Memphis-style barbecue smoked for up to 14 hours over sweet apple and cherry wood in Midtown St. Louis.'
   },
   {
     id: 'evt-girl-and-the-goat',
@@ -887,6 +1014,60 @@ export function formatDisplayDate(dateStr?: string): string {
 }
 
 /**
+ * Evaluates whether an event's city or address matches a targeted user/selected city.
+ * Normalizes common variations like "St. Louis" vs "Saint Louis", state codes, and punctuation.
+ */
+export function matchesCityFilter(
+  eventCity?: string,
+  eventAddress?: string,
+  targetCity?: string
+): boolean {
+  if (!targetCity || targetCity === 'All Cities' || !targetCity.trim()) {
+    return true;
+  }
+
+  const cleanEventCity = (eventCity || '').toLowerCase()
+    .replace(/\bsaint\b/g, 'st')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const cleanAddress = (eventAddress || '').toLowerCase()
+    .replace(/\bsaint\b/g, 'st')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const cleanTarget = targetCity.toLowerCase()
+    .replace(/\bsaint\b/g, 'st')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Strip 2-letter state abbreviation if at the end of cleanTarget (e.g. "st louis mo" -> "st louis")
+  const baseTarget = cleanTarget.replace(/\s+(mo|il|ca|ny|tx|fl|ga|co|wa|tn|oh|mi|pa|az|nc|ma|mn|nv|va|in|wi|or|md|la|ky|ok|ct|ut|al|ri)\b$/, '').trim();
+
+  if (!baseTarget) return true;
+
+  // Direct substring check in city or address
+  if (cleanEventCity.includes(baseTarget) || cleanAddress.includes(baseTarget)) {
+    return true;
+  }
+
+  // Token check (all tokens of target city must appear in event city or address)
+  const targetTokens = baseTarget.split(' ').filter(t => t.length > 0);
+  if (targetTokens.length > 1) {
+    const allInCity = targetTokens.every(tok => cleanEventCity.includes(tok));
+    const allInAddr = targetTokens.every(tok => cleanAddress.includes(tok));
+    if (allInCity || allInAddr) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Calculates a relevance score for an event based on artist, title, venue, city, and date.
  */
 export function computeEventRelevance(
@@ -1011,7 +1192,7 @@ export function resolveDynamicOuting(query: string, userCity?: string): AutoPull
     return null;
   }
 
-  const cityStr = userCity || 'Chicago, IL';
+  const cityStr = userCity && userCity !== 'All Cities' ? userCity : 'Chicago, IL';
   const cleanTitle = q
     .replace(/^(visit|go to|dinner at|drinks at|hangout at|check out|outing to)\s+/i, '')
     .trim();
@@ -1090,7 +1271,11 @@ export function resolveDynamicOuting(query: string, userCity?: string): AutoPull
 /**
  * Searches the catalog of events with relevance ranking and chronological date sorting.
  */
-export function searchAutoPullEvents(query: string, userCity?: string): AutoPullEvent[] {
+export function searchAutoPullEvents(
+  query: string,
+  userCity?: string,
+  strictCity: boolean = false
+): AutoPullEvent[] {
   const now = new Date();
   const startOfTodayMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
@@ -1098,9 +1283,16 @@ export function searchAutoPullEvents(query: string, userCity?: string): AutoPull
     return parseEventDateToTimestamp(evt.date) >= startOfTodayMs;
   };
 
+  const isCityMatch = (evt: AutoPullEvent) => {
+    if (!strictCity || !userCity || userCity === 'All Cities' || !userCity.trim()) {
+      return true;
+    }
+    return matchesCityFilter(evt.city, evt.venueAddress, userCity);
+  };
+
   if (!query || !query.trim()) {
     return [...POPULAR_EVENTS_CATALOG]
-      .filter(isUpcoming)
+      .filter(evt => isUpcoming(evt) && isCityMatch(evt))
       .sort((a, b) => {
         const aUserCity = userCity && a.city.toLowerCase().includes(userCity.toLowerCase()) ? 1 : 0;
         const bUserCity = userCity && b.city.toLowerCase().includes(userCity.toLowerCase()) ? 1 : 0;
@@ -1111,7 +1303,7 @@ export function searchAutoPullEvents(query: string, userCity?: string): AutoPull
   }
 
   const scored = POPULAR_EVENTS_CATALOG
-    .filter(isUpcoming)
+    .filter(evt => isUpcoming(evt) && isCityMatch(evt))
     .map(evt => ({ evt, score: computeEventRelevance(evt, query, userCity) }))
     .filter(item => item.score > 0);
 
@@ -1126,7 +1318,7 @@ export function searchAutoPullEvents(query: string, userCity?: string): AutoPull
   // If query is at least 2 chars, provide a dynamic venue/dining outing option if not already an exact match
   if (query.trim().length >= 2) {
     const dynamicCandidate = resolveDynamicOuting(query, userCity);
-    if (dynamicCandidate) {
+    if (dynamicCandidate && isCityMatch(dynamicCandidate)) {
       const alreadyHasExact = results.some(
         r => r.title.toLowerCase() === dynamicCandidate.title.toLowerCase() ||
              r.venue.toLowerCase() === dynamicCandidate.venue.toLowerCase()

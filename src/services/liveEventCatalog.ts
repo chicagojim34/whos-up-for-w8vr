@@ -4,7 +4,8 @@ import {
   computeEventRelevance, 
   parseEventDateToTimestamp,
   isEventUpcoming,
-  searchAutoPullEvents
+  searchAutoPullEvents,
+  matchesCityFilter
 } from './eventAutoPull';
 import { resolveEventSchedule, type ResolvedSchedule } from './venueScheduleResolver';
 import { deduplicateAndMergeEvents } from './eventDeduplication';
@@ -401,6 +402,7 @@ export async function searchLiveEventCatalog(params: {
   const keyword = params.keyword?.trim() || '';
   const city = params.city?.trim() || '';
   const subType = params.subType === 'All' ? undefined : params.subType;
+  const isSpecificCity = Boolean(city && city !== 'All Cities' && city.trim());
 
   // Map subType to classification names
   let tmClass: string | undefined = undefined;
@@ -424,7 +426,7 @@ export async function searchLiveEventCatalog(params: {
   }
 
   // Get local verified community events, tours, dining outings, and art walks
-  const localCatalogEvents = searchAutoPullEvents(keyword, city);
+  const localCatalogEvents = searchAutoPullEvents(keyword, city, isSpecificCity);
 
   // Query primary APIs and syndicated multi-market drivers concurrently
   const [tmResults, sgResults, doStuffResults, dmoResults, pacResults, diningResults] = await Promise.all([
@@ -456,6 +458,11 @@ export async function searchLiveEventCatalog(params: {
     ...pacResults,
     ...diningResults,
   ].filter(evt => isEventUpcoming(evt.date));
+
+  // If a specific city filter is selected, strictly retain events matching that city/metro
+  if (isSpecificCity) {
+    combinedRaw = combinedRaw.filter(evt => matchesCityFilter(evt.city, evt.venueAddress, city));
+  }
 
   // Apply subtype / category filter if requested
   if (subType) {
