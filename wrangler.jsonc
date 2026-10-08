@@ -1,0 +1,31 @@
+// One Worker serves the built app (./dist) and the API (/api/*) from one origin.
+// Free tier: Workers 100k requests/day, D1 5 GB with 5M rows read and 100k
+// rows written per day. See README "Backend" for setup.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "w8vr",
+  "main": "worker/src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "w8vr",
+      // Replace with the id printed by `npx wrangler d1 create w8vr`.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "worker/migrations"
+    }
+  ],
+  "vars": {
+    // Your Firebase project id (the same one as VITE_FIREBASE_PROJECT_ID).
+    "FIREBASE_PROJECT_ID": "w8vr-app"
+    // ADMIN_EMAILS: set with `npx wrangler secret put ADMIN_EMAILS` (comma-separated).
+    // AUTH_MODE is deliberately absent: dev tokens are only for `npm run dev:api`.
+  },
+  "observability": { "enabled": true }
+}

@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ME,
   type AlertItem,
@@ -23,6 +23,7 @@ import {
 import { clearAllSlices, isArray, loadSlice, saveSlice } from '../lib/storage';
 import { attendeesWith, myRsvp, spotsLeft, waitlistQueue } from '../lib/events';
 import { useAuth } from '../hooks/useAuth';
+import { ApiUnavailable, createApi, type Api, type ServerState } from '../services/api';
 
 export type RsvpIntent = 'going' | 'maybe' | 'no';
 
@@ -84,6 +85,11 @@ interface AppContextType {
   updateProfile: (patch: Partial<Pick<UserProfile, 'name' | 'tagline' | 'homeCity'>>) => void;
 
   resetToDefaults: () => void;
+
+  /** True while signed in and talking to the shared backend. */
+  isOnline: boolean;
+  /** Fetches a private circle by its invite link so it can be previewed and joined. */
+  openCircleInvite: (circleId: string, inviteCode: string) => Promise<boolean>;
 }
 
 export interface NewEventDraft {
@@ -145,8 +151,19 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 const uid = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
+const POLL_MS = 60_000;
+
+type Synced = { id: string; origin?: 'server' };
+const isLocal = (item: Synced) => item.origin !== 'server';
+
+/** Server items replace every server item we had; local demo items stay. */
+function mergeServer<T extends Synced>(prev: T[], server: T[]): T[] {
+  const ids = new Set(server.map(s => s.id));
+  return [...server, ...prev.filter(p => isLocal(p) && !ids.has(p.id))];
+}
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, updateCurrentUserProfile } = useAuth();
+  const { user, updateCurrentUserProfile, isAuthenticated } = useAuth();
   const [events, setEvents] = useState<EventItem[]>(() =>
     loadSlice('events', INITIAL_EVENTS, isArray)
   );
@@ -161,11 +178,107 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
   const [reports, setReports] = useState<ReportItem[]>(() => loadSlice('reports', [], isArray));
 
-  useEffect(() => saveSlice('events', events), [events]);
-  useEffect(() => saveSlice('circles', circles), [circles]);
-  useEffect(() => saveSlice('alerts', alerts), [alerts]);
+  // Only this browser's own items persist; server items are re-fetched.
+  useEffect(() => saveSlice('events', events.filter(isLocal)), [events]);
+  useEffect(() => saveSlice('circles', circles.filter(isLocal)), [circles]);
+  useEffect(() => saveSlice('alerts', alerts.filter(isLocal)), [alerts]);
   useEffect(() => saveSlice('contacts', contacts), [contacts]);
-  useEffect(() => saveSlice('reports', reports), [reports]);
+  useEffect(() => saveSlice('reports', reports.filter(isLocal)), [reports]);
+
+  // ---------------------------------------------------------------- Sync ---
+  //
+  // Signed in with a backend reachable: events, circles, alerts and reports
+  // that live on the server merge in alongside the local demo world. Signed
+  // out, or with no backend (plain `vite`), everything stays local as before.
+
+  const api = useMemo(
+    () => (isAuthenticated ? createApi({ uid: user.id, name: user.name, email: user.email }) : null),
+    [isAuthenticated, user.id, user.name, user.email]
+  );
+  const [onlineApi, setOnlineApi] = useState<Api | null>(null);
+  /** The API to send mutations to; null while offline or signed out. */
+  const remote = onlineApi && onlineApi === api ? onlineApi : null;
+
+  const userRef = useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
+  const applyServerState = useCallback(
+    (state: ServerState) => {
+      setEvents(prev => mergeServer(prev, state.events));
+      setCircles(prev => mergeServer(prev, state.circles));
+      setAlerts(prev => mergeServer(prev, state.alerts).sort((a, b) => b.createdAt - a.createdAt));
+      setReports(prev => mergeServer(prev, state.reports));
+
+      // The server decides role, and holds the preferences other people see.
+      const { role, tagline, homeCity, notifications, gameHandles, blockedIds, closeFriendIds } = state.me;
+      const patch = { role, tagline, homeCity, notifications, gameHandles, blockedIds, closeFriendIds };
+      const current = userRef.current;
+      const changed = (Object.keys(patch) as (keyof typeof patch)[]).some(
+        k => JSON.stringify(patch[k]) !== JSON.stringify(current[k])
+      );
+      if (changed) updateCurrentUserProfile(patch);
+    },
+    [updateCurrentUserProfile]
+  );
+
+  /** Set when this sign-in found no backend, so polling stops asking. */
+  const unavailableFor = useRef<Api | null>(null);
+
+  const refresh = useCallback(async () => {
+    if (!api || unavailableFor.current === api) return;
+    try {
+      applyServerState(await api.state());
+      setOnlineApi(api);
+    } catch (err) {
+      if (err instanceof ApiUnavailable) {
+        unavailableFor.current = api;
+        setOnlineApi(null);
+      } else console.warn('W8VR: could not refresh from the server', err);
+    }
+  }, [api, applyServerState]);
+
+  // Poll while the tab is visible. Free tier: one /api/state per minute per
+  // open tab is far inside 100k Worker requests a day for a friends-scale app.
+  useEffect(() => {
+    if (!api) return;
+    const tick = () => {
+      if (document.visibilityState === 'visible') void refresh();
+    };
+    tick();
+    const timer = window.setInterval(tick, POLL_MS);
+    document.addEventListener('visibilitychange', tick);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', tick);
+    };
+  }, [api, refresh]);
+
+  /** Sends a mutation, applies its result, then re-syncs so server alerts arrive. */
+  const sync = useCallback(
+    <T,>(op: (a: Api) => Promise<T>, onResult?: (result: T) => void) => {
+      if (!remote) return;
+      op(remote)
+        .then(result => onResult?.(result))
+        .catch(err => console.warn('W8VR: change was not saved to the server', err))
+        .finally(() => void refresh());
+    },
+    [remote, refresh]
+  );
+
+  const replaceEvent = useCallback((event: EventItem) => {
+    setEvents(prev => prev.map(e => (e.id === event.id ? event : e)));
+  }, []);
+
+  const eventsRef = useRef(events);
+  useEffect(() => {
+    eventsRef.current = events;
+  }, [events]);
+  const isServerEvent = useCallback(
+    (eventId: string) => eventsRef.current.some(e => e.id === eventId && e.origin === 'server'),
+    []
+  );
 
   const pushAlert = useCallback(
     (alert: Omit<AlertItem, 'id' | 'createdAt' | 'unread'> & { unread?: boolean }) => {
@@ -208,6 +321,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const vacatedSeat = current === 'going' && next !== 'going';
       let promoted: Attendee | undefined;
 
+      // Server events: show the change now, let the server decide for real.
+      // Its alerts arrive on the re-sync, so none are made up here.
+      const onServer = event.origin === 'server';
+      if (onServer) sync(a => a.rsvp(eventId, intent), r => replaceEvent(r.event));
+
       setEvents(prev =>
         prev.map(e => {
           if (e.id !== eventId) return e;
@@ -242,7 +360,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         })
       );
 
-      if (next === 'going') {
+      if (onServer) {
+        // no local alerts
+      } else if (next === 'going') {
         pushAlert({
           type: 'confirm',
           tier: 'logistics',
@@ -260,7 +380,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
       }
 
-      if (promoted) {
+      if (promoted && !onServer) {
         if (promoted.id === ME) {
           pushAlert({
             type: 'waitlist',
@@ -286,14 +406,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         promoted: promoted && promoted.id !== ME ? promoted.name : undefined,
       };
     },
-    [events, user.name, pushAlert]
+    [events, user.name, pushAlert, sync, replaceEvent]
   );
 
-  const muteEvent = useCallback((eventId: string) => {
-    setEvents(prev => prev.map(e => (e.id === eventId ? { ...e, muted: true } : e)));
-  }, []);
+  const muteEvent = useCallback(
+    (eventId: string) => {
+      setEvents(prev => prev.map(e => (e.id === eventId ? { ...e, muted: true } : e)));
+      if (isServerEvent(eventId)) sync(a => a.mute(eventId));
+    },
+    [isServerEvent, sync]
+  );
 
   const unmuteEvent = useCallback((eventId: string) => {
+    if (isServerEvent(eventId)) sync(a => a.unmute(eventId));
     setEvents(prev =>
       prev.map(e =>
         e.id === eventId
@@ -306,7 +431,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           : e
       )
     );
-  }, []);
+  }, [isServerEvent, sync]);
 
   // -------------------------------------------------------------- Events ---
 
@@ -376,6 +501,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ],
       };
 
+      // Shared when signed in, unless it is for a demo circle the server has
+      // never heard of.
+      const circle = draft.circleId ? circles.find(c => c.id === draft.circleId) : undefined;
+      const onServer = remote !== null && (draft.privacy !== 'circle' || circle?.origin === 'server');
+
+      if (onServer) {
+        created.origin = 'server';
+        setEvents(prev => [created, ...prev]);
+        remote
+          .createEvent(created)
+          .then(replaceEvent)
+          .catch(err => {
+            // Keep the plan on this device rather than lose it.
+            console.warn('W8VR: event kept on this device only', err);
+            setEvents(prev => prev.map(e => (e.id === id ? { ...e, origin: undefined } : e)));
+          })
+          .finally(() => void refresh());
+        return created;
+      }
+
       setEvents(prev => [created, ...prev]);
       pushAlert({
         type: 'confirm',
@@ -386,7 +531,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       return created;
     },
-    [user.name, pushAlert]
+    [user.name, pushAlert, circles, remote, replaceEvent, refresh]
   );
 
   const updateEvent = useCallback(
@@ -431,7 +576,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return prev.map(e => (e.id === eventId ? updated : e));
       });
 
-      if (notifyAttendees && changeSummary) {
+      if (isServerEvent(eventId)) {
+        sync(a => a.updateEvent(eventId, patch, notifyAttendees, changeSummary), replaceEvent);
+      } else if (notifyAttendees && changeSummary) {
         pushAlert({
           type: 'confirm',
           tier: 'logistics',
@@ -443,13 +590,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return updatedItem;
     },
-    [user.name, pushAlert]
+    [user.name, pushAlert, isServerEvent, sync, replaceEvent]
   );
 
   const addComment = useCallback(
     (eventId: string, text: string) => {
       const trimmed = text.trim();
       if (!trimmed) return;
+      if (isServerEvent(eventId)) sync(a => a.comment(eventId, trimmed), replaceEvent);
       setEvents(prev =>
         prev.map(e =>
           e.id === eventId
@@ -471,7 +619,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         )
       );
     },
-    [user.name]
+    [user.name, isServerEvent, sync, replaceEvent]
   );
 
   /** Returns how many people the blast actually reached. */
@@ -510,6 +658,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         )
       );
 
+      if (event.origin === 'server') {
+        sync(a => a.broadcast(eventId, trimmed, target));
+        return recipients.filter(r => r.id !== ME).length;
+      }
+
       const audience =
         target === 'going'
           ? 'confirmed guests'
@@ -529,13 +682,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return recipients.length;
     },
-    [events, user.name, pushAlert]
+    [events, user.name, pushAlert, sync]
   );
 
   // ------------------------------------------------------------- Circles ---
 
   const joinCircle = useCallback(
     (circleId: string) => {
+      const circle = circles.find(c => c.id === circleId);
+      if (circle?.origin === 'server') {
+        sync(
+          a => a.joinCircle(circleId, circle.inviteCode),
+          joined => setCircles(prev => prev.map(c => (c.id === circleId ? joined : c)))
+        );
+      }
       setCircles(prev =>
         prev.map(c =>
           c.id !== circleId || c.isJoined
@@ -548,10 +708,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         )
       );
     },
-    [user.name]
+    [user.name, circles, sync]
   );
 
   const leaveCircle = useCallback((circleId: string) => {
+    if (circles.some(c => c.id === circleId && c.origin === 'server')) sync(a => a.leaveCircle(circleId));
     setCircles(prev =>
       prev.map(c =>
         c.id !== circleId
@@ -563,7 +724,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
       )
     );
-  }, []);
+  }, [circles, sync]);
+
+  const openCircleInvite = useCallback(
+    async (circleId: string, code: string): Promise<boolean> => {
+      if (!api) return false;
+      try {
+        const circle = await api.circle(circleId, code);
+        // Non-members are not sent the code; keep the one from the link to join with.
+        const withCode = { ...circle, inviteCode: circle.inviteCode ?? code };
+        setCircles(prev => [withCode, ...prev.filter(c => c.id !== circleId)]);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [api]
+  );
 
   const createCircle = useCallback(
     (draft: NewCircleDraft): CircleItem => {
@@ -582,6 +759,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...invited.map(c => ({ id: c.id, name: c.name, role: 'Member' as const })),
         ],
       };
+      if (remote) {
+        // Shared circles start with just you; everyone else joins by invite link.
+        created.origin = 'server';
+        created.memberList = created.memberList.slice(0, 1);
+        remote
+          .createCircle({
+            id: created.id,
+            name: created.name,
+            description: created.description,
+            categoryTag: created.categoryTag,
+            isPrivate: created.isPrivate,
+          })
+          .then(saved => setCircles(prev => prev.map(c => (c.id === saved.id ? saved : c))))
+          .catch(err => {
+            console.warn('W8VR: circle kept on this device only', err);
+            setCircles(prev => prev.map(c => (c.id === created.id ? { ...c, origin: undefined } : c)));
+          });
+      }
       setCircles(prev => [created, ...prev]);
       if (invited.length > 0) {
         setContacts(prev =>
@@ -590,24 +785,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return created;
     },
-    [contacts, user.name]
+    [contacts, user.name, remote]
   );
 
   // -------------------------------------------------------------- Alerts ---
 
-  const markAlertRead = useCallback((alertId: string) => {
-    setAlerts(prev => prev.map(a => (a.id === alertId ? { ...a, unread: false } : a)));
-  }, []);
+  const alertsRef = useRef(alerts);
+  useEffect(() => {
+    alertsRef.current = alerts;
+  }, [alerts]);
+  const isServerAlert = useCallback(
+    (alertId: string) => alertsRef.current.some(a => a.id === alertId && a.origin === 'server'),
+    []
+  );
+
+  const markAlertRead = useCallback(
+    (alertId: string) => {
+      if (isServerAlert(alertId)) sync(a => a.markAlertRead(alertId));
+      setAlerts(prev => prev.map(a => (a.id === alertId ? { ...a, unread: false } : a)));
+    },
+    [isServerAlert, sync]
+  );
 
   const markAllAlertsRead = useCallback(() => {
+    sync(a => a.markAllAlertsRead());
     setAlerts(prev => prev.map(a => ({ ...a, unread: false })));
-  }, []);
+  }, [sync]);
 
-  const dismissAlert = useCallback((alertId: string) => {
-    setAlerts(prev => prev.filter(a => a.id !== alertId));
-  }, []);
+  const dismissAlert = useCallback(
+    (alertId: string) => {
+      if (isServerAlert(alertId)) sync(a => a.dismissAlert(alertId));
+      setAlerts(prev => prev.filter(a => a.id !== alertId));
+    },
+    [isServerAlert, sync]
+  );
 
-  const clearAlerts = useCallback(() => setAlerts([]), []);
+  const clearAlerts = useCallback(() => {
+    sync(a => a.clearAlerts());
+    setAlerts([]);
+  }, [sync]);
 
   // --------------------------------------------------- Contacts & safety ---
 
@@ -619,6 +835,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     (userId: string, name: string) => {
       if (!user.blockedIds.includes(userId)) {
         updateCurrentUserProfile({ blockedIds: [...user.blockedIds, userId] });
+        sync(a => a.block(userId));
       }
       setEvents(prev =>
         prev.map(e =>
@@ -634,25 +851,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         desc: 'Their events and messages are hidden from you. You can undo this in Settings.',
       });
     },
-    [user.blockedIds, updateCurrentUserProfile, pushAlert]
+    [user.blockedIds, updateCurrentUserProfile, pushAlert, sync]
   );
 
   const unblockUser = useCallback(
     (userId: string) => {
       updateCurrentUserProfile({ blockedIds: user.blockedIds.filter((id: string) => id !== userId) });
+      sync(a => a.unblock(userId));
     },
-    [user.blockedIds, updateCurrentUserProfile]
+    [user.blockedIds, updateCurrentUserProfile, sync]
   );
 
   const toggleCloseFriend = useCallback(
     (userId: string) => {
+      const wasFriend = user.closeFriendIds.includes(userId);
+      sync(a => (wasFriend ? a.removeCloseFriend(userId) : a.addCloseFriend(userId)));
       updateCurrentUserProfile({
-        closeFriendIds: user.closeFriendIds.includes(userId)
+        closeFriendIds: wasFriend
           ? user.closeFriendIds.filter((id: string) => id !== userId)
           : [...user.closeFriendIds, userId],
       });
     },
-    [user.closeFriendIds, updateCurrentUserProfile]
+    [user.closeFriendIds, updateCurrentUserProfile, sync]
   );
 
   /**
@@ -665,8 +885,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const trimmed = handle.trim();
       if (!trimmed) return;
       updateCurrentUserProfile({ gameHandles: { ...user.gameHandles, [gameId]: trimmed } });
+      sync(a => a.setGameHandle(gameId, trimmed));
     },
-    [user.gameHandles, updateCurrentUserProfile]
+    [user.gameHandles, updateCurrentUserProfile, sync]
   );
 
   const unlinkGameAccount = useCallback(
@@ -674,13 +895,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const next = { ...user.gameHandles };
       delete next[gameId];
       updateCurrentUserProfile({ gameHandles: next });
+      sync(a => a.removeGameHandle(gameId));
     },
-    [user.gameHandles, updateCurrentUserProfile]
+    [user.gameHandles, updateCurrentUserProfile, sync]
   );
 
   const reportEvent = useCallback(
     (eventId: string, reason: string, note: string) => {
       const event = events.find(e => e.id === eventId);
+      if (event?.origin === 'server') {
+        // The server files it and sends the receipt alert.
+        sync(a => a.report(eventId, reason, note.trim()));
+        return;
+      }
       const report: ReportItem = {
         id: uid('r'),
         eventId,
@@ -698,21 +925,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         eventId,
       });
     },
-    [events, pushAlert]
+    [events, pushAlert, sync]
   );
 
   const updateNotifications = useCallback(
     (patch: Partial<Omit<NotificationTiers, 'logistics'>>) => {
-      updateCurrentUserProfile({ notifications: { ...user.notifications, ...patch } });
+      const notifications = { ...user.notifications, ...patch };
+      updateCurrentUserProfile({ notifications });
+      sync(a => a.updateMe({ notifications }));
     },
-    [user.notifications, updateCurrentUserProfile]
+    [user.notifications, updateCurrentUserProfile, sync]
   );
 
   const updateProfile = useCallback(
     (patch: Partial<Pick<UserProfile, 'name' | 'tagline' | 'homeCity'>>) => {
       updateCurrentUserProfile(patch);
+      sync(a => a.updateMe(patch));
     },
-    [updateCurrentUserProfile]
+    [updateCurrentUserProfile, sync]
   );
 
   const resetToDefaults = useCallback(() => {
@@ -723,22 +953,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAlerts(INITIAL_ALERTS);
     setContacts(INITIAL_CONTACTS);
     setReports([]);
-  }, [updateCurrentUserProfile]);
+    // Shared data is not demo data; bring it straight back.
+    void refresh();
+  }, [updateCurrentUserProfile, refresh]);
 
   // ---------------------------------------------------------- Selections ---
 
   /** Blocked hosts disappear from every browsing surface. */
+  // Signed out, server items left over from the last session are hidden
+  // until the next sign-in replaces them.
   const visibleEvents = useMemo(
     () =>
       events
-        .filter(e => !user.blockedIds.includes(e.hostId))
+        .filter(e => (api || isLocal(e)) && !user.blockedIds.includes(e.hostId))
         .map(e =>
           e.comments.some(c => user.blockedIds.includes(c.authorId))
             ? { ...e, comments: e.comments.filter(c => !user.blockedIds.includes(c.authorId)) }
             : e
         ),
-    [events, user.blockedIds]
+    [events, user.blockedIds, api]
   );
+
+  const visibleCircles = useMemo(() => (api ? circles : circles.filter(isLocal)), [api, circles]);
+  const visibleAlertList = useMemo(() => (api ? alerts : alerts.filter(isLocal)), [api, alerts]);
+  const visibleReports = useMemo(() => (api ? reports : reports.filter(isLocal)), [api, reports]);
 
   const mutedEventIds = useMemo(
     () => new Set(events.filter(e => e.muted).map(e => e.id)),
@@ -757,31 +995,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (tier === 'circleActivity') return user.notifications.circleActivity;
       return user.notifications.publicNearby;
     };
-    return alerts.filter(a => {
+    return visibleAlertList.filter(a => {
       if (a.eventId && mutedEventIds.has(a.eventId)) return false;
       return tierEnabled(a.tier);
     });
-  }, [alerts, mutedEventIds, user.notifications]);
+  }, [visibleAlertList, mutedEventIds, user.notifications]);
 
   const findEvent = useCallback(
-    (id: string | undefined) => (id ? events.find(e => e.id === id) : undefined),
-    [events]
+    (id: string | undefined) => (id ? visibleEvents.find(e => e.id === id) : undefined),
+    [visibleEvents]
   );
 
   const findCircle = useCallback(
-    (id: string | undefined) => (id ? circles.find(c => c.id === id) : undefined),
-    [circles]
+    (id: string | undefined) => (id ? visibleCircles.find(c => c.id === id) : undefined),
+    [visibleCircles]
   );
 
   const value = useMemo<AppContextType>(
     () => ({
       user,
       events: visibleEvents,
-      circles,
-      alerts,
+      circles: visibleCircles,
+      alerts: visibleAlertList,
       visibleAlerts,
       contacts,
-      reports,
+      reports: visibleReports,
       findEvent,
       findCircle,
       rsvpEvent,
@@ -808,15 +1046,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateNotifications,
       updateProfile,
       resetToDefaults,
+      isOnline: remote !== null,
+      openCircleInvite,
     }),
     [
       user,
       visibleEvents,
-      circles,
-      alerts,
+      visibleCircles,
+      visibleAlertList,
       visibleAlerts,
       contacts,
-      reports,
+      visibleReports,
       findEvent,
       findCircle,
       rsvpEvent,
@@ -843,6 +1083,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateNotifications,
       updateProfile,
       resetToDefaults,
+      remote,
+      openCircleInvite,
     ]
   );
 

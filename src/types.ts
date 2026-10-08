@@ -103,6 +103,9 @@ export interface EventItem {
   confidenceScore?: number;
   marketRank?: number;
   metroArea?: string;
+
+  /** Set when this event lives in the shared backend rather than this browser. */
+  origin?: 'server';
 }
 
 export interface CanonicalTicketOption {
@@ -146,6 +149,10 @@ export interface CircleItem {
   isPrivate: boolean;
   categoryTag: string;
   memberList: CircleMember[];
+  /** Set when this circle lives in the shared backend rather than this browser. */
+  origin?: 'server';
+  /** Key to join a private server circle. Only members receive it. */
+  inviteCode?: string;
 }
 
 export type AlertType = 'invite' | 'confirm' | 'broadcast' | 'waitlist' | 'circle';
@@ -167,6 +174,7 @@ export interface AlertItem {
   eventId?: string;
   circleId?: string;
   actionLabel?: string;
+  origin?: 'server';
 }
 
 export interface ContactItem {
@@ -222,4 +230,5 @@ export interface ReportItem {
   reason: string;
   note: string;
   createdAt: number;
+  origin?: 'server';
 }

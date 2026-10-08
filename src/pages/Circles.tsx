@@ -6,6 +6,7 @@ import { useApp } from '../hooks/useApp';
 import { useToast } from '../hooks/useToast';
 import { GlassModal } from '../components/GlassModal';
 import { ShareSheet } from '../components/ShareSheet';
+import { circleInviteUrl } from '../lib/circles';
 import { AvatarGroup } from '../components/AvatarGroup';
 import { Avatar } from '../components/Avatar';
 import type { CircleItem } from '../types';
@@ -395,7 +396,7 @@ export default function Circles() {
         onClose={() => setShareTarget(null)}
         title={`Invite to ${shareTarget?.name ?? 'circle'}`}
         subtitle="Scan the code or send the link"
-        url={`${window.location.origin}/circle/${shareTarget?.id ?? ''}`}
+        url={shareTarget ? circleInviteUrl(shareTarget) : ''}
         shareText={`Join ${shareTarget?.name ?? 'my circle'} on W8VR`}
       />
 

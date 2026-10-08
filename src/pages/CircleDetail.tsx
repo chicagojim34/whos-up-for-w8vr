@@ -1,7 +1,9 @@
-import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, Share2, Users, LogOut, Lock, Globe, CalendarDays, Plus } from 'lucide-react';
 import { useApp } from '../hooks/useApp';
+import { useAuth } from '../hooks/useAuth';
+import { circleInviteUrl } from '../lib/circles';
 import { useToast } from '../hooks/useToast';
 import { useConfirm } from '../hooks/useConfirm';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -17,17 +19,55 @@ import { formatWhen } from '../lib/datetime';
 export default function CircleDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { findCircle, events, joinCircle, leaveCircle } = useApp();
+  const [searchParams] = useSearchParams();
+  const invite = searchParams.get('invite');
+  const { findCircle, events, joinCircle, leaveCircle, openCircleInvite } = useApp();
+  const { isAuthenticated, openAuthModal } = useAuth();
+  const [inviteFailedFor, setInviteFailedFor] = useState<string | null>(null);
   const toast = useToast();
   const confirm = useConfirm();
   const [shareOpen, setShareOpen] = useState(false);
 
   const circle = findCircle(id);
 
+  // An invite link to a shared circle this device has not seen yet.
+  const needsInviteLookup = !circle && Boolean(id && invite && isAuthenticated) && inviteFailedFor !== id;
+  useEffect(() => {
+    if (!needsInviteLookup || !id || !invite) return;
+    let cancelled = false;
+    openCircleInvite(id, invite).then(found => {
+      if (!found && !cancelled) setInviteFailedFor(id);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [needsInviteLookup, id, invite, openCircleInvite]);
+
   const circleEvents = useMemo(
     () => (circle ? rankEvents(events.filter(e => e.circleId === circle.id && !e.muted)) : []),
     [events, circle]
   );
+
+  if (!circle && invite && !isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center text-center gap-4 px-6 py-24 max-w-md mx-auto animate-fade-in">
+        <Users size={40} className="text-primary" aria-hidden="true" />
+        <h1 className="font-headline font-bold text-2xl text-text-dark">You have a circle invite</h1>
+        <p className="text-sm text-text-light max-w-sm">Sign in to see who is in it and join.</p>
+        <button onClick={openAuthModal} className="btn btn-primary py-2.5 px-6 text-sm">
+          Sign in to join
+        </button>
+      </div>
+    );
+  }
+
+  if (!circle && needsInviteLookup) {
+    return (
+      <div className="px-6 py-24 text-center text-sm text-text-light" role="status">
+        Opening your invite…
+      </div>
+    );
+  }
 
   if (!circle) {
     return (
@@ -39,7 +79,7 @@ export default function CircleDetail() {
   }
 
   const memberCount = circle.memberList.length + circle.extraMembers;
-  const circleUrl = `${window.location.origin}/circle/${circle.id}`;
+  const circleUrl = circleInviteUrl(circle);
 
   const handleLeave = async () => {
     const ok = await confirm.ask({
