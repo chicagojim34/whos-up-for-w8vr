@@ -10,6 +10,7 @@
  * selectors in src/lib/events.ts work unchanged on server data.
  */
 import { authenticate, AuthError, type Caller } from './auth';
+import { ensureSchema } from './schema';
 import { ME } from '../../src/types';
 import { canSeeExactAddress } from '../../src/lib/events';
 import type {
@@ -1115,6 +1116,7 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
   if (url.pathname === '/api/health') return json({ ok: true });
 
   const caller = await authenticate(request, env);
+  await ensureSchema(env.DB);
   await ensureUser(env, caller);
 
   for (const [method, pattern, handler] of routes) {
