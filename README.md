@@ -4,8 +4,10 @@ A front-end prototype of a social coordination app: broadcast an intent to a
 circle of friends, collect RSVPs without the group-chat noise, and keep the
 logistics in one place.
 
-Built with React 19, TypeScript, Vite and Tailwind v4. All state lives in the
-browser — there is no backend, and no network calls at runtime.
+Built with React 19, TypeScript, Vite and Tailwind v4. Signed out, it is a
+self-contained demo that keeps everything in the browser. Signed in, events,
+circles, RSVPs and alerts are shared through a Cloudflare Worker backed by D1
+(see [Backend](#backend)).
 
 ## Running it
 
@@ -15,6 +17,16 @@ npm run dev      # http://localhost:5173
 npm run build    # tsc -b && vite build
 npm run lint     # eslint
 ```
+
+To run the shared backend too, in a second terminal:
+
+```bash
+npm run db:migrate:local   # once: creates the local D1 database
+npm run dev:api            # the Worker on :8787; Vite proxies /api to it
+npm run test:api           # end-to-end API checks against it
+```
+
+Then sign in (the simulated sign-in works locally) and the app syncs.
 
 ## How it is put together
 
@@ -110,6 +122,49 @@ pick a restaurant will not get eight people online at once.
 is neither an in-person Entertainment outing nor a Home/Social game night — it
 has no venue, and the async ones have no start time — so folding it into an
 existing category would have made the feed filter lie.
+
+## Backend
+
+One Cloudflare Worker (`worker/src/index.ts`) serves both the built app and
+`/api/*`, so the browser talks to one origin. Data lives in D1 (SQLite); the
+schema is `worker/migrations/`. Everything is on free tiers:
+
+| Service | Free limit that matters | First paid step |
+| --- | --- | --- |
+| Workers | 100k requests/day | Workers Paid ($5/mo) for 10M/month |
+| D1 | 5 GB, 5M rows read/day, 100k rows written/day | Same $5 plan raises reads/writes |
+| Firebase Auth | Email and Google sign-in, no cap that a small app hits | Phone/SMS auth, or Identity Platform at 50k MAU |
+
+To stay well inside those, the client polls `/api/state` once a minute and
+only while the tab is visible, returning users cost a read rather than a
+write, and fan-out alerts are capped per action.
+
+**Auth.** The app sends its Firebase ID token; the Worker verifies it against
+Google's public keys (no Admin SDK). Roles are decided by the server: everyone
+is `user` unless their email is listed in the `ADMIN_EMAILS` secret.
+`npm run dev:api` also accepts unsigned dev tokens (`AUTH_MODE=dev`) so the
+app works locally without a Firebase project; a deployed Worker never does.
+
+**Privacy is enforced on the server.** Circle-only events are only returned
+to members, private circles only to members or holders of the invite link,
+and street addresses, room links and game room codes are stripped for anyone
+who is not a confirmed guest. Seat claims are a single conditional insert, so
+two people racing for the last spot cannot both get it.
+
+**Local and shared, side by side.** Items from the server carry
+`origin: 'server'`. They are merged with the local demo data, never written
+to `localStorage`, and hidden again on sign-out. Changing one sends the change
+to the API and re-syncs; local items behave exactly as before.
+
+### Deploying
+
+```bash
+npx wrangler login
+npx wrangler d1 create w8vr          # paste the database_id into wrangler.jsonc
+# set FIREBASE_PROJECT_ID in wrangler.jsonc, and VITE_FIREBASE_* in .env.production
+npx wrangler secret put ADMIN_EMAILS # optional, comma-separated
+npm run deploy                       # build, migrate the remote DB, deploy
+```
 
 ## Demo state
 

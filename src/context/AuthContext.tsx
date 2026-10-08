@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const cred = await fbSignInWithGoogle();
     if (cred.user) {
       const u = cred.user;
-      const role = rolesMap[u.uid] || 'admin';
+      const role = rolesMap[u.uid] || 'user';
       const profile: UserProfile = {
         ...user,
         id: u.uid,
@@ -106,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const cred = await fbSignInWithPassword(email, pass);
       if (cred.user) {
         const u = cred.user;
-        const role = rolesMap[u.uid] || user.role || 'admin';
+        const role = rolesMap[u.uid] || 'user';
         const profile: UserProfile = {
           ...user,
           id: u.uid,
