@@ -9,7 +9,7 @@
 -- are queried by the server, so a JSON blob avoids a migration per field. Only
 -- what the server filters or enforces on gets a real column.
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id            TEXT PRIMARY KEY,          -- Firebase uid
   name          TEXT NOT NULL,
   email         TEXT,
@@ -22,26 +22,26 @@ CREATE TABLE users (
   created_at    INTEGER NOT NULL
 );
 
-CREATE TABLE game_handles (
+CREATE TABLE IF NOT EXISTS game_handles (
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   game_id TEXT NOT NULL,
   handle  TEXT NOT NULL,
   PRIMARY KEY (user_id, game_id)
 );
 
-CREATE TABLE blocks (
+CREATE TABLE IF NOT EXISTS blocks (
   user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   blocked_id TEXT NOT NULL,
   PRIMARY KEY (user_id, blocked_id)
 );
 
-CREATE TABLE close_friends (
+CREATE TABLE IF NOT EXISTS close_friends (
   user_id   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   friend_id TEXT NOT NULL,
   PRIMARY KEY (user_id, friend_id)
 );
 
-CREATE TABLE circles (
+CREATE TABLE IF NOT EXISTS circles (
   id           TEXT PRIMARY KEY,
   name         TEXT NOT NULL,
   description  TEXT NOT NULL DEFAULT '',
@@ -54,16 +54,16 @@ CREATE TABLE circles (
   created_at   INTEGER NOT NULL
 );
 
-CREATE TABLE circle_members (
+CREATE TABLE IF NOT EXISTS circle_members (
   circle_id TEXT NOT NULL REFERENCES circles(id) ON DELETE CASCADE,
   user_id   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   role      TEXT NOT NULL DEFAULT 'Member',
   joined_at INTEGER NOT NULL,
   PRIMARY KEY (circle_id, user_id)
 );
-CREATE INDEX idx_circle_members_user ON circle_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_circle_members_user ON circle_members(user_id);
 
-CREATE TABLE events (
+CREATE TABLE IF NOT EXISTS events (
   id            TEXT PRIMARY KEY,
   host_id       TEXT NOT NULL REFERENCES users(id),
   privacy       TEXT NOT NULL CHECK (privacy IN ('public', 'circle', 'hidden')),
@@ -75,20 +75,20 @@ CREATE TABLE events (
   data          TEXT NOT NULL,             -- JSON: everything else on EventItem
   created_at    INTEGER NOT NULL
 );
-CREATE INDEX idx_events_starts ON events(starts_at);
-CREATE INDEX idx_events_circle ON events(circle_id);
-CREATE INDEX idx_events_host ON events(host_id);
+CREATE INDEX IF NOT EXISTS idx_events_starts ON events(starts_at);
+CREATE INDEX IF NOT EXISTS idx_events_circle ON events(circle_id);
+CREATE INDEX IF NOT EXISTS idx_events_host ON events(host_id);
 
-CREATE TABLE attendees (
+CREATE TABLE IF NOT EXISTS attendees (
   event_id  TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   user_id   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   status    TEXT NOT NULL CHECK (status IN ('going', 'maybe', 'waitlist', 'declined')),
   joined_at INTEGER NOT NULL,
   PRIMARY KEY (event_id, user_id)
 );
-CREATE INDEX idx_attendees_user ON attendees(user_id);
+CREATE INDEX IF NOT EXISTS idx_attendees_user ON attendees(user_id);
 
-CREATE TABLE comments (
+CREATE TABLE IF NOT EXISTS comments (
   id           TEXT PRIMARY KEY,
   event_id     TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   author_id    TEXT NOT NULL REFERENCES users(id),
@@ -97,17 +97,17 @@ CREATE TABLE comments (
   broadcast_to TEXT,
   created_at   INTEGER NOT NULL
 );
-CREATE INDEX idx_comments_event ON comments(event_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_comments_event ON comments(event_id, created_at);
 
 -- Muting is per person, not per event: you quieting an event must not quiet
 -- it for everyone else.
-CREATE TABLE mutes (
+CREATE TABLE IF NOT EXISTS mutes (
   user_id  TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   PRIMARY KEY (user_id, event_id)
 );
 
-CREATE TABLE alerts (
+CREATE TABLE IF NOT EXISTS alerts (
   id         TEXT PRIMARY KEY,
   user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   type       TEXT NOT NULL,
@@ -119,9 +119,9 @@ CREATE TABLE alerts (
   unread     INTEGER NOT NULL DEFAULT 1,
   created_at INTEGER NOT NULL
 );
-CREATE INDEX idx_alerts_user ON alerts(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_alerts_user ON alerts(user_id, created_at);
 
-CREATE TABLE reports (
+CREATE TABLE IF NOT EXISTS reports (
   id          TEXT PRIMARY KEY,
   reporter_id TEXT NOT NULL REFERENCES users(id),
   event_id    TEXT NOT NULL,
@@ -130,4 +130,4 @@ CREATE TABLE reports (
   note        TEXT NOT NULL DEFAULT '',
   created_at  INTEGER NOT NULL
 );
-CREATE INDEX idx_reports_reporter ON reports(reporter_id);
+CREATE INDEX IF NOT EXISTS idx_reports_reporter ON reports(reporter_id);

@@ -3,9 +3,11 @@
 // rows written per day. See README "Backend" for setup.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "w8vr",
+  "name": "whos-up-for-w8vr",
   "main": "worker/src/index.ts",
   "compatibility_date": "2026-09-01",
+  // Builds the app into ./dist before every deploy (and before `wrangler dev`).
+  "build": { "command": "npm run build" },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
@@ -16,8 +18,8 @@
     {
       "binding": "DB",
       "database_name": "w8vr",
-      // Replace with the id printed by `npx wrangler d1 create w8vr`.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      // No database_id: the first deploy creates the database (free tier) and
+      // binds it. The Worker creates its own tables; see worker/src/schema.ts.
       "migrations_dir": "worker/migrations"
     }
   ],

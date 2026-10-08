@@ -21,7 +21,6 @@ npm run lint     # eslint
 To run the shared backend too, in a second terminal:
 
 ```bash
-npm run db:migrate:local   # once: creates the local D1 database
 npm run dev:api            # the Worker on :8787; Vite proxies /api to it
 npm run test:api           # end-to-end API checks against it
 ```
@@ -158,13 +157,19 @@ to the API and re-syncs; local items behave exactly as before.
 
 ### Deploying
 
-```bash
-npx wrangler login
-npx wrangler d1 create w8vr          # paste the database_id into wrangler.jsonc
-# set FIREBASE_PROJECT_ID in wrangler.jsonc, and VITE_FIREBASE_* in .env.production
-npx wrangler secret put ADMIN_EMAILS # optional, comma-separated
-npm run deploy                       # build, migrate the remote DB, deploy
-```
+Cloudflare Workers Builds deploys `main` on every push, with no manual
+database step:
+
+- the first deploy creates the D1 database (`w8vr`) and binds it;
+- the first API request creates the tables (`worker/src/schema.ts`), and
+  records them in `d1_migrations`, the table `wrangler d1 migrations` reads;
+- new migrations go in `worker/migrations/` and get listed in `schema.ts`.
+
+Sign-in needs a Firebase project: set `FIREBASE_PROJECT_ID` in
+`wrangler.jsonc` and the `VITE_FIREBASE_*` web config in `.env.production`
+(the web config is public by design, so it is fine to commit), and add the
+`workers.dev` hostname to Firebase Auth's authorized domains. Until then the
+deployed app runs in demo mode. Admins: `npx wrangler secret put ADMIN_EMAILS`.
 
 ## Demo state
 
